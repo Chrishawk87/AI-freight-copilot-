@@ -1,0 +1,125 @@
+// AI Freight Co-Pilot — data model
+// PostgreSQL (Railway in production; use the Railway Postgres URL locally too).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("owner_operator") // owner_operator | dispatcher | fleet_manager
+  createdAt    DateTime  @default(now())
+
+  carrier   Carrier? @relation(fields: [carrierId], references: [id])
+  carrierId String?
+
+  bids     Bid[]
+  bookings Booking[]
+}
+
+model Carrier {
+  id                String   @id @default(cuid())
+  companyName       String
+  dotNumber         String   @default("")
+  mcNumber          String   @default("")
+  insuranceProvider String   @default("")
+  insuranceExpiry   String   @default("")
+  w9OnFile          Boolean  @default(false)
+  serviceAreas      String   @default("[]") // JSON array of state codes
+  mpg               Float    @default(6.5)
+  fixedCostPerMile  Float    @default(0.72)
+  createdAt         DateTime @default(now())
+
+  users     User[]
+  drivers   Driver[]
+  equipment Equipment[]
+  bookings  Booking[]
+}
+
+model Driver {
+  id        String  @id @default(cuid())
+  name      String
+  cdlClass  String  @default("Class A")
+  status    String  @default("Active")
+  carrier   Carrier @relation(fields: [carrierId], references: [id])
+  carrierId String
+}
+
+model Equipment {
+  id        String  @id @default(cuid())
+  type      String
+  unit      String
+  year      Int
+  carrier   Carrier @relation(fields: [carrierId], references: [id])
+  carrierId String
+}
+
+model Load {
+  id            String   @id @default(cuid())
+  externalId    String   @unique // provider load id e.g. L-4821
+  equipment     String
+  originCity    String
+  originState   String
+  destCity      String
+  destState     String
+  miles         Int
+  deadheadMiles Int
+  rate          Float
+  weightLbs     Int
+  broker        String
+  brokerRating  Float
+  pickupDate    String
+  source        String // DAT, Truckstop, Uber Freight...
+  demandIndex   Int
+  reloadIndex   Int
+  isReloadPool  Boolean  @default(false) // reload marketplace vs main board
+  createdAt     DateTime @default(now())
+
+  bids     Bid[]
+  bookings Booking[]
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  amount    Float
+  message   String   @default("")
+  status    String   @default("submitted") // submitted | countered | accepted | rejected
+  createdAt DateTime @default(now())
+
+  load   Load   @relation(fields: [loadId], references: [id])
+  loadId String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model Booking {
+  id        String   @id @default(cuid())
+  status    String   @default("booked") // booked | in_transit | delivered | canceled
+  bookedAt  DateTime @default(now())
+
+  load      Load     @relation(fields: [loadId], references: [id])
+  loadId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  carrier   Carrier  @relation(fields: [carrierId], references: [id])
+  carrierId String
+}
+
+model FuelStation {
+  id         String  @id @default(cuid())
+  name       String
+  city       String
+  state      String
+  price      Float
+  distanceMi Int
+  onRoute    Boolean
+  network    String
+}

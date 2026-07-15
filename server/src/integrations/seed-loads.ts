@@ -1,0 +1,36 @@
+import { ProviderLoad } from './load-board.provider';
+
+// Realistic simulated freight feed. Mirrors what a real DAT/Truckstop
+// response would give us after mapping into ProviderLoad shape.
+export const SIMULATED_LOADS: ProviderLoad[] = [
+  { externalId: 'L-4821', equipment: 'Reefer', originCity: 'Dallas', originState: 'TX', destCity: 'Atlanta', destState: 'GA', miles: 781, deadheadMiles: 12, rate: 2180, weightLbs: 38000, broker: 'CH Robinson', brokerRating: 4.4, pickupDate: '2026-07-14', source: 'DAT', demandIndex: 82, reloadIndex: 88 },
+  { externalId: 'L-4822', equipment: 'Reefer', originCity: 'Fort Worth', originState: 'TX', destCity: 'Miami', destState: 'FL', miles: 1310, deadheadMiles: 35, rate: 3450, weightLbs: 41000, broker: 'Uber Freight', brokerRating: 4.1, pickupDate: '2026-07-15', source: 'Truckstop', demandIndex: 74, reloadIndex: 61 },
+  { externalId: 'L-4823', equipment: 'Dry Van', originCity: 'Dallas', originState: 'TX', destCity: 'Memphis', destState: 'TN', miles: 452, deadheadMiles: 8, rate: 985, weightLbs: 22000, broker: 'JB Hunt', brokerRating: 4.6, pickupDate: '2026-07-14', source: 'DAT', demandIndex: 68, reloadIndex: 79 },
+  { externalId: 'L-4824', equipment: 'Dry Van', originCity: 'Denton', originState: 'TX', destCity: 'Oklahoma City', destState: 'OK', miles: 206, deadheadMiles: 24, rate: 360, weightLbs: 15000, broker: 'Coyote', brokerRating: 3.8, pickupDate: '2026-07-14', source: 'Truckstop', demandIndex: 41, reloadIndex: 44 },
+  { externalId: 'L-4825', equipment: 'Flatbed', originCity: 'Houston', originState: 'TX', destCity: 'Phoenix', destState: 'AZ', miles: 1176, deadheadMiles: 240, rate: 2760, weightLbs: 44000, broker: 'Landstar', brokerRating: 4.3, pickupDate: '2026-07-16', source: 'DAT', demandIndex: 71, reloadIndex: 66 },
+  { externalId: 'L-4826', equipment: 'Flatbed', originCity: 'Dallas', originState: 'TX', destCity: 'Nashville', destState: 'TN', miles: 663, deadheadMiles: 15, rate: 1720, weightLbs: 46000, broker: 'CH Robinson', brokerRating: 4.4, pickupDate: '2026-07-15', source: 'DAT', demandIndex: 77, reloadIndex: 72 },
+  { externalId: 'L-4827', equipment: 'Step Deck', originCity: 'Waco', originState: 'TX', destCity: 'Little Rock', destState: 'AR', miles: 385, deadheadMiles: 95, rate: 1180, weightLbs: 42000, broker: 'Landstar', brokerRating: 4.3, pickupDate: '2026-07-15', source: 'Truckstop', demandIndex: 58, reloadIndex: 49 },
+  { externalId: 'L-4828', equipment: 'Power Only', originCity: 'Dallas', originState: 'TX', destCity: 'Shreveport', destState: 'LA', miles: 189, deadheadMiles: 6, rate: 410, weightLbs: 0, broker: 'Uber Freight', brokerRating: 4.1, pickupDate: '2026-07-14', source: 'Uber Freight', demandIndex: 63, reloadIndex: 55 },
+  { externalId: 'L-4829', equipment: 'Box Truck', originCity: 'Plano', originState: 'TX', destCity: 'Austin', destState: 'TX', miles: 215, deadheadMiles: 18, rate: 520, weightLbs: 8000, broker: 'Roadie', brokerRating: 4.0, pickupDate: '2026-07-14', source: 'Roadie', demandIndex: 66, reloadIndex: 70 },
+  { externalId: 'L-4830', equipment: 'Hotshot', originCity: 'Dallas', originState: 'TX', destCity: 'Midland', destState: 'TX', miles: 331, deadheadMiles: 40, rate: 890, weightLbs: 11000, broker: 'Curri', brokerRating: 4.2, pickupDate: '2026-07-15', source: 'Curri', demandIndex: 72, reloadIndex: 58 },
+  { externalId: 'L-4831', equipment: 'Sprinter Van', originCity: 'Irving', originState: 'TX', destCity: 'San Antonio', destState: 'TX', miles: 274, deadheadMiles: 22, rate: 560, weightLbs: 2500, broker: 'GoShare', brokerRating: 3.9, pickupDate: '2026-07-14', source: 'GoShare', demandIndex: 54, reloadIndex: 51 },
+  { externalId: 'L-4832', equipment: 'Tanker', originCity: 'Houston', originState: 'TX', destCity: 'Baton Rouge', destState: 'LA', miles: 271, deadheadMiles: 30, rate: 1050, weightLbs: 48000, broker: 'Quality Carriers', brokerRating: 4.0, pickupDate: '2026-07-16', source: 'DAT', demandIndex: 69, reloadIndex: 47 },
+  { externalId: 'L-4833', equipment: 'Auto Transport', originCity: 'Dallas', originState: 'TX', destCity: 'Los Angeles', destState: 'CA', miles: 1435, deadheadMiles: 20, rate: 2050, weightLbs: 30000, broker: 'Central Dispatch', brokerRating: 4.1, pickupDate: '2026-07-16', source: 'DAT', demandIndex: 64, reloadIndex: 74 },
+  { externalId: 'L-4834', equipment: 'Specialized', originCity: 'Fort Worth', originState: 'TX', destCity: 'Denver', destState: 'CO', miles: 782, deadheadMiles: 55, rate: 3120, weightLbs: 52000, broker: 'Landstar', brokerRating: 4.3, pickupDate: '2026-07-17', source: 'DAT', demandIndex: 60, reloadIndex: 45 },
+  { externalId: 'L-4835', equipment: 'Local & Final-Mile', originCity: 'Dallas', originState: 'TX', destCity: 'Arlington', destState: 'TX', miles: 42, deadheadMiles: 9, rate: 210, weightLbs: 3000, broker: 'Frayt', brokerRating: 4.2, pickupDate: '2026-07-14', source: 'Frayt', demandIndex: 80, reloadIndex: 83 },
+  { externalId: 'L-4836', equipment: 'Dry Van', originCity: 'Dallas', originState: 'TX', destCity: 'Kansas City', destState: 'MO', miles: 561, deadheadMiles: 10, rate: 1490, weightLbs: 26000, broker: 'CH Robinson', brokerRating: 4.4, pickupDate: '2026-07-15', source: 'DAT', demandIndex: 75, reloadIndex: 69 },
+  // Reload pool (near Atlanta, GA)
+  { externalId: 'R-9001', equipment: 'Reefer', originCity: 'Atlanta', originState: 'GA', destCity: 'Dallas', destState: 'TX', miles: 781, deadheadMiles: 18, rate: 2240, weightLbs: 39000, broker: 'CH Robinson', brokerRating: 4.4, pickupDate: '2026-07-16', source: 'DAT', demandIndex: 84, reloadIndex: 80, isReloadPool: true },
+  { externalId: 'R-9002', equipment: 'Reefer', originCity: 'Marietta', originState: 'GA', destCity: 'Houston', destState: 'TX', miles: 795, deadheadMiles: 42, rate: 2050, weightLbs: 40000, broker: 'Uber Freight', brokerRating: 4.1, pickupDate: '2026-07-16', source: 'Truckstop', demandIndex: 78, reloadIndex: 72, isReloadPool: true },
+  { externalId: 'R-9003', equipment: 'Reefer', originCity: 'Atlanta', originState: 'GA', destCity: 'Orlando', destState: 'FL', miles: 438, deadheadMiles: 8, rate: 1180, weightLbs: 37000, broker: 'JB Hunt', brokerRating: 4.6, pickupDate: '2026-07-16', source: 'DAT', demandIndex: 81, reloadIndex: 76, isReloadPool: true },
+  { externalId: 'R-9004', equipment: 'Reefer', originCity: 'Chattanooga', originState: 'TN', destCity: 'Memphis', destState: 'TN', miles: 344, deadheadMiles: 118, rate: 820, weightLbs: 35000, broker: 'Coyote', brokerRating: 3.8, pickupDate: '2026-07-16', source: 'Truckstop', demandIndex: 62, reloadIndex: 58, isReloadPool: true },
+];
+
+export const SIMULATED_FUEL = [
+  { name: "Love's #412", city: 'Terrell', state: 'TX', price: 3.74, distanceMi: 6, onRoute: true, network: "Love's" },
+  { name: 'Pilot #221', city: 'Tyler', state: 'TX', price: 3.79, distanceMi: 41, onRoute: true, network: 'Pilot' },
+  { name: 'TA Shreveport', city: 'Shreveport', state: 'LA', price: 3.68, distanceMi: 189, onRoute: true, network: 'TA' },
+  { name: "Love's #77", city: 'Jackson', state: 'MS', price: 3.71, distanceMi: 412, onRoute: true, network: "Love's" },
+  { name: 'QuikTrip', city: 'Dallas', state: 'TX', price: 3.88, distanceMi: 3, onRoute: false, network: 'QT' },
+  { name: 'Pilot #109', city: 'Birmingham', state: 'AL', price: 3.82, distanceMi: 618, onRoute: true, network: 'Pilot' },
+];

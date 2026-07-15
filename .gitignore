@@ -1,0 +1,20 @@
+node_modules
+.next
+out
+dist
+build
+*.tsbuildinfo
+
+# Secrets — never commit real env files, but keep the templates
+.env
+.env.*
+!.env.example
+
+# Local SQLite leftovers (project uses Postgres now)
+**/dev.db
+**/dev.db-journal
+*.sqlite
+
+*.log
+.DS_Store
+next-env.d.ts.bak
