@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/current-user.decorator';
 import { OcrService } from './ocr.service';
 import { UsageService } from '../usage/usage.service';
+import { MailService } from '../mail/mail.service';
+import { buildJobPackagePdf } from './job-package';
 
 // What each document type needs before it's "complete" enough to invoice / file.
 const REQUIRED: Record<string, string[]> = {
@@ -33,6 +39,7 @@ export class DocumentsService {
     private readonly prisma: PrismaService,
     private readonly ocr: OcrService,
     private readonly usage: UsageService,
+    private readonly mail: MailService,
   ) {}
 
   // Fields returned in list view — everything except the heavy image + raw blobs.
@@ -190,6 +197,176 @@ export class DocumentsService {
       select: this.listSelect,
     });
     return docs.map((d) => this.serialize(d));
+  }
+
+  /**
+   * Group every document under the "job" it belongs to (its booked load).
+   * Documents not tied to a load fall into a single "Unassigned" job so
+   * nothing gets lost. This powers the per-job package view.
+   */
+  async jobs(user: AuthUser) {
+    const docs = await this.prisma.document.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      select: this.listSelect,
+    });
+
+    const loadIds = [
+      ...new Set(docs.map((d) => d.loadId).filter((x): x is string => !!x)),
+    ];
+    const loads = loadIds.length
+      ? await this.prisma.load.findMany({ where: { id: { in: loadIds } } })
+      : [];
+    const loadMap = new Map(loads.map((l) => [l.id, l]));
+
+    const groups = new Map<string, any>();
+    for (const d of docs) {
+      const key = d.loadId || 'unassigned';
+      if (!groups.has(key)) {
+        const load = d.loadId ? loadMap.get(d.loadId) : null;
+        groups.set(key, {
+          jobId: key,
+          loadId: d.loadId,
+          bookingId: d.bookingId,
+          title: load
+            ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity}, ${load.originState} → ${load.destCity}, ${load.destState}`
+            : 'Unassigned documents',
+          broker: load?.broker ?? null,
+          rate: load?.rate ?? null,
+          docs: [] as any[],
+        });
+      }
+      groups.get(key).docs.push(this.serialize(d));
+    }
+
+    const list = [...groups.values()].map((g) => ({
+      jobId: g.jobId,
+      loadId: g.loadId,
+      bookingId: g.bookingId,
+      title: g.title,
+      broker: g.broker,
+      rate: g.rate,
+      docCount: g.docs.length,
+      completeCount: g.docs.filter((x: any) => x.status === 'complete').length,
+      needsReview: g.docs.some((x: any) => x.status === 'needs_review'),
+      types: [...new Set(g.docs.map((x: any) => x.type))],
+      latestAt: g.docs[0]?.createdAt ?? null,
+      docs: g.docs,
+    }));
+
+    // Real jobs first (newest activity), unassigned bucket last.
+    list.sort((a, b) => {
+      if (a.jobId === 'unassigned') return 1;
+      if (b.jobId === 'unassigned') return -1;
+      return String(b.latestAt).localeCompare(String(a.latestAt));
+    });
+    return list;
+  }
+
+  /**
+   * Gather one job's documents + load + carrier and render the combined PDF.
+   * Shared by the download and the email flows.
+   */
+  private async buildPackage(user: AuthUser, jobId: string) {
+    const where =
+      jobId === 'unassigned'
+        ? { userId: user.id, loadId: null }
+        : { userId: user.id, loadId: jobId };
+
+    const docs = await this.prisma.document.findMany({
+      where,
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!docs.length) throw new NotFoundException('No documents for this job');
+
+    let load: any = null;
+    if (jobId !== 'unassigned') {
+      load = await this.prisma.load.findUnique({ where: { id: jobId } });
+    }
+
+    let carrier: { companyName: string; contactEmail: string } | null = null;
+    if (user.carrierId) {
+      carrier = (await this.prisma.carrier.findUnique({
+        where: { id: user.carrierId },
+        select: { companyName: true, contactEmail: true },
+      })) as { companyName: string; contactEmail: string } | null;
+    }
+
+    const bytes = await buildJobPackagePdf({
+      load,
+      docs,
+      carrierName: carrier?.companyName ?? null,
+    });
+    const ref = load ? (load.externalId ?? load.id.slice(0, 6)) : 'documents';
+    return {
+      bytes,
+      filename: `job-${String(ref).replace(/[^a-z0-9-_]+/gi, '-')}.pdf`,
+      docCount: docs.length,
+      load,
+      carrier,
+    };
+  }
+
+  /**
+   * Combine every document under one job into a single downloadable PDF.
+   * Returned as a data URL so the frontend can save or attach it as one file.
+   */
+  async jobPackage(user: AuthUser, jobId: string) {
+    const { bytes, filename, docCount } = await this.buildPackage(user, jobId);
+    const base64 = Buffer.from(bytes).toString('base64');
+    return {
+      filename,
+      dataUrl: `data:application/pdf;base64,${base64}`,
+      docCount,
+    };
+  }
+
+  /**
+   * Email a job's combined package as a single PDF attachment. Uses the
+   * company mailer; the carrier's contact email is the reply-to (and gets a
+   * copy) so replies land back with the driver's company.
+   */
+  async emailJobPackage(
+    user: AuthUser,
+    jobId: string,
+    body: { to: string; subject?: string; message?: string },
+  ) {
+    const to = (body.to || '').trim();
+    if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+      throw new BadRequestException('Please enter a valid recipient email.');
+    }
+    if (!this.mail.configured()) {
+      throw new BadRequestException(
+        'Email is not set up yet. Ask your company admin to add the mail (SMTP) settings.',
+      );
+    }
+
+    const { bytes, filename, load, carrier } = await this.buildPackage(user, jobId);
+    const replyTo = carrier?.contactEmail?.trim() || undefined;
+    const jobRef = load
+      ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity} → ${load.destCity}`
+      : 'documents';
+    const subject = body.subject?.trim() || `Documents — ${jobRef}`;
+    const text =
+      (body.message?.trim() ? `${body.message.trim()}\n\n` : '') +
+      `Attached is the document package for ${jobRef}.` +
+      (carrier?.companyName ? `\n\n${carrier.companyName}` : '') +
+      `\n\nSent via AI Freight Co-Pilot.`;
+
+    const result = await this.mail.send({
+      to,
+      cc: replyTo,
+      replyTo,
+      subject,
+      text,
+      attachments: [
+        { filename, content: Buffer.from(bytes), contentType: 'application/pdf' },
+      ],
+    });
+    if (!result.sent) {
+      throw new BadRequestException(result.reason || 'The email could not be sent.');
+    }
+    return { sent: true, to, filename };
   }
 
   async getOne(user: AuthUser, id: string) {

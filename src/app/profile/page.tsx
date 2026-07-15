@@ -33,6 +33,7 @@ export default function ProfilePage() {
     try {
       await api.updateCarrier({
         companyName: form.companyName,
+        contactEmail: form.contactEmail,
         dotNumber: form.dotNumber,
         mcNumber: form.mcNumber,
         insuranceProvider: form.insuranceProvider,
@@ -85,6 +86,13 @@ export default function ProfilePage() {
             <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
               <LabeledInput label="DOT #" value={form.dotNumber} onChange={(v) => set("dotNumber", v)} />
               <LabeledInput label="MC #" value={form.mcNumber} onChange={(v) => set("mcNumber", v)} />
+            </div>
+            <div className="mt-2 text-sm">
+              <LabeledInput
+                label="Company email (used to send document packages)"
+                value={form.contactEmail}
+                onChange={(v) => set("contactEmail", v)}
+              />
             </div>
           </div>
           <div className="text-right">

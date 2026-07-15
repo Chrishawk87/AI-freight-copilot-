@@ -29,6 +29,7 @@ model User {
 model Carrier {
   id                String   @id @default(cuid())
   companyName       String
+  contactEmail      String   @default("") // company email — sender/reply-to for document packages
   dotNumber         String   @default("")
   mcNumber          String   @default("")
   insuranceProvider String   @default("")

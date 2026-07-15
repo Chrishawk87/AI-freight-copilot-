@@ -73,6 +73,7 @@ export interface AuthResponse {
 export interface CarrierDetail {
   id: string;
   companyName: string;
+  contactEmail: string;
   dotNumber: string;
   mcNumber: string;
   insuranceProvider: string;
@@ -165,6 +166,27 @@ export interface FreightDocument {
   imageData?: string | null; // only returned by document(id)
 }
 
+export interface DocumentJob {
+  jobId: string; // loadId, or "unassigned"
+  loadId: string | null;
+  bookingId: string | null;
+  title: string;
+  broker: string | null;
+  rate: number | null;
+  docCount: number;
+  completeCount: number;
+  needsReview: boolean;
+  types: DocType[];
+  latestAt: string | null;
+  docs: FreightDocument[];
+}
+
+export interface JobPackage {
+  filename: string;
+  dataUrl: string; // data:application/pdf;base64,...
+  docCount: number;
+}
+
 export interface DocScanBody {
   type?: DocType;
   imageData?: string; // base64 data URL
@@ -205,6 +227,17 @@ export const api = {
 
   // ---- Documents (BOL / POD scanning) ----
   documents: () => apiFetch<FreightDocument[]>("/documents"),
+  documentJobs: () => apiFetch<DocumentJob[]>("/documents/jobs"),
+  jobPackage: (jobId: string) =>
+    apiFetch<JobPackage>(`/documents/jobs/${encodeURIComponent(jobId)}/package`),
+  emailJobPackage: (
+    jobId: string,
+    body: { to: string; subject?: string; message?: string },
+  ) =>
+    apiFetch<{ sent: boolean; to: string; filename: string }>(
+      `/documents/jobs/${encodeURIComponent(jobId)}/email`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
   document: (id: string) => apiFetch<FreightDocument>(`/documents/${id}`),
   scanDocument: (body: DocScanBody) =>
     apiFetch<FreightDocument>("/documents/scan", {

@@ -11,9 +11,22 @@ import {
   Link2,
   Receipt,
   Sparkles,
+  Download,
+  Package,
+  ChevronDown,
+  Truck,
+  Mail,
+  Send,
+  X,
 } from "lucide-react";
 import { PageHeader, Loading, ErrorState, money } from "@/components/ui";
-import { api, type FreightDocument, type DocType, type Booking } from "@/lib/api";
+import {
+  api,
+  type FreightDocument,
+  type DocType,
+  type Booking,
+  type DocumentJob,
+} from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { readOcrKey } from "@/lib/plugins";
 import clsx from "clsx";
@@ -65,6 +78,16 @@ function StatusChip({ status }: { status: FreightDocument["status"] }) {
 export default function DocumentsPage() {
   const { data: docs, loading, error, reload } = useApi(() => api.documents(), []);
   const { data: bookings } = useApi(() => api.bookings(), []);
+  const { data: jobs, loading: jobsLoading, reload: reloadJobs } = useApi(
+    () => api.documentJobs(),
+    [],
+  );
+  const [view, setView] = useState<"jobs" | "all">("jobs");
+
+  function reloadAll() {
+    reload();
+    reloadJobs();
+  }
 
   const [docType, setDocType] = useState<DocType>("BOL");
   const [linkedBooking, setLinkedBooking] = useState<string>("");
@@ -73,6 +96,7 @@ export default function DocumentsPage() {
   const [active, setActive] = useState<FreightDocument | null>(null);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -89,7 +113,7 @@ export default function DocumentsPage() {
         ocrKey: readOcrKey(),
       });
       setActive(doc);
-      reload();
+      reloadAll();
     } catch (err: any) {
       setScanError(err.message || "Scan failed");
     } finally {
@@ -119,7 +143,7 @@ export default function DocumentsPage() {
         signedBy: active.signedBy,
       });
       setActive(updated);
-      reload();
+      reloadAll();
     } finally {
       setSaving(false);
     }
@@ -131,7 +155,7 @@ export default function DocumentsPage() {
     try {
       const updated = await api.stageInvoice(active.id);
       setActive(updated);
-      reload();
+      reloadAll();
     } finally {
       setSaving(false);
     }
@@ -166,11 +190,7 @@ export default function DocumentsPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={scanning}
-            className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] p-8 text-center transition hover:border-electric/50 hover:bg-electric/[0.04] disabled:opacity-60"
-          >
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] p-8 text-center">
             {scanning ? (
               <>
                 <Loader2 className="h-8 w-8 animate-spin text-electric" />
@@ -180,13 +200,27 @@ export default function DocumentsPage() {
             ) : (
               <>
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-electric/15">
-                  <Camera className="h-7 w-7 text-electric" />
+                  <ScanLine className="h-7 w-7 text-electric" />
                 </div>
-                <div className="text-sm font-semibold">Scan or upload {docType}</div>
-                <div className="text-xs text-white/40">Take a photo at the dock, or pick from your gallery</div>
+                <div className="text-sm font-semibold">Add your {docType}</div>
+                <div className="text-xs text-white/40">Take a photo, or pick a stored image or document (PDF)</div>
+                <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    onClick={() => cameraRef.current?.click()}
+                    className="flex items-center gap-1.5 rounded-lg bg-electric px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-electric/90"
+                  >
+                    <Camera className="h-4 w-4" /> Take a photo
+                  </button>
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="flex items-center gap-1.5 rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/5"
+                  >
+                    <FileText className="h-4 w-4" /> Stored image or document
+                  </button>
+                </div>
               </>
             )}
-          </button>
+          </div>
 
           <div className="rounded-2xl bg-white/[0.02] p-4">
             <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-white/50">
@@ -211,11 +245,21 @@ export default function DocumentsPage() {
           </div>
         </div>
 
+        {/* Camera: capture forces the device camera on mobile/tablet. */}
         <input
-          ref={fileRef}
+          ref={cameraRef}
           type="file"
           accept="image/*"
           capture="environment"
+          onChange={onFile}
+          className="hidden"
+        />
+        {/* Stored: no capture, so the OS offers the gallery / file browser
+            (photos AND documents like PDFs). */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,application/pdf"
           onChange={onFile}
           className="hidden"
         />
@@ -229,9 +273,49 @@ export default function DocumentsPage() {
       {/* Review panel */}
       {active && <ReviewPanel doc={active} onPatch={patchActive} onSave={saveCorrections} onInvoice={stageInvoice} saving={saving} />}
 
-      {/* History */}
-      <div className="mb-3 mt-8 text-sm font-bold text-white/70">Scanned documents</div>
-      {loading ? (
+      {/* History — grouped by job, or a flat list of everything */}
+      <div className="mb-3 mt-8 flex items-center justify-between gap-2">
+        <div className="text-sm font-bold text-white/70">
+          {view === "jobs" ? "Documents by job" : "All scanned documents"}
+        </div>
+        <div className="flex items-center gap-1 rounded-lg bg-white/5 p-0.5 text-xs">
+          <button
+            onClick={() => setView("jobs")}
+            className={clsx(
+              "rounded-md px-3 py-1.5 font-semibold transition",
+              view === "jobs" ? "bg-electric/20 text-white" : "text-white/50 hover:text-white/80"
+            )}
+          >
+            By job
+          </button>
+          <button
+            onClick={() => setView("all")}
+            className={clsx(
+              "rounded-md px-3 py-1.5 font-semibold transition",
+              view === "all" ? "bg-electric/20 text-white" : "text-white/50 hover:text-white/80"
+            )}
+          >
+            All documents
+          </button>
+        </div>
+      </div>
+
+      {view === "jobs" ? (
+        jobsLoading ? (
+          <Loading />
+        ) : !jobs || jobs.length === 0 ? (
+          <div className="card p-10 text-center text-sm text-white/40">
+            <Package className="mx-auto mb-2 h-6 w-6 text-white/30" />
+            No jobs yet. Every document you scan collects under its load here.
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {jobs.map((j) => (
+              <JobCard key={j.jobId} job={j} onOpenDoc={(d) => setActive(d)} activeId={active?.id} />
+            ))}
+          </div>
+        )
+      ) : loading ? (
         <Loading />
       ) : error ? (
         <ErrorState message={error} />
@@ -271,6 +355,193 @@ export default function DocumentsPage() {
                 )}
                 <StatusChip status={d.status} />
               </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JobCard({
+  job,
+  onOpenDoc,
+  activeId,
+}: {
+  job: DocumentJob;
+  onOpenDoc: (d: FreightDocument) => void;
+  activeId?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [err, setErr] = useState("");
+
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [to, setTo] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState("");
+  const [emailErr, setEmailErr] = useState("");
+
+  async function downloadPackage() {
+    setDownloading(true);
+    setErr("");
+    try {
+      const pkg = await api.jobPackage(job.jobId);
+      const a = document.createElement("a");
+      a.href = pkg.dataUrl;
+      a.download = pkg.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e: any) {
+      setErr(e.message || "Could not build the package");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  async function sendEmail() {
+    setSending(true);
+    setEmailErr("");
+    setSent("");
+    try {
+      const res = await api.emailJobPackage(job.jobId, {
+        to: to.trim(),
+        message: message.trim() || undefined,
+      });
+      setSent(`Package emailed to ${res.to}.`);
+      setTo("");
+      setMessage("");
+    } catch (e: any) {
+      setEmailErr(e.message || "Could not send the email");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <button onClick={() => setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-electric/10">
+            <Truck className="h-5 w-5 text-electric" />
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">{job.title}</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-white/50">
+              <span>{job.docCount} doc{job.docCount === 1 ? "" : "s"}</span>
+              <span>·</span>
+              <span>{job.types.join(", ")}</span>
+              {job.needsReview && (
+                <span className="chip bg-warning/15 text-warning">Needs review</span>
+              )}
+              {job.docCount > 0 && job.completeCount === job.docCount && (
+                <span className="chip bg-success/15 text-success">All complete</span>
+              )}
+            </div>
+          </div>
+          <ChevronDown
+            className={clsx("ml-auto h-4 w-4 shrink-0 text-white/40 transition", open && "rotate-180")}
+          />
+        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setEmailOpen((o) => !o);
+              setSent("");
+              setEmailErr("");
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/5"
+          >
+            <Mail className="h-4 w-4" /> Email
+          </button>
+          <button
+            onClick={downloadPackage}
+            disabled={downloading}
+            className="flex items-center gap-1.5 rounded-lg bg-electric px-3 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-60"
+          >
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Package PDF
+          </button>
+        </div>
+      </div>
+
+      {err && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-danger">
+          <AlertTriangle className="h-3.5 w-3.5" /> {err}
+        </div>
+      )}
+
+      {emailOpen && (
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
+              <Mail className="h-3.5 w-3.5 text-electric" /> Email this package as one PDF
+            </div>
+            <button onClick={() => setEmailOpen(false)} className="text-white/40 hover:text-white/70">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {sent ? (
+            <div className="flex items-center gap-1.5 text-xs text-success">
+              <CheckCircle2 className="h-3.5 w-3.5" /> {sent}
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              <input
+                type="email"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                placeholder="Recipient email (broker, factoring, office…)"
+                className="w-full rounded-lg border border-white/10 bg-navy-900 px-3 py-2 text-sm outline-none focus:border-electric/50"
+              />
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Optional note…"
+                rows={2}
+                className="w-full rounded-lg border border-white/10 bg-navy-900 px-3 py-2 text-sm outline-none focus:border-electric/50"
+              />
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] text-white/40">
+                  Sent from your company email; replies come back to you.
+                </p>
+                <button
+                  onClick={sendEmail}
+                  disabled={sending || !to.trim()}
+                  className="flex items-center gap-1.5 rounded-lg bg-electric px-3 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-50"
+                >
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Send
+                </button>
+              </div>
+              {emailErr && (
+                <div className="flex items-center gap-1.5 text-xs text-danger">
+                  <AlertTriangle className="h-3.5 w-3.5" /> {emailErr}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {open && (
+        <div className="mt-3 grid gap-2 border-t border-white/10 pt-3">
+          {job.docs.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => onOpenDoc(d)}
+              className={clsx(
+                "flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] p-3 text-left transition hover:bg-white/[0.05]",
+                activeId === d.id && "ring-1 ring-electric/40"
+              )}
+            >
+              <div className="flex items-center gap-2 text-sm">
+                <span className="chip bg-white/10 text-white/70">{d.type}</span>
+                <span className="font-medium">{d.bolNumber || "—"}</span>
+              </div>
+              <StatusChip status={d.status} />
             </button>
           ))}
         </div>

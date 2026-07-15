@@ -19,6 +19,7 @@ import {
 
 class UpdateCarrierDto {
   @IsOptional() @IsString() companyName?: string;
+  @IsOptional() @IsString() contactEmail?: string;
   @IsOptional() @IsString() dotNumber?: string;
   @IsOptional() @IsString() mcNumber?: string;
   @IsOptional() @IsString() insuranceProvider?: string;
