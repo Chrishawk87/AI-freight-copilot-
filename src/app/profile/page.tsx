@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgeCheck, FileText, Truck, Users, MapPin, ShieldCheck, LogOut, Loader2, Check } from "lucide-react";
+import { BadgeCheck, FileText, Truck, Users, MapPin, ShieldCheck, LogOut, Loader2, Check, Gauge, ScanLine, Bot } from "lucide-react";
 import { PageHeader, Loading, ErrorState } from "@/components/ui";
-import { api, type CarrierDetail } from "@/lib/api";
+import { api, type CarrierDetail, type UsageMeter } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useAuth } from "@/lib/auth";
 
@@ -176,6 +176,78 @@ export default function ProfilePage() {
           </div>
         </Section>
       </div>
+
+      <UsageCard />
+    </div>
+  );
+}
+
+// This month's company-paid AI usage for the tenant, so the operator can see how
+// much of the shared OCR / Co-Pilot allowance is being consumed.
+function UsageCard() {
+  const { data, loading } = useApi(() => api.usage(), []);
+  if (loading || !data) return null;
+
+  const period = new Date(data.periodStart).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <div className="mt-5 card p-5">
+      <div className="mb-1 flex items-center gap-2 font-semibold">
+        <Gauge className="h-4 w-4 text-electric" /> AI Usage — {period}
+      </div>
+      <p className="mb-4 text-xs text-white/40">
+        Company-paid scans and Co-Pilot replies on your subscription. Anything you
+        run on your own key doesn&apos;t count here.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Meter icon={ScanLine} label="Document scans" meter={data.ocr} />
+        <Meter icon={Bot} label="Co-Pilot replies" meter={data.copilot} />
+      </div>
+    </div>
+  );
+}
+
+function Meter({
+  icon: Icon,
+  label,
+  meter,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  meter: UsageMeter;
+}) {
+  const pct = meter.cap ? Math.min(100, Math.round((meter.used / meter.cap) * 100)) : 0;
+  const barColor = meter.overCap ? "bg-warning" : pct >= 80 ? "bg-amber-400" : "bg-electric";
+  return (
+    <div className="rounded-xl bg-white/5 p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium text-white/80">
+          <Icon className="h-4 w-4 text-white/50" /> {label}
+        </div>
+        <div className="text-sm font-bold">
+          {meter.used.toLocaleString()}
+          <span className="text-white/40">
+            {meter.cap ? ` / ${meter.cap.toLocaleString()}` : " used"}
+          </span>
+        </div>
+      </div>
+      {meter.cap ? (
+        <>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+          </div>
+          <div className="mt-1.5 text-[11px] text-white/40">
+            {meter.overCap
+              ? "Cap reached — extra calls fall back to the free engine until next month."
+              : `${(meter.remaining ?? 0).toLocaleString()} left this month`}
+          </div>
+        </>
+      ) : (
+        <div className="text-[11px] text-white/40">No cap set — unlimited on your plan.</div>
+      )}
     </div>
   );
 }

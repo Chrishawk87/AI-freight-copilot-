@@ -1,11 +1,12 @@
-// Per-device Claude brain.
+// Optional per-device Claude brain (BYOK override).
 //
-// The Anthropic key lives ONLY in the driver's own browser (localStorage, via
-// the Plugin Engine) — exactly like the ElevenLabs key. We call Anthropic
-// directly from the device, so each person's usage bills their OWN key. Nobody
-// routes through a shared server key, so the app owner is never on the hook for
-// thousands of users. No key on a device → this returns null → the app falls
-// back to its free built-in brain.
+// By default every subscriber gets the Claude brain for free through the
+// company's server key (see src/lib/copilot.ts → llm, which calls the backend
+// /copilot/llm endpoint). This module is the OVERRIDE: if a power user pastes
+// their OWN Anthropic key in the Plugin Engine, we call Anthropic straight from
+// their device so their usage bills THEIR account instead of the company's.
+// No key on the device → readAnthropicConfig() returns null → the resolver uses
+// the server key path instead.
 
 import { readEnabled, readKeys } from "./plugins";
 
@@ -60,6 +61,7 @@ You can DRIVE the app, not just talk about it. When the driver wants to go somew
 <<go:/profit>>     the Profitability Engine / earnings / P&L
 <<go:/fuel>>       Fuel Intelligence / cheapest diesel
 <<go:/navigation>> Profit Navigation / the map / START GPS / begin a route
+<<go:/documents>> Documents / scan a BOL or POD / paperwork / proof of delivery
 <<go:/integrations>> the Plugin Engine / connect a plugin
 <<go:/profile>>    the Company Profile / account / settings
 Only add a token when the driver actually wants to move or act. If they just asked a question, answer it — no token. Use exactly one token, and only from this list.

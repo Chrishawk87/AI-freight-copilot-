@@ -1,6 +1,8 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser, AuthUser } from '../auth/current-user.decorator';
+import { UsageService } from '../usage/usage.service';
 
 // The Co-Pilot's open-ended "brain". The rules engine in the app handles the
 // common freight asks (loads, reloads, fuel, bids, earnings). When it can't
@@ -45,18 +47,48 @@ How you talk (these are hard rules):
 - NO bullet-point lists unless the driver explicitly asks for a list. Just talk.
 - You're being read aloud by a voice, so write the way you'd say it, not the way you'd type it.
 
-Keep answers short and useful. When you have real numbers in the facts below, use them. When you don't, be honest about it.`;
+Keep answers short and useful. When you have real numbers in the facts below, use them. When you don't, be honest about it.
+
+Think before you talk: work out the right answer in your head first, then say only the answer. Never show your reasoning, steps, or any tags — the driver just hears the reply.
+
+You can DRIVE the app, not just talk about it. When the driver wants to go somewhere or start something, take them there by ending your reply with ONE control token on its own line. Say a short natural sentence first ("Pulling up the map now."), THEN the token. Never read the token aloud — it's stripped before speaking. Valid tokens:
+<<go:/>>            the Command Center / dashboard / home
+<<go:/loads>>      the Opportunity Center / load board / available freight
+<<go:/reloads>>    Deadhead Prevention / reloads / backhauls
+<<go:/profit>>     the Profitability Engine / earnings / P&L
+<<go:/fuel>>       Fuel Intelligence / cheapest diesel
+<<go:/navigation>> Profit Navigation / the map / START GPS / begin a route
+<<go:/documents>> Documents / scan a BOL or POD / paperwork / proof of delivery
+<<go:/integrations>> the Plugin Engine / connect a plugin
+<<go:/profile>>    the Company Profile / account / settings
+Only add a token when the driver actually wants to move or act. If they just asked a question, answer it — no token. Use exactly one token, and only from this list.
+
+When the driver asks for a breakdown, summary, or "how am I doing" on the dashboard or any screen, give them the real numbers from the facts below in a tight spoken rundown — revenue, net, margin, miles, loads, best load, cheapest diesel — whatever's relevant. Don't just navigate; actually tell them what's there.`;
 
 @UseGuards(JwtAuthGuard)
 @Controller('copilot')
 export class CopilotController {
+  constructor(private readonly usage: UsageService) {}
+
   @Post('llm')
-  async llm(@Body() dto: LlmDto): Promise<{ speak: string | null }> {
+  async llm(
+    @Body() dto: LlmDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<{ speak: string | null }> {
     const key = process.env.ANTHROPIC_API_KEY?.trim();
     if (!key) {
       // No key wired — let the app fall back to its built-in reply.
       return { speak: null };
     }
+
+    // Protect the shared Anthropic account: over the monthly cap we decline the
+    // paid call and let the app fall back to its free built-in brain.
+    const within = await this.usage.withinCap(
+      'copilot_llm',
+      user.id,
+      user.carrierId,
+    );
+    if (!within) return { speak: null };
 
     const model = process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5-20251001';
 
@@ -89,7 +121,19 @@ export class CopilotController {
         Array.isArray(data?.content) && data.content[0]?.type === 'text'
           ? String(data.content[0].text || '').trim()
           : null;
-      return { speak: text && text.length ? text : null };
+      const speak = text && text.length ? text : null;
+
+      // Meter the paid call against the company's shared Anthropic account.
+      if (speak) {
+        await this.usage.record({
+          kind: 'copilot_llm',
+          provider: 'anthropic',
+          billable: true,
+          userId: user.id,
+          carrierId: user.carrierId,
+        });
+      }
+      return { speak };
     } catch {
       return { speak: null };
     }

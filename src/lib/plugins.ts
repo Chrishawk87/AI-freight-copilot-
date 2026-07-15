@@ -36,6 +36,19 @@ export function writeKeys(keys: KeyMap) {
   localStorage.setItem(PLUGIN_KEYS_KEY, JSON.stringify(keys));
 }
 
+// The document-OCR plugin id. If the driver connects a dedicated OCR provider
+// and pastes a key, we pass it to the backend scan call so extraction runs on
+// the live provider instead of the simulated fallback.
+export const OCR_PLUGIN_ID = "ocr";
+
+export function readOcrKey(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const enabled = readEnabled();
+  if (!enabled[OCR_PLUGIN_ID]) return undefined;
+  const keys = readKeys();
+  return keys[OCR_PLUGIN_ID]?.trim() || undefined;
+}
+
 // Which map engine should this client see? First connected provider that has a key,
 // otherwise the free OpenStreetMap engine that works for everyone.
 export function resolveMapEngine(enabled: EnabledMap, keys: KeyMap): string {

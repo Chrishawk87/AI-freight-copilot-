@@ -1,0 +1,417 @@
+"use client";
+
+import { useRef, useState } from "react";
+import {
+  ScanLine,
+  Camera,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
+  Loader2,
+  Link2,
+  Receipt,
+  Sparkles,
+} from "lucide-react";
+import { PageHeader, Loading, ErrorState, money } from "@/components/ui";
+import { api, type FreightDocument, type DocType, type Booking } from "@/lib/api";
+import { useApi } from "@/lib/useApi";
+import { readOcrKey } from "@/lib/plugins";
+import clsx from "clsx";
+
+const DOC_TYPES: { id: DocType; label: string }[] = [
+  { id: "BOL", label: "Bill of Lading" },
+  { id: "POD", label: "Proof of Delivery" },
+  { id: "LUMPER", label: "Lumper Receipt" },
+  { id: "FUEL", label: "Fuel Receipt" },
+  { id: "OTHER", label: "Other" },
+];
+
+// Downscale a phone photo before upload — smaller payload, faster extraction.
+function fileToDataUrl(file: File, maxW = 1600): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => resolve(String(reader.result)); // fall back to raw
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(String(reader.result));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function StatusChip({ status }: { status: FreightDocument["status"] }) {
+  const map = {
+    complete: "bg-success/15 text-success ring-1 ring-success/30",
+    needs_review: "bg-warning/15 text-warning ring-1 ring-warning/30",
+    captured: "bg-white/10 text-white/70 ring-1 ring-white/20",
+  } as const;
+  const label = { complete: "Complete", needs_review: "Needs review", captured: "Captured" }[status];
+  return <span className={clsx("chip", map[status])}>{label}</span>;
+}
+
+export default function DocumentsPage() {
+  const { data: docs, loading, error, reload } = useApi(() => api.documents(), []);
+  const { data: bookings } = useApi(() => api.bookings(), []);
+
+  const [docType, setDocType] = useState<DocType>("BOL");
+  const [linkedBooking, setLinkedBooking] = useState<string>("");
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const [active, setActive] = useState<FreightDocument | null>(null);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setScanning(true);
+    setScanError("");
+    try {
+      const imageData = await fileToDataUrl(file);
+      const doc = await api.scanDocument({
+        type: docType,
+        imageData,
+        bookingId: linkedBooking || undefined,
+        ocrKey: readOcrKey(),
+      });
+      setActive(doc);
+      reload();
+    } catch (err: any) {
+      setScanError(err.message || "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  function patchActive(patch: Partial<FreightDocument>) {
+    setActive((d) => (d ? { ...d, ...patch } : d));
+  }
+
+  async function saveCorrections() {
+    if (!active) return;
+    setSaving(true);
+    try {
+      const updated = await api.updateDocument(active.id, {
+        bolNumber: active.bolNumber,
+        proNumber: active.proNumber,
+        shipper: active.shipper,
+        consignee: active.consignee,
+        poNumber: active.poNumber,
+        pieceCount: active.pieceCount,
+        weightLbs: active.weightLbs,
+        shipDate: active.shipDate,
+        deliveryDate: active.deliveryDate,
+        signaturePresent: active.signaturePresent,
+        signedBy: active.signedBy,
+      });
+      setActive(updated);
+      reload();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function stageInvoice() {
+    if (!active) return;
+    setSaving(true);
+    try {
+      const updated = await api.stageInvoice(active.id);
+      setActive(updated);
+      reload();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const bookingOptions: Booking[] = bookings ?? [];
+
+  return (
+    <div>
+      <PageHeader
+        title="Documents"
+        subtitle="Snap a BOL or POD at the dock — AI reads it, checks it's signed, matches your load, and stages the invoice. No back-office wait."
+      />
+
+      {/* Capture card */}
+      <div className="card mb-6 p-5">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {DOC_TYPES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setDocType(t.id)}
+              className={clsx(
+                "chip transition",
+                docType === t.id
+                  ? "bg-electric/15 text-white ring-1 ring-electric/40"
+                  : "bg-white/5 text-white/60 hover:bg-white/10"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={scanning}
+            className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] p-8 text-center transition hover:border-electric/50 hover:bg-electric/[0.04] disabled:opacity-60"
+          >
+            {scanning ? (
+              <>
+                <Loader2 className="h-8 w-8 animate-spin text-electric" />
+                <div className="text-sm font-semibold">Reading your document…</div>
+                <div className="text-xs text-white/40">Extracting fields and checking the signature</div>
+              </>
+            ) : (
+              <>
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-electric/15">
+                  <Camera className="h-7 w-7 text-electric" />
+                </div>
+                <div className="text-sm font-semibold">Scan or upload {docType}</div>
+                <div className="text-xs text-white/40">Take a photo at the dock, or pick from your gallery</div>
+              </>
+            )}
+          </button>
+
+          <div className="rounded-2xl bg-white/[0.02] p-4">
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-white/50">
+              <Link2 className="h-3.5 w-3.5" /> Link to a booked load (optional)
+            </label>
+            <select
+              value={linkedBooking}
+              onChange={(e) => setLinkedBooking(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-navy-900 px-3 py-2 text-sm outline-none focus:border-electric/50"
+            >
+              <option value="">Auto-match / none</option>
+              {bookingOptions.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.load.externalId ?? b.load.id.slice(0, 6)} · {b.load.originCity} → {b.load.destCity}
+                </option>
+              ))}
+            </select>
+            <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-white/40">
+              <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-electric" />
+              Fields are auto-filled by AI. Review anything flagged before you leave the receiver.
+            </p>
+          </div>
+        </div>
+
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onFile}
+          className="hidden"
+        />
+        {scanError && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-danger">
+            <AlertTriangle className="h-3.5 w-3.5" /> {scanError}
+          </div>
+        )}
+      </div>
+
+      {/* Review panel */}
+      {active && <ReviewPanel doc={active} onPatch={patchActive} onSave={saveCorrections} onInvoice={stageInvoice} saving={saving} />}
+
+      {/* History */}
+      <div className="mb-3 mt-8 text-sm font-bold text-white/70">Scanned documents</div>
+      {loading ? (
+        <Loading />
+      ) : error ? (
+        <ErrorState message={error} />
+      ) : !docs || docs.length === 0 ? (
+        <div className="card p-10 text-center text-sm text-white/40">
+          <FileText className="mx-auto mb-2 h-6 w-6 text-white/30" />
+          Nothing scanned yet. Snap your first BOL above.
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {docs.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => setActive(d)}
+              className={clsx(
+                "card flex items-center justify-between gap-3 p-4 text-left transition hover:bg-white/[0.04]",
+                active?.id === d.id && "ring-1 ring-electric/40"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/5">
+                  <ScanLine className="h-5 w-5 text-electric" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <span className="chip bg-white/10 text-white/70">{d.type}</span>
+                    {d.bolNumber || "—"}
+                  </div>
+                  <div className="text-xs text-white/50">
+                    {d.shipper || "Unknown shipper"} → {d.consignee || "Unknown consignee"}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {d.invoiceStatus === "staged" && (
+                  <span className="chip bg-electric/15 text-electric">Invoice staged</span>
+                )}
+                <StatusChip status={d.status} />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  missing,
+}: {
+  label: string;
+  value: string | number | null;
+  onChange: (v: string) => void;
+  type?: string;
+  missing?: boolean;
+}) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium uppercase tracking-wide text-white/40">{label}</label>
+      <input
+        type={type}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className={clsx(
+          "mt-1 w-full rounded-lg border bg-navy-900 px-3 py-2 text-sm outline-none focus:border-electric/50",
+          missing ? "border-warning/50" : "border-white/10"
+        )}
+      />
+    </div>
+  );
+}
+
+function ReviewPanel({
+  doc,
+  onPatch,
+  onSave,
+  onInvoice,
+  saving,
+}: {
+  doc: FreightDocument;
+  onPatch: (p: Partial<FreightDocument>) => void;
+  onSave: () => void;
+  onInvoice: () => void;
+  saving: boolean;
+}) {
+  const complete = doc.missingFields.length === 0 && doc.signaturePresent;
+  const isMissing = (f: string) => doc.missingFields.includes(f);
+
+  return (
+    <div className="card p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-semibold">
+          <FileText className="h-4 w-4 text-electric" /> Review extracted fields
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="chip bg-white/10 text-white/60">
+            {doc.ocrProvider === "simulated" ? "Simulated read" : `${doc.ocrProvider} · live`}
+          </span>
+          <span className="chip bg-white/10 text-white/60">{doc.confidence}% confidence</span>
+        </div>
+      </div>
+
+      {/* Completeness / signature banner */}
+      {complete ? (
+        <div className="mb-4 flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm text-success ring-1 ring-success/30">
+          <CheckCircle2 className="h-4 w-4" /> All set — signed and complete. Good to leave the dock.
+        </div>
+      ) : (
+        <div className="mb-4 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning ring-1 ring-warning/30">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            {!doc.signaturePresent && <div>No signature detected — get it signed before you pull off.</div>}
+            {doc.missingLabels.length > 0 && <div>Missing: {doc.missingLabels.join(", ")}.</div>}
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="BOL #" value={doc.bolNumber} missing={isMissing("bolNumber")} onChange={(v) => onPatch({ bolNumber: v })} />
+        <Field label="PRO #" value={doc.proNumber} onChange={(v) => onPatch({ proNumber: v })} />
+        <Field label="PO #" value={doc.poNumber} missing={isMissing("poNumber")} onChange={(v) => onPatch({ poNumber: v })} />
+        <Field label="Shipper" value={doc.shipper} missing={isMissing("shipper")} onChange={(v) => onPatch({ shipper: v })} />
+        <Field label="Consignee" value={doc.consignee} missing={isMissing("consignee")} onChange={(v) => onPatch({ consignee: v })} />
+        <Field label="Signed by" value={doc.signedBy} onChange={(v) => onPatch({ signedBy: v })} />
+        <Field label="Pieces" value={doc.pieceCount} type="number" onChange={(v) => onPatch({ pieceCount: v ? Number(v) : null })} />
+        <Field label="Weight (lbs)" value={doc.weightLbs} type="number" missing={isMissing("weightLbs")} onChange={(v) => onPatch({ weightLbs: v ? Number(v) : null })} />
+        <Field label="Ship date" value={doc.shipDate} type="date" onChange={(v) => onPatch({ shipDate: v })} />
+        <Field label="Delivery date" value={doc.deliveryDate} type="date" missing={isMissing("deliveryDate")} onChange={(v) => onPatch({ deliveryDate: v })} />
+      </div>
+
+      <label className="mt-4 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={doc.signaturePresent}
+          onChange={(e) => onPatch({ signaturePresent: e.target.checked })}
+          className="h-4 w-4 accent-electric"
+        />
+        Signature present on the document
+      </label>
+
+      {/* Auto-match + invoice */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+        <div className="text-xs text-white/50">
+          {doc.loadId ? (
+            <span className="flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5 text-success" /> Matched to a booked load
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-white/40">
+              <Link2 className="h-3.5 w-3.5" /> Not linked to a load
+            </span>
+          )}
+          {doc.invoiceStatus === "staged" && doc.invoiceAmount != null && (
+            <span className="mt-1 flex items-center gap-1.5 text-electric">
+              <Receipt className="h-3.5 w-3.5" /> Invoice staged for {money(doc.invoiceAmount)}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onSave}
+            disabled={saving}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/5 disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save corrections"}
+          </button>
+          <button
+            onClick={onInvoice}
+            disabled={saving || doc.invoiceStatus === "staged"}
+            className="flex items-center gap-1.5 rounded-lg bg-electric px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-60"
+          >
+            <Receipt className="h-4 w-4" />
+            {doc.invoiceStatus === "staged" ? "Invoice staged" : "Stage invoice"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

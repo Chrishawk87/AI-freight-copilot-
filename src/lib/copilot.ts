@@ -15,7 +15,8 @@
 
 import type { ScoredLoad, Equipment } from "./types";
 import type { CarrierDetail, DashboardResponse, FuelResponse } from "./api";
-import { askClaude } from "./anthropic";
+import { askClaude, claudeBrainReady } from "./anthropic";
+import { api } from "./api";
 import type { EnabledMap } from "./plugins";
 
 // ---------------- Personality + driver profile ----------------
@@ -706,6 +707,7 @@ const NAV_MAP: { test: RegExp; route: string; name: string }[] = [
   { test: /(reload|deadhead) (screen|tab|center)/, route: "/reloads", name: "Deadhead Prevention" },
   { test: /(fuel (screen|tab|intelligence)|open fuel|show fuel)/, route: "/fuel", name: "Fuel Intelligence" },
   { test: /(map|navigation|gps|route screen)/, route: "/navigation", name: "Profit Navigation" },
+  { test: /(document|bol|b\.o\.l|proof of delivery|pod|paperwork|scan (a |the |my )?(doc|bill|paper))/, route: "/documents", name: "Documents" },
   { test: /(plugin|integration)/, route: "/integrations", name: "the Plugin Engine" },
   { test: /(profile|company|my account|settings)/, route: "/profile", name: "your Company Profile" },
 ];
@@ -716,7 +718,7 @@ function matchNavigation(q: string): { route: string; name: string } | null {
     // Allow bare "fuel screen" style too via NAV_MAP explicit phrases.
   }
   for (const n of NAV_MAP) {
-    if (n.test.test(q) && /(open|show|go to|take me to|pull up|switch to|bring up|screen|tab|center|engine)\b/.test(q)) {
+    if (n.test.test(q) && /(open|show|go to|take me to|pull up|switch to|bring up|scan|screen|tab|center|engine)\b/.test(q)) {
       return { route: n.route, name: n.name };
     }
   }
@@ -809,6 +811,7 @@ const ALLOWED_ROUTES = new Set([
   "/profit",
   "/fuel",
   "/navigation",
+  "/documents",
   "/integrations",
   "/profile",
 ]);
@@ -831,7 +834,19 @@ function extractNavigation(reply: string): { speak: string; navigate?: string } 
 export const llm: LlmResolver | null = async (input, ctx) => {
   try {
     const facts = await buildFacts(ctx);
-    const reply = await askClaude(input, facts, ctx.profile.personality);
+
+    // Server-first: every subscriber gets the Claude brain for free using the
+    // company's own key (ANTHROPIC_API_KEY on the server). A power user who has
+    // pasted their OWN Anthropic key in the Plugin Engine overrides this and
+    // bills their own account, calling Claude straight from their device.
+    let reply: string | null = null;
+    if (claudeBrainReady()) {
+      reply = await askClaude(input, facts, ctx.profile.personality);
+    } else {
+      const res = await api.copilotLlm(input, facts, ctx.profile.personality);
+      reply = res.speak;
+    }
+
     if (reply) {
       const { speak, navigate } = extractNavigation(reply);
       if (speak) return { speak, navigate };

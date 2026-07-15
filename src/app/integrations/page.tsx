@@ -14,6 +14,7 @@ import {
   Navigation,
   AudioLines,
   Brain,
+  ScanLine,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
@@ -37,6 +38,12 @@ type Plugin = {
   // An optional second, non-secret field (e.g. a chosen voice ID) shown once
   // connected. Stored under its own key id in the same key map.
   extraField?: { id: string; label: string; hint: string };
+  // Documentation shown on the card (used for load boards).
+  cost?: "Free" | "Freemium" | "Paid";
+  equipment?: string[];
+  website?: string;
+  // One honest line about whether a public API exists for live load pulls.
+  apiNote?: string;
 };
 
 type Category = {
@@ -54,14 +61,57 @@ const CATEGORIES: Category[] = [
   { key: "lastmile", label: "Last-Mile & Delivery", icon: PackageCheck, desc: "On-demand and local delivery gigs" },
   { key: "fuel", label: "Fuel & Savings", icon: Fuel, desc: "Discounts and station networks" },
   { key: "maintenance", label: "Fleet & Maintenance", icon: Wrench, desc: "Service, parts, and asset tracking" },
+  { key: "documents", label: "Documents & Compliance", icon: ScanLine, desc: "Scan BOL/POD and read the fields automatically" },
   { key: "voice", label: "Co-Pilot Voice", icon: AudioLines, desc: "Give your Co-Pilot a real human voice" },
   { key: "brain", label: "Co-Pilot Brain", icon: Brain, desc: "Upgrade your Co-Pilot's reasoning with Claude" },
 ];
 
 const PLUGINS: Plugin[] = [
-  { id: "dat", name: "DAT", category: "loadboards", blurb: "The largest load board network in North America.", status: "beta" },
-  { id: "truckstop", name: "Truckstop", category: "loadboards", blurb: "Load board, rate insights, and broker credit checks.", status: "beta" },
-  { id: "truckerpath", name: "Trucker Path", category: "loadboards", blurb: "Loads, parking, weigh stations, and truck-safe routing.", status: "beta" },
+  // ---- Free load boards (no subscription to search) ----
+  { id: "trucksmarter", name: "TruckSmarter", category: "loadboards", blurb: "100% free load board that aggregates 100K+ daily loads from other sources into one feed. Search, bid, and Book Now at no cost.", status: "beta", cost: "Free",
+    equipment: ["Dry Van", "Reefer", "Flatbed", "Power Only", "Step Deck", "Conestoga", "Container", "Box Truck", "Hotshot", "Car Hauling"],
+    website: "https://www.trucksmarter.com/free-load-boards", apiNote: "No public API — free via web & mobile app." },
+  { id: "trulos", name: "Trulos", category: "loadboards", blurb: "Free since 2006. Search live loads by state and equipment with no login and zero signup friction.", status: "beta", cost: "Free",
+    equipment: ["Flatbed", "Dry Van", "Reefer", "Auto Carrier", "Hotshot", "Step Deck", "Power Only", "Lowboy", "Dump"],
+    website: "https://www.trulos.com/load-board", apiNote: "No public API — free web board, no account needed." },
+  { id: "nextload", name: "NextLOAD", category: "loadboards", blurb: "Genuinely free board operated by Apex Capital. Open search with no subscription and no factoring account required.", status: "beta", cost: "Free",
+    equipment: ["Dry Van", "Reefer", "Flatbed", "Step Deck", "Power Only", "Hotshot"],
+    website: "https://nextload.com", apiNote: "No public API — free web & app search." },
+  { id: "directfreight", name: "Direct Freight", category: "loadboards", blurb: "300K+ loads daily from brokers and shippers. Free tier for searching; paid tiers add credit reports and alerts.", status: "beta", cost: "Freemium",
+    equipment: ["Dry Van", "Flatbed", "Reefer", "Step Deck", "Double Drop", "Vented Van", "Curtain Van"],
+    website: "https://www.directfreight.com", apiNote: "No public API — free tier + paid plans up to $34.95/mo." },
+  { id: "coyotego", name: "CoyoteGo (C.H. Robinson)", category: "loadboards", blurb: "Free digital freight app from C.H. Robinson. Book directly with one of the largest brokers in North America.", status: "beta", cost: "Free",
+    equipment: ["Dry Van", "Reefer", "Container", "Flatbed", "Step Deck", "RGN", "Hotshot", "Liftgate"],
+    website: "https://coyote.com/carriers/coyotego", apiNote: "Partner API via C.H. Robinson (approval required)." },
+  { id: "loadie", name: "TrueNorth Loadie", category: "loadboards", blurb: "Free, box-truck-friendly board. Post availability and get push-match notifications built for straight trucks.", status: "beta", cost: "Free",
+    equipment: ["Box Truck (26')", "Cargo Van", "Sprinter", "Dry Van"],
+    website: "https://www.truenorthfleet.com", apiNote: "No public API — free web & app." },
+  { id: "uship", name: "uShip", category: "loadboards", blurb: "Open freight marketplace. Free to search and bid on specialized, LTL, auto, heavy-haul, and oversized loads.", status: "beta", cost: "Free",
+    equipment: ["Flatbed", "Step Deck", "RGN / Lowboy", "Auto Carrier", "LTL", "Heavy Haul", "Boat / Oversized"],
+    website: "https://www.uship.com/carriers", apiNote: "Partner API available (contact uShip)." },
+  { id: "uberfreight", name: "Uber Freight", category: "loadboards", blurb: "Free carrier app with upfront pricing and instant booking. No subscription to browse and book.", status: "beta", cost: "Free",
+    equipment: ["Dry Van", "Reefer", "Flatbed"],
+    website: "https://www.uberfreight.com/carriers", apiNote: "Partner API for TMS integration (approval required)." },
+  { id: "amazonrelay", name: "Amazon Relay", category: "loadboards", blurb: "Free load board for Amazon freight. Requires a qualifying carrier account (DOT/MC, insurance).", status: "beta", cost: "Free",
+    equipment: ["Dry Van (53')", "Box Truck"],
+    website: "https://relay.amazon.com", apiNote: "No public API — app-only for approved carriers." },
+
+  // ---- Major paid / partner-API boards ----
+  { id: "123loadboard", name: "123Loadboard", category: "loadboards", blurb: "Freight matching with rate check and credit tools. Limited free search (≈5 loads/day); paid plans unlock full access. Has a partner API for live pulls — paste a partner key to enable.", status: "beta", cost: "Freemium",
+    equipment: ["Flatbed", "Dry Van", "Reefer", "Step Deck", "Power Only", "Auto Carrier", "Box Truck", "Conestoga", "Container", "Hopper Bottom", "Hotshot", "Tanker", "Lowboy"],
+    website: "https://www.123loadboard.com/api", apiNote: "Partner API (email partner-integrations@123loadboard.com).",
+    needsKey: true, keyHint: "123Loadboard partner API key" },
+  { id: "dat", name: "DAT", category: "loadboards", blurb: "The largest truckload marketplace in North America. Subscription board with a developer API (setup fee applies). Paste your DAT API key to turn on live pulls.", status: "beta", cost: "Paid",
+    equipment: ["Dry Van", "Reefer", "Flatbed", "Step Deck", "Power Only", "Hotshot"],
+    website: "https://www.dat.com/api-integration", apiNote: "Developer API — paid setup + subscription.",
+    needsKey: true, keyHint: "DAT API key" },
+  { id: "truckstop", name: "Truckstop", category: "loadboards", blurb: "Load board with rate insights and broker credit checks. Strong for flatbed and hotshot. Partner API available for live pulls.", status: "beta", cost: "Paid",
+    equipment: ["Flatbed", "Step Deck", "Hotshot", "Dry Van", "Reefer", "Power Only", "RGN"],
+    website: "https://truckstop.com/integrations", apiNote: "Partner API (approval required).",
+    needsKey: true, keyHint: "Truckstop API key" },
+  { id: "truckerpath", name: "Trucker Path (Truckloads)", category: "loadboards", blurb: "150K+ daily loads plus parking, weigh stations, and truck-safe routing. Free tier (≈5 loads/day); paid plans unlock full search.", status: "beta", cost: "Freemium",
+    equipment: ["Dry Van", "Reefer", "Flatbed", "Step Deck", "Power Only", "Auto Carrier", "Box Truck", "Conestoga", "Hopper Bottom", "Hotshot", "Tanker", "Lowboy"],
+    website: "https://truckerpath.com/truckloads", apiNote: "No public API — free tier + paid plans." },
 
   { id: "trimble", name: "Trimble Maps", category: "gps", blurb: "PC*MILER truck-legal routing and mileage. Connect your key and the Maps screen switches to Trimble automatically.", status: "beta", needsKey: true, keyHint: "Trimble Maps API key" },
   { id: "googlemaps", name: "Google Maps", category: "gps", blurb: "Google Maps engine for the in-app map. Add your Maps JavaScript API key to power it.", status: "beta", needsKey: true, keyHint: "Google Maps API key" },
@@ -84,9 +134,11 @@ const PLUGINS: Plugin[] = [
   { id: "senpex", name: "Senpex", category: "lastmile", blurb: "Same-day courier and route delivery.", status: "soon" },
   { id: "fleetio", name: "Fleetio", category: "maintenance", blurb: "Maintenance schedules, work orders, and parts.", status: "beta" },
 
+  { id: "ocr", name: "Document AI (OCR)", category: "documents", blurb: "Snap a photo of a BOL or POD and the fields read themselves — BOL#, PRO#, shipper, consignee, pieces, weight, and signature — then auto-match to your booked load and stage the invoice. This works out of the box on your subscription; nothing to set up. Optional: paste your OWN OCR provider key (Mindee) only if you'd rather run extraction on your own account.", status: "beta", needsKey: true, keyHint: "Your own OCR key (optional)" },
+
   { id: "elevenlabs", name: "ElevenLabs", category: "voice", blurb: "Swap the built-in voice for a genuinely human one. Paste your ElevenLabs API key. Heads up: free ElevenLabs plans can't use the stock voices over the API — add your own voice in your ElevenLabs library and paste its Voice ID below, or upgrade your plan.", status: "beta", needsKey: true, keyHint: "ElevenLabs API key", extraField: { id: "elevenlabs_voice", label: "Voice ID", hint: "ElevenLabs Voice ID (optional)" } },
 
-  { id: "anthropic", name: "Claude (Anthropic)", category: "brain", blurb: "Give your Co-Pilot Claude's brain — it reasons, researches, and talks like a real co-driver instead of a script. Paste your own Anthropic API key. It stays on THIS device only and bills only your usage — nobody else's. Without a key the Co-Pilot still runs on the free built-in brain.", status: "beta", needsKey: true, keyHint: "Anthropic API key (sk-ant-…)", extraField: { id: "anthropic_model", label: "Model (optional)", hint: "e.g. claude-haiku-4-5-20251001" } },
+  { id: "anthropic", name: "Claude (Anthropic)", category: "brain", blurb: "Your Co-Pilot already runs on Claude's brain — reasoning, researching, and talking like a real co-driver — included with your subscription. Nothing to set up. Optional: paste your OWN Anthropic key only if you'd rather it bill your own account and run straight from this device.", status: "beta", needsKey: true, keyHint: "Your own Anthropic key (optional, sk-ant-…)", extraField: { id: "anthropic_model", label: "Model (optional)", hint: "e.g. claude-haiku-4-5-20251001" } },
 ];
 
 const STORAGE_KEY = STORAGE_KEY_SHARED;
@@ -101,6 +153,12 @@ const STATUS_STYLE: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = {
   beta: "Available",
   soon: "Coming soon",
+};
+
+const COST_STYLE: Record<string, string> = {
+  Free: "bg-success/15 text-success ring-1 ring-success/30",
+  Freemium: "bg-electric/15 text-electric ring-1 ring-electric/30",
+  Paid: "bg-white/10 text-white/50 ring-1 ring-white/15",
 };
 
 function initials(name: string) {
@@ -292,6 +350,42 @@ function PluginGrid({
               <ToggleSwitch on={on} onClick={() => onToggle(p.id)} label={p.name} />
             </div>
             <p className="text-xs leading-relaxed text-white/50">{p.blurb}</p>
+
+            {(p.cost || p.equipment?.length || p.website || p.apiNote) && (
+              <div className="flex flex-col gap-2 border-t border-white/5 pt-2.5">
+                {p.cost && (
+                  <div className="flex items-center gap-2">
+                    <span className={clsx("chip px-2 py-0.5 text-[10px] font-semibold", COST_STYLE[p.cost])}>
+                      {p.cost}
+                    </span>
+                    {p.apiNote && <span className="text-[10px] leading-tight text-white/40">{p.apiNote}</span>}
+                  </div>
+                )}
+                {!!p.equipment?.length && (
+                  <div className="flex flex-wrap gap-1">
+                    {p.equipment.map((e) => (
+                      <span
+                        key={e}
+                        className="rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] text-white/50"
+                      >
+                        {e}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {p.website && (
+                  <a
+                    href={p.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-medium text-electric hover:underline"
+                  >
+                    Visit &amp; sign up →
+                  </a>
+                )}
+              </div>
+            )}
+
             {p.needsKey && on && (
               <KeyField
                 value={keys[p.id] ?? ""}

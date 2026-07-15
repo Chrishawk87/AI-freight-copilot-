@@ -16,7 +16,7 @@ export class LoadsService {
   }
 
   async list(user: AuthUser, equipment?: string): Promise<ScoredLoad[]> {
-    const where: any = { isReloadPool: false };
+    const where: any = { isReloadPool: false, active: true };
     if (equipment && equipment !== 'All') where.equipment = equipment;
     const loads = await this.prisma.load.findMany({ where });
     return loads

@@ -115,11 +115,62 @@ export interface DispatcherResponse {
   loads: ScoredLoad[];
 }
 
+export interface UsageMeter {
+  used: number;
+  cap: number | null; // null = unlimited
+  remaining: number | null;
+  overCap: boolean;
+}
+export interface UsageSummary {
+  periodStart: string;
+  scope: "carrier" | "user";
+  ocr: UsageMeter;
+  copilot: UsageMeter;
+}
+
 export interface Booking {
   id: string;
   status: string;
   bookedAt: string;
   load: ScoredLoad;
+}
+
+export type DocType = "BOL" | "POD" | "LUMPER" | "FUEL" | "OTHER";
+export type DocStatus = "captured" | "needs_review" | "complete";
+
+export interface FreightDocument {
+  id: string;
+  type: DocType;
+  status: DocStatus;
+  bolNumber: string;
+  proNumber: string;
+  shipper: string;
+  consignee: string;
+  poNumber: string;
+  pieceCount: number | null;
+  weightLbs: number | null;
+  shipDate: string;
+  deliveryDate: string;
+  signaturePresent: boolean;
+  signedBy: string;
+  missingFields: string[];
+  missingLabels: string[];
+  ocrProvider: string;
+  confidence: number;
+  invoiceAmount: number | null;
+  invoiceStatus: "none" | "staged" | "sent";
+  loadId: string | null;
+  bookingId: string | null;
+  createdAt: string;
+  imageData?: string | null; // only returned by document(id)
+}
+
+export interface DocScanBody {
+  type?: DocType;
+  imageData?: string; // base64 data URL
+  loadId?: string;
+  bookingId?: string;
+  ocrKey?: string;
 }
 
 // ---- Auth ----
@@ -152,8 +203,27 @@ export const api = {
   // ---- Bookings / bids ----
   bookings: () => apiFetch<Booking[]>("/bookings"),
 
+  // ---- Documents (BOL / POD scanning) ----
+  documents: () => apiFetch<FreightDocument[]>("/documents"),
+  document: (id: string) => apiFetch<FreightDocument>(`/documents/${id}`),
+  scanDocument: (body: DocScanBody) =>
+    apiFetch<FreightDocument>("/documents/scan", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateDocument: (id: string, patch: Partial<FreightDocument>) =>
+    apiFetch<FreightDocument>(`/documents/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  stageInvoice: (id: string) =>
+    apiFetch<FreightDocument>(`/documents/${id}/invoice`, { method: "POST" }),
+
   // ---- Fuel ----
   fuel: () => apiFetch<FuelResponse>("/fuel"),
+
+  // ---- Usage metering ----
+  usage: () => apiFetch<UsageSummary>("/usage"),
 
   // ---- Carrier ----
   carrier: () => apiFetch<CarrierDetail>("/carrier"),

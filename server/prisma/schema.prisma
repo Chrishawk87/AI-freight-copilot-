@@ -21,8 +21,9 @@ model User {
   carrier   Carrier? @relation(fields: [carrierId], references: [id])
   carrierId String?
 
-  bids     Bid[]
-  bookings Booking[]
+  bids      Bid[]
+  bookings  Booking[]
+  documents Document[]
 }
 
 model Carrier {
@@ -42,6 +43,7 @@ model Carrier {
   drivers   Driver[]
   equipment Equipment[]
   bookings  Booking[]
+  documents Document[]
 }
 
 model Driver {
@@ -81,10 +83,15 @@ model Load {
   demandIndex   Int
   reloadIndex   Int
   isReloadPool  Boolean  @default(false) // reload marketplace vs main board
+  active        Boolean  @default(true) // false once the board no longer lists it
+  lastSeenAt    DateTime @default(now()) // last sync that saw this load on the board
   createdAt     DateTime @default(now())
 
-  bids     Bid[]
-  bookings Booking[]
+  bids      Bid[]
+  bookings  Booking[]
+  documents Document[]
+
+  @@index([active])
 }
 
 model Bid {
@@ -111,6 +118,76 @@ model Booking {
   userId    String
   carrier   Carrier  @relation(fields: [carrierId], references: [id])
   carrierId String
+
+  documents Document[]
+}
+
+// A scanned freight document (Bill of Lading, Proof of Delivery, lumper or fuel
+// receipt). The driver photographs it at the dock; a dedicated OCR provider (or
+// the simulated fallback) extracts the fields, we check it's signed/complete,
+// auto-match it to the booked load, and stage the invoice — all on the spot.
+model Document {
+  id     String @id @default(cuid())
+  type   String @default("BOL") // BOL | POD | LUMPER | FUEL | OTHER
+  status String @default("captured") // captured | needs_review | complete
+
+  imageData String? // base64 data URL of the scan (demo store; swap for blob storage later)
+
+  // Extracted fields
+  bolNumber        String  @default("")
+  proNumber        String  @default("")
+  shipper          String  @default("")
+  consignee        String  @default("")
+  poNumber         String  @default("")
+  pieceCount       Int?
+  weightLbs        Int?
+  shipDate         String  @default("")
+  deliveryDate     String  @default("")
+  signaturePresent Boolean @default(false)
+  signedBy         String  @default("")
+
+  // Completeness / exceptions / provenance
+  missingFields String @default("[]") // JSON array of field names still missing
+  extractedRaw  String @default("{}") // raw OCR result JSON
+  ocrProvider   String @default("simulated") // which engine produced this
+  confidence    Int    @default(0) // 0-100 overall extraction confidence
+
+  // Invoice staging
+  invoiceAmount Float?
+  invoiceStatus String @default("none") // none | staged | sent
+
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  bookingId String?
+  load      Load?    @relation(fields: [loadId], references: [id])
+  loadId    String?
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  carrier   Carrier? @relation(fields: [carrierId], references: [id])
+  carrierId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// One row per billable AI event (an OCR scan or a Co-Pilot LLM reply). We meter
+// per-carrier so the company can see who's consuming the shared provider
+// accounts and cap runaway usage. Events where the driver supplied their OWN key
+// (BYOK) or that fell back to the free simulated engine are recorded with
+// billable=false so they don't count against the company's cost or caps.
+model UsageEvent {
+  id        String   @id @default(cuid())
+  kind      String // ocr_scan | copilot_llm
+  provider  String   @default("") // mindee | anthropic | simulated | byok
+  billable  Boolean  @default(true) // true = cost lands on the company's shared account
+  units     Int      @default(1) // scans/calls (or tokens later)
+  userId    String
+  carrierId String?
+  createdAt DateTime @default(now())
+
+  @@index([carrierId, createdAt])
+  @@index([userId, createdAt])
+  @@index([kind, createdAt])
 }
 
 model FuelStation {
