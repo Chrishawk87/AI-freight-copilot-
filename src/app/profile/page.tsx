@@ -114,6 +114,22 @@ export default function ProfilePage() {
   const [rosterBusy, setRosterBusy] = useState(false);
   const [newEq, setNewEq] = useState({ type: EQUIPMENT_TYPES[0], unit: "", year: "" });
   const [newDrv, setNewDrv] = useState({ name: "", cdlClass: CDL_CLASSES[0] });
+  const [oauthBusy, setOauthBusy] = useState(""); // "google" | "microsoft" | "disconnect"
+  const [oauthMsg, setOauthMsg] = useState(""); // banner after the OAuth redirect
+  const [oauthErr, setOauthErr] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Show a result banner after the provider redirect (…/profile?email=connected).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const status = new URLSearchParams(window.location.search).get("email");
+    if (!status) return;
+    if (status === "connected") setOauthMsg("Your inbox is connected — document packages will now send from your own address.");
+    else if (status === "noretoken") setOauthErr("Almost there — your provider didn't return a lasting connection. Try Connect again and be sure to allow access.");
+    else if (status === "error") setOauthErr("Couldn't finish connecting your inbox. Please try again.");
+    // Clean the URL so the banner doesn't stick on refresh.
+    window.history.replaceState({}, "", "/profile");
+  }, []);
 
   useEffect(() => {
     if (data) {
@@ -228,6 +244,38 @@ export default function ProfilePage() {
       setEmailErr(e?.message || "Could not save your email.");
     } finally {
       setEmailSaving(false);
+    }
+  }
+
+  // One-click "Connect Gmail / Connect Outlook". We ask the server for the
+  // provider consent URL, then hand the browser off to it. The provider
+  // redirects back to /profile?email=connected once done.
+  async function connectOauth(provider: "google" | "microsoft") {
+    setOauthErr("");
+    setOauthMsg("");
+    setOauthBusy(provider);
+    try {
+      const { url } = await api.startEmailOauth(provider);
+      window.location.href = url;
+    } catch (e: any) {
+      setOauthErr(e?.message || "Couldn't start the connection. Please try again.");
+      setOauthBusy("");
+    }
+  }
+
+  async function disconnectOauth() {
+    setOauthErr("");
+    setOauthMsg("");
+    setOauthBusy("disconnect");
+    try {
+      await api.disconnectEmailOauth();
+      const refreshed = await api.carrier();
+      setForm(refreshed);
+      setOauthMsg("Inbox disconnected. Packages will send through AI Freight Co-Pilot with replies to your company email.");
+    } catch (e: any) {
+      setOauthErr(e?.message || "Couldn't disconnect. Please try again.");
+    } finally {
+      setOauthBusy("");
     }
   }
 
@@ -412,7 +460,11 @@ export default function ProfilePage() {
       <div className="mb-5 card p-5">
         <div className="mb-1 flex items-center gap-2 font-semibold">
           <Mail className="h-4 w-4 text-electric" /> Send email
-          {form.emailConnected && !appPassword ? (
+          {form.oauthConnected ? (
+            <span className="chip ml-1 flex items-center gap-1 bg-success/15 text-success">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Sending from your inbox
+            </span>
+          ) : form.smtpConnected ? (
             <span className="chip ml-1 flex items-center gap-1 bg-success/15 text-success">
               <CheckCircle2 className="h-3.5 w-3.5" /> Your inbox connected
             </span>
@@ -422,8 +474,86 @@ export default function ProfilePage() {
         </div>
         <p className="mb-4 text-xs leading-relaxed text-white/40">
           Sending already works — document packages go out through AI Freight
-          Co-Pilot with replies coming back to your company email. You only need
-          this if you want mail to send from your own inbox instead. Pick your
+          Co-Pilot with replies coming back to your company email. Connect your
+          own inbox below if you&apos;d rather packages send <em>from</em> your
+          own address. One click, no app passwords.
+        </p>
+
+        {oauthMsg && (
+          <p className="mb-3 rounded-lg bg-success/10 px-3 py-2 text-xs text-success">
+            {oauthMsg}
+          </p>
+        )}
+        {oauthErr && (
+          <p className="mb-3 rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
+            {oauthErr}
+          </p>
+        )}
+
+        {form.oauthConnected ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-success/[0.06] p-4">
+            <div className="text-sm">
+              <div className="flex items-center gap-2 font-medium text-white/90">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                Connected to {form.oauthProvider === "microsoft" ? "Outlook / Microsoft 365" : "Gmail / Google Workspace"}
+              </div>
+              <div className="mt-1 text-xs text-white/50">
+                Packages send from{" "}
+                <span className="text-white/80">{form.oauthEmail || form.contactEmail}</span>.
+              </div>
+            </div>
+            <button
+              onClick={disconnectOauth}
+              disabled={oauthBusy === "disconnect"}
+              className="btn-ghost text-xs"
+            >
+              {oauthBusy === "disconnect" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : null}
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => connectOauth("google")}
+              disabled={!!oauthBusy}
+              className="btn-primary"
+            >
+              {oauthBusy === "google" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              Connect Gmail
+            </button>
+            <button
+              onClick={() => connectOauth("microsoft")}
+              disabled={!!oauthBusy}
+              className="btn-ghost"
+            >
+              {oauthBusy === "microsoft" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              Connect Outlook
+            </button>
+          </div>
+        )}
+
+        {/* Advanced: legacy SMTP + app-password path, for hosts without OAuth. */}
+        <button
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="mt-4 text-xs text-white/40 underline-offset-2 hover:text-white/70 hover:underline"
+        >
+          {showAdvanced ? "Hide advanced (app password / SMTP)" : "Advanced: use an app password / custom SMTP instead"}
+        </button>
+
+        {showAdvanced && (
+        <div className="mt-3 border-t border-white/5 pt-4">
+        <p className="mb-4 text-xs leading-relaxed text-white/40">
+          Prefer an app password or have a custom mail server? Pick your
           provider, enter your address and a one-time app password.
         </p>
 
@@ -528,6 +658,8 @@ export default function ProfilePage() {
 
         {saveErr && (
           <p className="mt-3 text-xs text-danger">{saveErr}</p>
+        )}
+        </div>
         )}
       </div>
 

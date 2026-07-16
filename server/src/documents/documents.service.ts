@@ -8,6 +8,7 @@ import { AuthUser } from '../auth/current-user.decorator';
 import { OcrService } from './ocr.service';
 import { UsageService } from '../usage/usage.service';
 import { MailService } from '../mail/mail.service';
+import { EmailOauthService } from '../carrier/email-oauth.service';
 import { decryptSecret } from '../common/secret';
 import { buildJobPackagePdf } from './job-package';
 
@@ -41,6 +42,7 @@ export class DocumentsService {
     private readonly ocr: OcrService,
     private readonly usage: UsageService,
     private readonly mail: MailService,
+    private readonly oauth: EmailOauthService,
   ) {}
 
   // Fields returned in list view — everything except the heavy image + raw blobs.
@@ -374,6 +376,9 @@ export class DocumentsService {
         smtpSecure: true,
         smtpUser: true,
         smtpPass: true,
+        emailOauthProvider: true,
+        emailOauthEmail: true,
+        emailOauthRefresh: true,
       },
     })) as {
       companyName: string;
@@ -383,15 +388,73 @@ export class DocumentsService {
       smtpSecure: boolean;
       smtpUser: string;
       smtpPass: string;
+      emailOauthProvider: string;
+      emailOauthEmail: string;
+      emailOauthRefresh: string;
     } | null;
 
     // The carrier's own reply address — where a broker's reply should land.
-    const carrierReply = carrier?.contactEmail || carrier?.smtpUser || '';
+    const oauthProvider = carrier?.emailOauthProvider || '';
+    const carrierReply =
+      carrier?.contactEmail || carrier?.emailOauthEmail || carrier?.smtpUser || '';
 
-    // Prefer the carrier's own SMTP if they connected one (mail originates from
-    // their inbox). Otherwise fall back to the shared platform sender so email
-    // works out of the box for every subscriber — with replies routed back to
-    // the carrier.
+    const { bytes, filename, load, docs } = await this.buildPackage(
+      user,
+      jobId,
+      body.docIds,
+    );
+    const jobRef = load
+      ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity} → ${load.destCity}`
+      : 'documents';
+    const subject = body.subject?.trim() || `Documents — ${jobRef}`;
+    const summary = this.docSummary(docs);
+    const single = docs.length === 1;
+    const text =
+      (body.message?.trim() ? `${body.message.trim()}\n\n` : '') +
+      (single
+        ? `Attached is the ${summary} for ${jobRef}.`
+        : `Attached is the document package for ${jobRef} (${docs.length} documents).`) +
+      (summary ? `\n\nIncluded: ${summary}.` : '') +
+      (carrier?.companyName ? `\n\n${carrier.companyName}` : '') +
+      `\n\nSent via AI Freight Co-Pilot.`;
+
+    const attachments = [
+      { filename, content: Buffer.from(bytes), contentType: 'application/pdf' },
+    ];
+
+    // Sending preference, most-preferred first:
+    //   1. OAuth ("Connect Gmail/Outlook") — sends FROM the carrier's own
+    //      mailbox via the provider API. The scalable one-click path.
+    //   2. Per-carrier SMTP (app password) — advanced fallback.
+    //   3. Shared platform relay — works out of the box; carrier's address is
+    //      set as reply-to so broker replies land with them, not us.
+    if (oauthProvider === 'google' || oauthProvider === 'microsoft') {
+      const fromEmail = carrier?.emailOauthEmail || carrierReply;
+      let accessToken: string;
+      try {
+        accessToken = await this.oauth.accessTokenFromRefresh(
+          oauthProvider,
+          decryptSecret(carrier?.emailOauthRefresh || ''),
+        );
+      } catch {
+        throw new BadRequestException(
+          'Your connected inbox lost authorization. Reconnect it in Profile \u2192 Send email.',
+        );
+      }
+      const result = await this.mail.sendOauth(oauthProvider, accessToken, fromEmail, {
+        to,
+        replyTo: carrierReply && carrierReply !== fromEmail ? carrierReply : undefined,
+        subject,
+        text,
+        attachments,
+      });
+      if (!result.sent) {
+        throw new BadRequestException(result.reason || 'The email could not be sent.');
+      }
+      return { sent: true, to, filename };
+    }
+
+    // No OAuth — fall back to SMTP or the shared platform relay.
     const byok = {
       host: carrier?.smtpHost || '',
       port: carrier?.smtpPort || 587,
@@ -423,34 +486,12 @@ export class DocumentsService {
       replyTo = carrierReply || undefined;
     }
 
-    const { bytes, filename, load, docs } = await this.buildPackage(
-      user,
-      jobId,
-      body.docIds,
-    );
-    const jobRef = load
-      ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity} → ${load.destCity}`
-      : 'documents';
-    const subject = body.subject?.trim() || `Documents — ${jobRef}`;
-    const summary = this.docSummary(docs);
-    const single = docs.length === 1;
-    const text =
-      (body.message?.trim() ? `${body.message.trim()}\n\n` : '') +
-      (single
-        ? `Attached is the ${summary} for ${jobRef}.`
-        : `Attached is the document package for ${jobRef} (${docs.length} documents).`) +
-      (summary ? `\n\nIncluded: ${summary}.` : '') +
-      (carrier?.companyName ? `\n\n${carrier.companyName}` : '') +
-      `\n\nSent via AI Freight Co-Pilot.`;
-
     const result = await this.mail.send(cfg, {
       to,
       replyTo,
       subject,
       text,
-      attachments: [
-        { filename, content: Buffer.from(bytes), contentType: 'application/pdf' },
-      ],
+      attachments,
     });
     if (!result.sent) {
       throw new BadRequestException(result.reason || 'The email could not be sent.');

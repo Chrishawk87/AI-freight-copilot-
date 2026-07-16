@@ -79,7 +79,13 @@ export interface CarrierDetail {
   smtpPort: number;
   smtpSecure: boolean;
   smtpUser: string;
-  emailConnected: boolean; // carrier connected their OWN inbox (SMTP)
+  emailConnected: boolean; // carrier connected their OWN inbox (OAuth or SMTP)
+  // One-click OAuth ("Connect Gmail/Outlook") — sends from the carrier's own
+  // mailbox. Tokens are never returned; only the connected provider + address.
+  oauthConnected?: boolean;
+  oauthProvider?: string; // "google" | "microsoft" | ""
+  oauthEmail?: string; // the connected mailbox address
+  smtpConnected?: boolean; // legacy per-carrier SMTP (app password)
   platformEmailAvailable?: boolean; // shared platform sender configured server-side
   canSendEmail?: boolean; // emailConnected || platformEmailAvailable
   dotNumber: string;
@@ -288,6 +294,14 @@ export const api = {
   carrier: () => apiFetch<CarrierDetail>("/carrier"),
   updateCarrier: (body: Partial<CarrierDetail> & { smtpPass?: string }) =>
     apiFetch<CarrierDetail>("/carrier", { method: "PUT", body: JSON.stringify(body) }),
+  // One-click email OAuth. `start` returns the provider consent URL to send the
+  // browser to; the server callback stores the connection and redirects back.
+  startEmailOauth: (provider: "google" | "microsoft") =>
+    apiFetch<{ url: string }>(`/carrier/email/oauth/${provider}/start`),
+  disconnectEmailOauth: () =>
+    apiFetch<{ disconnected: boolean }>("/carrier/email/oauth/disconnect", {
+      method: "POST",
+    }),
   // Auto-fill company profile from the FMCSA carrier registry.
   lookupCarrier: (params: { dot?: string; mc?: string }) => {
     const q = params.dot

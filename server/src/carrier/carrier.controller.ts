@@ -61,8 +61,18 @@ class EquipmentDto {
 // Never leak the stored password. Expose only whether email is connected.
 function serialize(carrier: any) {
   if (!carrier) return null;
-  const { smtpPass, ...rest } = carrier;
-  const emailConnected = !!(carrier.smtpHost && carrier.smtpUser && smtpPass);
+  // Never leak stored secrets (SMTP password, OAuth refresh token).
+  const { smtpPass, emailOauthRefresh, ...rest } = carrier;
+  // One-click OAuth ("Connect Gmail/Outlook") — the scalable way for a carrier
+  // to send from their OWN address. Expose the provider + connected mailbox
+  // but never the refresh token.
+  const oauthConnected = !!(
+    carrier.emailOauthProvider && emailOauthRefresh
+  );
+  // Legacy per-carrier SMTP (app password) — still supported as an advanced
+  // fallback for providers without OAuth.
+  const smtpConnected = !!(carrier.smtpHost && carrier.smtpUser && smtpPass);
+  const emailConnected = oauthConnected || smtpConnected;
   // Shared platform sender configured by us — lets every carrier send without
   // connecting their own inbox.
   const platformEmailAvailable = !!(
@@ -73,7 +83,11 @@ function serialize(carrier: any) {
   return {
     ...rest,
     serviceAreas: JSON.parse(carrier.serviceAreas || '[]'),
-    emailConnected, // carrier connected their OWN inbox
+    emailConnected, // carrier connected their OWN inbox (OAuth or SMTP)
+    oauthConnected,
+    smtpConnected,
+    oauthProvider: carrier.emailOauthProvider || '',
+    oauthEmail: carrier.emailOauthEmail || '',
     platformEmailAvailable,
     canSendEmail: emailConnected || platformEmailAvailable,
   };

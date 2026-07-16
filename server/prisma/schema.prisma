@@ -37,6 +37,12 @@ model Carrier {
   smtpSecure        Boolean  @default(false) // true = implicit TLS (port 465)
   smtpUser          String   @default("") // usually the same as contactEmail
   smtpPass          String   @default("") // encrypted app password / SMTP password
+  // OAuth "Connect Gmail / Outlook" — the scalable way to send from the
+  // carrier's OWN address with one click (no app passwords). Refresh token is
+  // stored ENCRYPTED; access tokens are minted on demand and never stored.
+  emailOauthProvider String  @default("") // "google" | "microsoft"
+  emailOauthEmail    String  @default("") // the connected mailbox address
+  emailOauthRefresh  String  @default("") // encrypted OAuth refresh token
   dotNumber         String   @default("")
   mcNumber          String   @default("")
   insuranceProvider String   @default("")

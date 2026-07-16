@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import MailComposer = require('nodemailer/lib/mail-composer');
 
 export interface SmtpConfig {
   host: string;
@@ -97,6 +98,113 @@ export class MailService {
       this.logger.warn(`Email send failed: ${e?.code || ''} ${e?.message || e}`);
       return { sent: false, reason };
     }
+  }
+
+  /**
+   * Send FROM the carrier's own mailbox using an OAuth access token — the
+   * scalable, one-click path (no app passwords). We send through the provider's
+   * HTTP API (Gmail API / Microsoft Graph) rather than SMTP XOAUTH2, because the
+   * API paths only need the lightweight gmail.send / Mail.Send scopes and avoid
+   * the costly restricted-scope security assessment.
+   *
+   * `accessToken` is minted on demand by the caller from the stored refresh
+   * token; nothing is persisted here.
+   */
+  async sendOauth(
+    provider: 'google' | 'microsoft',
+    accessToken: string,
+    fromEmail: string,
+    input: SendInput,
+  ): Promise<{ sent: boolean; reason?: string }> {
+    try {
+      if (provider === 'google') {
+        const raw = await this.buildMime(fromEmail, input);
+        const b64url = raw
+          .toString('base64')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+        const res = await fetch(
+          'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ raw: b64url }),
+          },
+        );
+        if (!res.ok) {
+          const body = await res.text();
+          this.logger.warn(`Gmail API send failed: ${res.status} ${body}`);
+          return { sent: false, reason: this.friendlyOauth(res.status, body) };
+        }
+        return { sent: true };
+      }
+
+      // Microsoft Graph sendMail.
+      const message = {
+        subject: input.subject,
+        body: { contentType: 'Text', content: input.text },
+        toRecipients: [{ emailAddress: { address: input.to } }],
+        replyTo: input.replyTo
+          ? [{ emailAddress: { address: input.replyTo } }]
+          : undefined,
+        attachments: (input.attachments || []).map((a) => ({
+          '@odata.type': '#microsoft.graph.fileAttachment',
+          name: a.filename,
+          contentType: a.contentType || 'application/octet-stream',
+          contentBytes: a.content.toString('base64'),
+        })),
+      };
+      const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message, saveToSentItems: true }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        this.logger.warn(`Graph sendMail failed: ${res.status} ${body}`);
+        return { sent: false, reason: this.friendlyOauth(res.status, body) };
+      }
+      return { sent: true };
+    } catch (e: any) {
+      this.logger.warn(`OAuth send failed: ${e?.message || e}`);
+      return {
+        sent: false,
+        reason:
+          'Could not send from your connected inbox. Try reconnecting it in Profile.',
+      };
+    }
+  }
+
+  // Compose a full RFC-822 MIME message (with attachments) as a Buffer.
+  private buildMime(fromEmail: string, input: SendInput): Promise<Buffer> {
+    const composer = new MailComposer({
+      from: fromEmail,
+      to: input.to,
+      replyTo: input.replyTo,
+      subject: input.subject,
+      text: input.text,
+      attachments: input.attachments,
+    });
+    return new Promise((resolve, reject) => {
+      composer.compile().build((err: Error | null, msg: Buffer) => {
+        if (err) reject(err);
+        else resolve(msg);
+      });
+    });
+  }
+
+  private friendlyOauth(status: number, _body: string): string {
+    if (status === 401 || status === 403) {
+      return 'Your connected inbox lost authorization. Reconnect it in Profile → Send email.';
+    }
+    return 'Your email provider refused the message. Reconnect your inbox in Profile if this keeps happening.';
   }
 
   // Turn raw SMTP errors into something a driver can act on. We also append the
