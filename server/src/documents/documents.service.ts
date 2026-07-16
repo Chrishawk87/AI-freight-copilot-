@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/current-user.decorator';
 import { OcrService } from './ocr.service';
 import { UsageService } from '../usage/usage.service';
+import { MailService } from '../mail/mail.service';
+import { decryptSecret } from '../common/secret';
 import { buildJobPackagePdf } from './job-package';
 
 // What each document type needs before it's "complete" enough to invoice / file.
@@ -34,6 +40,7 @@ export class DocumentsService {
     private readonly prisma: PrismaService,
     private readonly ocr: OcrService,
     private readonly usage: UsageService,
+    private readonly mail: MailService,
   ) {}
 
   // Fields returned in list view — everything except the heavy image + raw blobs.
@@ -313,6 +320,85 @@ export class DocumentsService {
       dataUrl: `data:application/pdf;base64,${base64}`,
       docCount,
     };
+  }
+
+  /**
+   * Email a job's combined package as one PDF using the CARRIER's OWN email
+   * account (the SMTP provider they connected in their Profile). Reply-to and
+   * From are the carrier's address, so replies land back in their inbox.
+   */
+  async emailJobPackage(
+    user: AuthUser,
+    jobId: string,
+    body: { to: string; subject?: string; message?: string },
+  ) {
+    const to = (body.to || '').trim();
+    if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+      throw new BadRequestException('Please enter a valid recipient email.');
+    }
+    if (!user.carrierId) {
+      throw new BadRequestException('No carrier profile on this account.');
+    }
+
+    const carrier = (await this.prisma.carrier.findUnique({
+      where: { id: user.carrierId },
+      select: {
+        companyName: true,
+        contactEmail: true,
+        smtpHost: true,
+        smtpPort: true,
+        smtpSecure: true,
+        smtpUser: true,
+        smtpPass: true,
+      },
+    })) as {
+      companyName: string;
+      contactEmail: string;
+      smtpHost: string;
+      smtpPort: number;
+      smtpSecure: boolean;
+      smtpUser: string;
+      smtpPass: string;
+    } | null;
+
+    const cfg = {
+      host: carrier?.smtpHost || '',
+      port: carrier?.smtpPort || 587,
+      secure: !!carrier?.smtpSecure,
+      user: carrier?.smtpUser || carrier?.contactEmail || '',
+      pass: decryptSecret(carrier?.smtpPass || ''),
+      from: carrier?.contactEmail || carrier?.smtpUser || '',
+    };
+    if (!this.mail.configured(cfg)) {
+      throw new BadRequestException(
+        'Connect your email first — open Profile and add your email address and app password under "Send email".',
+      );
+    }
+
+    const { bytes, filename, load } = await this.buildPackage(user, jobId);
+    const jobRef = load
+      ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity} → ${load.destCity}`
+      : 'documents';
+    const subject = body.subject?.trim() || `Documents — ${jobRef}`;
+    const text =
+      (body.message?.trim() ? `${body.message.trim()}\n\n` : '') +
+      `Attached is the document package for ${jobRef}.` +
+      (carrier?.companyName ? `\n\n${carrier.companyName}` : '') +
+      `\n\nSent via AI Freight Co-Pilot.`;
+
+    const result = await this.mail.send(cfg, {
+      to,
+      replyTo: cfg.from || undefined,
+      subject,
+      text,
+      attachments: [
+        { filename, content: Buffer.from(bytes), contentType: 'application/pdf' },
+      ],
+    });
+    if (!result.sent) {
+      throw new BadRequestException(result.reason || 'The email could not be sent.');
+    }
+    return { sent: true, to, filename };
   }
 
   async getOne(user: AuthUser, id: string) {

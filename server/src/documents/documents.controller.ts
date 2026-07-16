@@ -26,6 +26,12 @@ class ScanDto {
   @IsOptional() @IsString() ocrKey?: string; // per-driver OCR key from Plugins
 }
 
+class EmailPackageDto {
+  @IsString() to!: string;
+  @IsOptional() @IsString() subject?: string;
+  @IsOptional() @IsString() message?: string;
+}
+
 class UpdateDocDto {
   @IsOptional() @IsString() type?: string;
   @IsOptional() @IsString() bolNumber?: string;
@@ -64,6 +70,15 @@ export class DocumentsController {
   @Get('jobs/:jobId/package')
   jobPackage(@CurrentUser() user: AuthUser, @Param('jobId') jobId: string) {
     return this.docs.jobPackage(user, jobId);
+  }
+
+  @Post('jobs/:jobId/email')
+  emailPackage(
+    @CurrentUser() user: AuthUser,
+    @Param('jobId') jobId: string,
+    @Body() dto: EmailPackageDto,
+  ) {
+    return this.docs.emailJobPackage(user, jobId, dto);
   }
 
   @Get(':id')

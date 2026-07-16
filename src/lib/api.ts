@@ -74,6 +74,12 @@ export interface CarrierDetail {
   id: string;
   companyName: string;
   contactEmail: string;
+  // Per-carrier outbound email (their own provider). Password is never returned.
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser: string;
+  emailConnected: boolean;
   dotNumber: string;
   mcNumber: string;
   insuranceProvider: string;
@@ -230,6 +236,14 @@ export const api = {
   documentJobs: () => apiFetch<DocumentJob[]>("/documents/jobs"),
   jobPackage: (jobId: string) =>
     apiFetch<JobPackage>(`/documents/jobs/${encodeURIComponent(jobId)}/package`),
+  emailJobPackage: (
+    jobId: string,
+    body: { to: string; subject?: string; message?: string },
+  ) =>
+    apiFetch<{ sent: boolean; to: string; filename: string }>(
+      `/documents/jobs/${encodeURIComponent(jobId)}/email`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
   document: (id: string) => apiFetch<FreightDocument>(`/documents/${id}`),
   scanDocument: (body: DocScanBody) =>
     apiFetch<FreightDocument>("/documents/scan", {
@@ -252,7 +266,7 @@ export const api = {
 
   // ---- Carrier ----
   carrier: () => apiFetch<CarrierDetail>("/carrier"),
-  updateCarrier: (body: Partial<CarrierDetail>) =>
+  updateCarrier: (body: Partial<CarrierDetail> & { smtpPass?: string }) =>
     apiFetch<CarrierDetail>("/carrier", { method: "PUT", body: JSON.stringify(body) }),
 
   // ---- Dispatcher ----

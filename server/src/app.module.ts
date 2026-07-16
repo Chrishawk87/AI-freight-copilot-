@@ -12,6 +12,7 @@ import { DispatcherModule } from './dispatcher/dispatcher.module';
 import { CopilotModule } from './copilot/copilot.module';
 import { DocumentsModule } from './documents/documents.module';
 import { UsageModule } from './usage/usage.module';
+import { MailModule } from './mail/mail.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -29,6 +30,7 @@ import { HealthController } from './health.controller';
     CopilotModule,
     DocumentsModule,
     UsageModule,
+    MailModule,
   ],
   controllers: [HealthController],
 })

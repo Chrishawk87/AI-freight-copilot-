@@ -29,7 +29,14 @@ model User {
 model Carrier {
   id                String   @id @default(cuid())
   companyName       String
-  contactEmail      String   @default("") // company email — sender/reply-to for document packages
+  contactEmail      String   @default("") // company email — the "From"/reply-to for document packages
+  // Per-carrier outbound email — client connects their OWN provider (Gmail,
+  // Outlook, Yahoo, any SMTP). smtpPass is stored ENCRYPTED, never returned.
+  smtpHost          String   @default("")
+  smtpPort          Int      @default(587)
+  smtpSecure        Boolean  @default(false) // true = implicit TLS (port 465)
+  smtpUser          String   @default("") // usually the same as contactEmail
+  smtpPass          String   @default("") // encrypted app password / SMTP password
   dotNumber         String   @default("")
   mcNumber          String   @default("")
   insuranceProvider String   @default("")

@@ -318,6 +318,7 @@ export default function DocumentsPage() {
                 onOpenDoc={(d) => setActive(d)}
                 activeId={active?.id}
                 companyEmail={carrier?.contactEmail || ""}
+                emailConnected={!!carrier?.emailConnected}
               />
             ))}
           </div>
@@ -375,11 +376,13 @@ function JobCard({
   onOpenDoc,
   activeId,
   companyEmail,
+  emailConnected,
 }: {
   job: DocumentJob;
   onOpenDoc: (d: FreightDocument) => void;
   activeId?: string;
   companyEmail: string;
+  emailConnected: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -414,33 +417,22 @@ function JobCard({
     }
   }
 
-  // No server or SMTP account needed: build + download the combined PDF, then
-  // open the driver's OWN email app with a draft pre-filled from their on-file
-  // company email. They attach the downloaded PDF and hit send from their inbox.
+  // Real send: the backend emails the combined PDF to the recipient using the
+  // carrier's OWN connected email account (set up once in Profile → Send email).
   async function sendEmail() {
     setSending(true);
     setEmailErr("");
     setSent("");
     try {
-      const pkg = await api.jobPackage(job.jobId);
-      saveBlob(pkg);
-      const subject = `Freight documents — ${job.title}`;
-      const bodyLines = [
-        message.trim(),
-        message.trim() ? "" : undefined,
-        `Attached: ${pkg.filename} (${pkg.docCount} document${
-          pkg.docCount === 1 ? "" : "s"
-        }).`,
-        companyEmail ? `\n${companyEmail}` : undefined,
-      ].filter((l): l is string => l !== undefined);
-      const body = bodyLines.join("\n");
-      const mailto = `mailto:${to.trim()}?subject=${encodeURIComponent(
-        subject,
-      )}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
-      setSent(`Email draft opened. Attach ${pkg.filename} and send.`);
+      const res = await api.emailJobPackage(job.jobId, {
+        to: to.trim(),
+        message: message.trim() || undefined,
+      });
+      setSent(`Sent to ${res.to}.`);
+      setTo("");
+      setMessage("");
     } catch (e: any) {
-      setEmailErr(e.message || "Could not prepare the email");
+      setEmailErr(e.message || "Could not send the email");
     } finally {
       setSending(false);
     }
@@ -531,17 +523,17 @@ function JobCard({
               />
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] leading-relaxed text-white/40">
-                  {companyEmail
-                    ? `Opens your email app (${companyEmail}) with a draft ready. The package PDF downloads — just attach it and send.`
-                    : "Opens your email app with a draft ready. The package PDF downloads — just attach it and send. Add a company email in your Profile to sign it automatically."}
+                  {emailConnected
+                    ? `Sends the package PDF from ${companyEmail || "your email"} straight to the recipient.`
+                    : "Connect your email in Profile → Send email first, then this sends the PDF straight to the recipient."}
                 </p>
                 <button
                   onClick={sendEmail}
-                  disabled={sending}
+                  disabled={sending || !to.trim()}
                   className="flex shrink-0 items-center gap-1.5 rounded-lg bg-electric px-3 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-50"
                 >
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Open draft
+                  Send
                 </button>
               </div>
               {emailErr && (

@@ -1,11 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgeCheck, FileText, Truck, Users, MapPin, ShieldCheck, LogOut, Loader2, Check, Gauge, ScanLine, Bot } from "lucide-react";
+import { BadgeCheck, FileText, Truck, Users, MapPin, ShieldCheck, LogOut, Loader2, Check, Gauge, ScanLine, Bot, Mail, Lock, CheckCircle2 } from "lucide-react";
 import { PageHeader, Loading, ErrorState } from "@/components/ui";
 import { api, type CarrierDetail, type UsageMeter } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useAuth } from "@/lib/auth";
+
+// Known providers → SMTP server, so the client only enters email + app password.
+const SMTP_PRESETS: Record<string, { host: string; port: number; secure: boolean; label: string }> = {
+  "gmail.com": { host: "smtp.gmail.com", port: 465, secure: true, label: "Gmail" },
+  "googlemail.com": { host: "smtp.gmail.com", port: 465, secure: true, label: "Gmail" },
+  "outlook.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
+  "hotmail.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
+  "live.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
+  "msn.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
+  "yahoo.com": { host: "smtp.mail.yahoo.com", port: 465, secure: true, label: "Yahoo" },
+  "aol.com": { host: "smtp.aol.com", port: 465, secure: true, label: "AOL" },
+  "icloud.com": { host: "smtp.mail.me.com", port: 587, secure: false, label: "iCloud" },
+  "me.com": { host: "smtp.mail.me.com", port: 587, secure: false, label: "iCloud" },
+};
+function detectSmtp(email: string) {
+  const domain = (email.split("@")[1] || "").trim().toLowerCase();
+  return SMTP_PRESETS[domain] || null;
+}
 
 export default function ProfilePage() {
   const { logout } = useAuth();
@@ -13,6 +31,8 @@ export default function ProfilePage() {
   const [form, setForm] = useState<CarrierDetail | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [appPassword, setAppPassword] = useState(""); // never returned by API
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (data) setForm(data);
@@ -31,7 +51,26 @@ export default function ProfilePage() {
     if (!form) return;
     setSaving(true);
     try {
-      await api.updateCarrier({
+      // Resolve the SMTP server: auto-detected from the email domain, or the
+      // manual values if the user opened Advanced.
+      const detected = detectSmtp(form.contactEmail);
+      const emailCfg = showAdvanced
+        ? {
+            smtpHost: form.smtpHost,
+            smtpPort: form.smtpPort,
+            smtpSecure: form.smtpSecure,
+            smtpUser: form.smtpUser || form.contactEmail,
+          }
+        : detected
+        ? {
+            smtpHost: detected.host,
+            smtpPort: detected.port,
+            smtpSecure: detected.secure,
+            smtpUser: form.contactEmail,
+          }
+        : { smtpUser: form.contactEmail };
+
+      const updated = await api.updateCarrier({
         companyName: form.companyName,
         contactEmail: form.contactEmail,
         dotNumber: form.dotNumber,
@@ -42,7 +81,11 @@ export default function ProfilePage() {
         serviceAreas: form.serviceAreas,
         mpg: form.mpg,
         fixedCostPerMile: form.fixedCostPerMile,
+        ...emailCfg,
+        ...(appPassword ? { smtpPass: appPassword } : {}),
       });
+      setForm(updated);
+      setAppPassword("");
       setSaved(true);
     } finally {
       setSaving(false);
@@ -89,7 +132,7 @@ export default function ProfilePage() {
             </div>
             <div className="mt-2 text-sm">
               <LabeledInput
-                label="Company email (used to send document packages)"
+                label="Company email (your send-from address)"
                 value={form.contactEmail}
                 onChange={(v) => set("contactEmail", v)}
               />
@@ -103,6 +146,87 @@ export default function ProfilePage() {
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/5">
           <div className="h-full rounded-full bg-success" style={{ width: `${completeness}%` }} />
         </div>
+      </div>
+
+      {/* Connect your own email so document packages send straight from your inbox. */}
+      <div className="mb-5 card p-5">
+        <div className="mb-1 flex items-center gap-2 font-semibold">
+          <Mail className="h-4 w-4 text-electric" /> Send email
+          {form.emailConnected && !appPassword && (
+            <span className="chip ml-1 flex items-center gap-1 bg-success/15 text-success">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Connected
+            </span>
+          )}
+        </div>
+        <p className="mb-4 text-xs leading-relaxed text-white/40">
+          Connect your own email (Gmail, Outlook, Yahoo, any provider) and the app
+          sends document packages straight to brokers and factoring from your inbox.
+          {(() => {
+            const d = detectSmtp(form.contactEmail);
+            return d ? ` Detected ${d.label} — just add an app password below.` : "";
+          })()}
+        </p>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <LabeledInput
+            label="Your email address"
+            value={form.contactEmail}
+            onChange={(v) => set("contactEmail", v)}
+          />
+          <label className="block py-1">
+            <span className="mb-1 flex items-center gap-1 text-xs text-white/40">
+              <Lock className="h-3 w-3" /> App password
+            </span>
+            <input
+              type="password"
+              value={appPassword}
+              onChange={(e) => {
+                setAppPassword(e.target.value);
+                setSaved(false);
+              }}
+              placeholder={form.emailConnected ? "•••••••• (leave blank to keep)" : "app password"}
+              className="input"
+            />
+          </label>
+        </div>
+
+        <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+          Gmail, Yahoo and Outlook need a one-time{" "}
+          <span className="text-white/60">app password</span> (from your email account&apos;s
+          security settings) — not your normal login password.
+        </p>
+
+        <button
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="mt-3 text-xs font-semibold text-electric hover:underline"
+        >
+          {showAdvanced ? "Hide advanced server settings" : "Advanced server settings"}
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-3 grid gap-3 rounded-xl bg-white/[0.02] p-3 sm:grid-cols-2">
+            <LabeledInput label="SMTP host" value={form.smtpHost} onChange={(v) => set("smtpHost", v)} />
+            <div>
+              <label className="mb-1 block text-xs text-white/40">Port</label>
+              <input
+                type="number"
+                value={form.smtpPort}
+                onChange={(e) => set("smtpPort", Number(e.target.value))}
+                className="input"
+              />
+            </div>
+            <LabeledInput label="SMTP username" value={form.smtpUser} onChange={(v) => set("smtpUser", v)} />
+            <label className="flex items-center gap-2 pt-6 text-sm">
+              <input
+                type="checkbox"
+                checked={form.smtpSecure}
+                onChange={(e) => set("smtpSecure", e.target.checked)}
+                className="h-4 w-4 accent-electric"
+              />
+              Use TLS on port 465
+            </label>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
