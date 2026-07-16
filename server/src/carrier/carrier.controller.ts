@@ -175,7 +175,10 @@ export class CarrierController {
     // Email credentials: only touch the password when a new one is supplied,
     // and always store it encrypted. Default the SMTP login to the email.
     if (dto.smtpPass !== undefined) {
-      if (dto.smtpPass) data.smtpPass = encryptSecret(dto.smtpPass);
+      // App passwords are usually pasted with spaces (Gmail shows them in
+      // 4-char groups). Strip whitespace so SMTP auth actually works.
+      const pass = dto.smtpPass.replace(/\s+/g, '');
+      if (pass) data.smtpPass = encryptSecret(pass);
       else delete data.smtpPass; // empty = leave existing password untouched
     }
     if ((dto.smtpUser === undefined || dto.smtpUser === '') && dto.contactEmail) {
