@@ -2,10 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { TrendingUp, Fuel, Repeat, Bot, ArrowRight, Mic } from "lucide-react";
+import { useState } from "react";
+import {
+  TrendingUp,
+  Fuel,
+  Repeat,
+  Bot,
+  ArrowRight,
+  Mic,
+  MapPin,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { PageHeader, Stat, money, Loading, ErrorState } from "@/components/ui";
 import LoadCard from "@/components/LoadCard";
-import { api } from "@/lib/api";
+import { api, type Booking } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useAuth } from "@/lib/auth";
 
@@ -14,6 +25,7 @@ export default function Home() {
   const { user } = useAuth();
   const dash = useApi(() => api.dashboard(), []);
   const carrier = useApi(() => api.carrier(), []);
+  const booked = useApi(() => api.bookings(), []);
 
   if (dash.loading || carrier.loading) return <Loading />;
   if (dash.error) return <ErrorState message={dash.error} />;
@@ -60,6 +72,20 @@ export default function Home() {
         <QuickLink href="/loads" icon={TrendingUp} label="Best Loads Now" tint="#246BFD" />
       </div>
 
+      {booked.data && booked.data.length > 0 && (
+        <div className="mb-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Your booked loads</h2>
+            <span className="text-sm text-white/40">{booked.data.length} active</span>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {booked.data.map((b) => (
+              <BookedRow key={b.id} booking={b} onRemoved={() => { booked.reload(); dash.reload(); }} />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-bold">Top opportunities right now</h2>
         <Link href="/loads" className="flex items-center gap-1 text-sm text-electric hover:underline">
@@ -71,6 +97,81 @@ export default function Home() {
           <LoadCard key={l.id} load={l} onBooked={() => dash.reload()} />
         ))}
       </div>
+    </div>
+  );
+}
+
+function BookedRow({
+  booking,
+  onRemoved,
+}: {
+  booking: Booking;
+  onRemoved: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [error, setError] = useState("");
+  const l = booking.load;
+
+  async function remove() {
+    setBusy(true);
+    setError("");
+    try {
+      await api.removeBooking(booking.id);
+      onRemoved();
+    } catch (e: any) {
+      setError(e.message || "Could not remove");
+      setBusy(false);
+      setConfirm(false);
+    }
+  }
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs text-white/40">
+            <span className="chip bg-white/5">{l.equipment}</span>
+            <span>{l.source}</span>
+          </div>
+          <div className="mt-1.5 flex items-center gap-2 text-sm font-semibold">
+            <MapPin className="h-4 w-4 shrink-0 text-electric" />
+            <span className="truncate">
+              {l.originCity}, {l.originState} <ArrowRight className="inline h-3.5 w-3.5 text-white/30" /> {l.destCity}, {l.destState}
+            </span>
+          </div>
+          <div className="mt-1 text-xs text-white/50">
+            {money(l.rate)} · {l.broker}
+          </div>
+        </div>
+        {confirm ? (
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              onClick={remove}
+              disabled={busy}
+              className="rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Remove"}
+            </button>
+            <button
+              onClick={() => setConfirm(false)}
+              disabled={busy}
+              className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/70"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirm(true)}
+            title="Remove this load"
+            className="shrink-0 rounded-lg border border-white/10 p-2 text-white/40 transition hover:border-danger/40 hover:text-danger"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {error && <div className="mt-2 text-xs text-danger">{error}</div>}
     </div>
   );
 }

@@ -293,6 +293,7 @@ export const api = {
 
   // ---- Bookings / bids ----
   bookings: () => apiFetch<Booking[]>("/bookings"),
+  removeBooking: (id: string) => apiFetch(`/bookings/${id}`, { method: "DELETE" }),
 
   // ---- Documents (BOL / POD scanning) ----
   documents: () => apiFetch<FreightDocument[]>("/documents"),

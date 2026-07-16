@@ -48,10 +48,34 @@ export class BidsService {
 
   async myBookings(user: AuthUser) {
     return this.prisma.booking.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, status: { not: 'archived' } },
       include: { load: true },
       orderBy: { bookedAt: 'desc' },
     });
+  }
+
+  /**
+   * "Remove a load I'm done with." Scoped to the driver's own booking — loads are
+   * shared board listings, so we never hard-delete or deactivate the global load
+   * out from under other carriers. We archive the booking (soft, reversible in
+   * the DB, keeps history) so it drops off the driver's list and dashboard. For a
+   * carrier-originated Rate Con load — which belongs to this carrier alone — we
+   * also deactivate the load so the synthetic listing doesn't linger.
+   */
+  async removeBooking(user: AuthUser, bookingId: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: { id: bookingId, userId: user.id },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    await this.prisma.booking.update({
+      where: { id: booking.id },
+      data: { status: 'archived' },
+    });
+    await this.prisma.load.updateMany({
+      where: { id: booking.loadId, source: 'RateCon' },
+      data: { active: false },
+    });
+    return { ok: true };
   }
 
   async myBids(user: AuthUser) {

@@ -50,7 +50,7 @@ export class LoadsService {
 
   async dashboard(user: AuthUser) {
     const bookings = await this.prisma.booking.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, status: { not: 'archived' } },
       include: { load: true },
     });
     const scored = bookings.map((b) => scoreLoad(b.load, this.opts(user)));
