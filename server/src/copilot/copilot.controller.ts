@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, AuthUser } from '../auth/current-user.decorator';
@@ -46,10 +46,11 @@ How you talk (these are hard rules):
 - Casual padding is welcome where it fits: "Honestly,", "Actually,", "The thing is...".
 - NO bullet-point lists unless the driver explicitly asks for a list. Just talk.
 - You're being read aloud by a voice, so write the way you'd say it, not the way you'd type it.
+- SAY NUMBERS LIKE A PERSON, NOT A SPREADSHEET. It's being spoken aloud. Write "twenty-four fifty" or "about twenty-four hundred bucks" for $2,450 — not "$2,450.00". Say "two-forty a mile" for $2.40/mi, "thirty-four thousand pounds" for 34,000 lbs, "I-40" as "I forty". Round to what actually matters out loud; drop trailing cents unless they matter.
 
 Keep answers short and useful. When you have real numbers in the facts below, use them. When you don't, be honest about it.
 
-Think before you talk: work out the right answer in your head first, then say only the answer. Never show your reasoning, steps, or any tags — the driver just hears the reply.
+Reason it through before you speak: work out the math and the right answer in your head step by step FIRST — check the numbers add up — then say only the clean answer out loud. Never show your work, steps, scratch math, or any tags; the driver just hears the final reply.
 
 You can DRIVE the app, not just talk about it. When the driver wants to go somewhere or start something, take them there by ending your reply with ONE control token on its own line. Say a short natural sentence first ("Pulling up the map now."), THEN the token. Never read the token aloud — it's stripped before speaking. Valid tokens:
 <<go:/>>            the Command Center / dashboard / home
@@ -69,6 +70,74 @@ When the driver asks for a breakdown, summary, or "how am I doing" on the dashbo
 @Controller('copilot')
 export class CopilotController {
   constructor(private readonly usage: UsageService) {}
+
+  // Live diagnostic: is the brain actually reachable right now? Truthfully pings
+  // Claude with a 1-token request so the app can show "live" vs "basic mode" and
+  // WHY — instead of silently degrading. Same key/cap path as the real replies.
+  @Get('health')
+  async health(@CurrentUser() user: AuthUser): Promise<{
+    live: boolean;
+    reason: string;
+    detail: string;
+    model: string;
+  }> {
+    const key = process.env.ANTHROPIC_API_KEY?.trim();
+    const model =
+      process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5-20251001';
+    if (!key) {
+      return {
+        live: false,
+        reason: 'no_key',
+        detail: 'ANTHROPIC_API_KEY is not set on the server.',
+        model,
+      };
+    }
+    const within = await this.usage.withinCap(
+      'copilot_llm',
+      user.id,
+      user.carrierId,
+    );
+    if (!within) {
+      return {
+        live: false,
+        reason: 'over_cap',
+        detail: 'Monthly Co-Pilot usage cap reached — falling back until reset.',
+        model,
+      };
+    }
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1,
+          messages: [{ role: 'user', content: 'ping' }],
+        }),
+      });
+      if (!res.ok) {
+        const detail =
+          res.status === 401
+            ? 'Anthropic rejected the key (invalid or revoked).'
+            : res.status === 429
+              ? 'Rate limited or the Anthropic account is out of credit.'
+              : `Anthropic returned HTTP ${res.status}.`;
+        return { live: false, reason: `http_${res.status}`, detail, model };
+      }
+      return { live: true, reason: 'ok', detail: 'Claude is reachable.', model };
+    } catch {
+      return {
+        live: false,
+        reason: 'network',
+        detail: 'Could not reach Anthropic from the server.',
+        model,
+      };
+    }
+  }
 
   @Post('llm')
   async llm(

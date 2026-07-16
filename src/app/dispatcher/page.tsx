@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Radio, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { Radio, Volume2, VolumeX, Sparkles, Brain, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import CoPilotConversation from "@/components/CoPilotConversation";
 import { useCoPilot } from "@/lib/copilot-context";
 import { PERSONALITIES, type Personality } from "@/lib/copilot";
+import { api } from "@/lib/api";
+import { useApi } from "@/lib/useApi";
 
 export default function DispatcherPage() {
   const { profile, handsFree, voice, toggleHandsFree, toggleVoiceOut, pickPersonality } = useCoPilot();
@@ -25,6 +27,7 @@ export default function DispatcherPage() {
         subtitle={`${activeMode.name} · voice ${profile.voiceEnabled ? "on" : "off"}${handsFree ? " · hands-free" : ""}`}
         action={
           <div className="flex items-center gap-2">
+            <BrainStatus />
             {voice.sttSupported && (
               <button
                 onClick={toggleHandsFree}
@@ -73,6 +76,60 @@ export default function DispatcherPage() {
       <div className="min-h-0 flex-1">
         <CoPilotConversation variant="full" />
       </div>
+    </div>
+  );
+}
+
+function BrainStatus() {
+  const health = useApi(() => api.copilotHealth(), []);
+  const [open, setOpen] = useState(false);
+
+  if (health.loading) {
+    return (
+      <span className="flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs text-white/50">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking brain
+      </span>
+    );
+  }
+
+  // If the check itself failed to reach our server, treat it as unknown rather
+  // than lying about the brain being live.
+  const h = health.data;
+  const live = !!h?.live;
+  const detail = health.error
+    ? "Couldn't reach the server to check the brain."
+    : h?.detail ?? "Unknown status.";
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((s) => !s)}
+        title={detail}
+        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs transition ${
+          live
+            ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+            : "border-amber-500/50 bg-amber-500/10 text-amber-300"
+        }`}
+      >
+        <Brain className="h-3.5 w-3.5" /> {live ? "Brain live" : "Basic mode"}
+      </button>
+      {open && (
+        <div className="absolute right-0 z-10 mt-2 w-64 rounded-xl border border-white/10 bg-[#0B0F1A] p-3 text-xs shadow-xl">
+          <div className="font-semibold text-white/90">
+            {live ? "Full AI brain is live" : "Running in basic mode"}
+          </div>
+          <div className="mt-1 text-white/60">{detail}</div>
+          {h?.model && (
+            <div className="mt-2 text-[11px] text-white/40">Model: {h.model}</div>
+          )}
+          <button
+            onClick={() => health.reload()}
+            className="mt-2 text-electric hover:underline"
+          >
+            Re-check
+          </button>
+        </div>
+      )}
     </div>
   );
 }

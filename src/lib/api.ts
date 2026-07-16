@@ -162,6 +162,13 @@ export interface Booking {
   load: ScoredLoad;
 }
 
+export interface CopilotHealth {
+  live: boolean;
+  reason: string;
+  detail: string;
+  model: string;
+}
+
 export type DocType = "BOL" | "POD" | "LUMPER" | "FUEL" | "OTHER" | "RATECON";
 
 export interface Accessorial {
@@ -294,6 +301,9 @@ export const api = {
   // ---- Bookings / bids ----
   bookings: () => apiFetch<Booking[]>("/bookings"),
   removeBooking: (id: string) => apiFetch(`/bookings/${id}`, { method: "DELETE" }),
+
+  // ---- Co-Pilot brain ----
+  copilotHealth: () => apiFetch<CopilotHealth>("/copilot/health"),
 
   // ---- Documents (BOL / POD scanning) ----
   documents: () => apiFetch<FreightDocument[]>("/documents"),
