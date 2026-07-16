@@ -2936,4 +2936,384 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "Some ag and food shipments need a pest inspection or phytosanitary certificate proving the trailer's free of bugs, rodents, and pests — common for produce crossing state or international borders. The shipper arranges the inspection and provides the certificate before loading; without it the load can get rejected at the border.",
     keywords: 'pest certificate, phytosanitary, free of bugs rodents pests, produce state international border, shipper arranges inspection, provide before loading, rejected at border',
   },
+
+  // ── Truck Stop Operations, Fueling & Parking ──────────────────────────────
+  {
+    seedKey: 'parking-manual',
+    category: 'truck-stops',
+    subcategory: 'parking',
+    topic: 'Finding safe truck parking',
+    content:
+      "Parking is the hardest part of the day, not the driving. Spots fill up fast — after seven at night most lots are full. Your options are truck stop lots at Pilot, Love's, TA, and Petro (usually free overnight), state rest areas (free but early to fill, and some enforce time limits), and paid reserved spots you can book on an app for ten to twenty dollars. The golden rule: plan your last hour of drive time around finding a spot, not around getting more miles. Start looking thirty to forty-five minutes before your clock runs out. Try to be parked by six. If a lot's full, run to the next exit — the second stop usually has room. Trucker Path is the app most drivers live by for real-time availability.",
+    keywords: 'parking, truck parking, overnight parking, rest area, reserved spot, trucker path, full lot, plan last hour, park by six, next exit, scarce spots',
+  },
+  {
+    seedKey: 'qa-parking-full-lot',
+    category: 'qa',
+    subcategory: 'parking',
+    topic: "Arrived and the lot is completely full",
+    content:
+      "Don't panic and don't park on the shoulder — that's dangerous and illegal. Check Trucker Path for the nearest alternative, then drive to the next exit two to five miles up; everybody stops at the first truck stop, so the second one often has space. Look at paid reserved parking in the area. If you're truly stuck, find a well-lit, legal industrial lot. Never stop on the highway shoulder for a break.",
+    keywords: 'lot full, no parking, next exit, shoulder illegal dangerous, trucker path alternative, paid reserved, industrial lot well lit',
+  },
+  {
+    seedKey: 'qa-parking-rest-area-overnight',
+    category: 'qa',
+    subcategory: 'parking',
+    topic: 'Rest area says no overnight parking but I have no options',
+    content:
+      "It depends on the state. Some enforce no-overnight rules hard, with fines from a hundred to five hundred dollars. Others post the sign but still allow a driver taking a required ten-hour break. If you're out of options, park but be ready to move if an officer tells you to. Check the rest area's rules on Trucker Path or the state DOT site first.",
+    keywords: 'rest area no overnight, fine, ten hour break, state rules vary, move if told, dot site, enforcement',
+  },
+  {
+    seedKey: 'qa-parking-reserved-taken',
+    category: 'qa',
+    subcategory: 'parking',
+    topic: 'Someone else is in the spot I reserved',
+    content:
+      "Go to the front desk with your reservation confirmation. Staff will either move the other driver or assign you a different spot — most chains honor reservations. Snap a photo of your confirmation and the occupied spot in case you need to dispute a charge later.",
+    keywords: 'reserved spot taken, front desk, reservation confirmation, honor reservation, photo documentation, another truck in spot',
+  },
+  {
+    seedKey: 'qa-parking-idling-neighbor',
+    category: 'qa',
+    subcategory: 'parking',
+    topic: 'Neighbor idling and shaking my cab all night',
+    content:
+      "Politely ask him to move or reposition — a lot of drivers don't realize how much their idle carries. If he won't, ask the front desk to step in; some stops have no-idle zones they'll enforce. If nothing works, just move your own truck to another spot. Not worth losing sleep over.",
+    keywords: 'idling neighbor, shaking cab, ask politely, front desk, no idle zone, move your truck, noise vibration',
+  },
+  {
+    seedKey: 'qa-parking-walmart',
+    category: 'qa',
+    subcategory: 'parking',
+    topic: 'Can I park overnight at a Walmart?',
+    content:
+      "Some Walmarts allow it, some don't — it's store by store. Look for signs in the lot or check online, and when in doubt ask the store manager before you shut down. The ones that allow it usually cap you at twenty-four hours and want you away from the entrances. Park where you're not supposed to and you can get towed.",
+    keywords: 'walmart overnight, store by store, ask manager, twenty four hours, away from entrance, tow risk, alternative parking',
+  },
+  {
+    seedKey: 'fueling-manual',
+    category: 'truck-stops',
+    subcategory: 'fueling',
+    topic: 'Fueling smart to save money',
+    content:
+      "Diesel prices swing hard by state because of fuel taxes — Texas and the Gulf states are cheap, California and the Northeast are expensive. The play is fuel arbitrage: fill up in the cheap state and run light through the expensive one. Always leave a fifty-mile safety cushion; running out on the highway is dangerous and costs a fortune. Compare the net price after your fuel-card discount, not the sticker — a five-cent discount doesn't beat a stop that's fifteen cents cheaper. Top off your DEF every time you fuel, because running out of DEF derates the engine. And remember diesel weighs about seven pounds a gallon, so a full two-hundred-gallon tank adds fourteen hundred pounds to your axles — if you're near your weight limit, fuel after you scale. Keep every receipt for IFTA.",
+    keywords: 'fueling, diesel price, fuel tax by state, fuel arbitrage, cheap state, net price after discount, def top off, fuel weight seven pounds, ifta receipts, fifty mile cushion',
+  },
+  {
+    seedKey: 'qa-fuel-run-to-cheap-state',
+    category: 'qa',
+    subcategory: 'fueling',
+    topic: 'Should I run on fumes to reach the cheaper state?',
+    content:
+      "Usually yes — that's fuel arbitrage — but do the math on your burn rate first. If you need a hundred gallons to reach Nevada and you've only got ninety-five, you won't make it. Use a fuel calculator to plan it, and always keep a fifty-mile safety margin. Running dry on the highway is dangerous and expensive.",
+    keywords: 'run on fumes, fuel arbitrage, burn rate math, fifty mile margin, fuel calculator, cheaper state, dont run dry',
+  },
+  {
+    seedKey: 'qa-fuel-card-vs-cheap-stop',
+    category: 'qa',
+    subcategory: 'fueling',
+    topic: 'Is my fuel-card discount better than a cheaper independent stop?',
+    content:
+      "Only if the net price wins. If the independent is fifteen cents a gallon cheaper, your five-cent card discount doesn't make the chain cheaper. Always compare the price per gallon after the discount, using GasBuddy or Trucker Path to see real-time numbers.",
+    keywords: 'fuel card discount, net price per gallon, independent stop cheaper, compare after discount, gasbuddy trucker path',
+  },
+  {
+    seedKey: 'qa-fuel-skip-high-tax-state',
+    category: 'qa',
+    subcategory: 'fueling',
+    topic: 'Why fuel in one state but not the next?',
+    content:
+      "It's the fuel tax. A state like Illinois has much higher diesel tax — and pump price — than a neighbor like Missouri, so the smart move is to fill in the cheaper state and skip the expensive one. That's just standard practice for over-the-road drivers.",
+    keywords: 'skip high tax state, illinois missouri, diesel tax difference, fill cheaper state, standard otr practice',
+  },
+  {
+    seedKey: 'qa-fuel-lost-receipt',
+    category: 'qa',
+    subcategory: 'fueling',
+    topic: 'Lost a fuel receipt — can I still claim it for IFTA?',
+    content:
+      "You can if you can reconstruct it. Most fuel cards keep a digital receipt in their app, and the truck stop can usually print you a duplicate. If you can't get either, you can't credit that fuel on IFTA and you'll pay tax on it in your home state. Best habit: photograph every receipt right after you fuel.",
+    keywords: 'lost fuel receipt, ifta, digital receipt app, duplicate from stop, cant claim pay home state, photograph receipt',
+  },
+  {
+    seedKey: 'qa-fuel-weight-distribution',
+    category: 'qa',
+    subcategory: 'fueling',
+    topic: 'How much fuel for weight distribution?',
+    content:
+      "Diesel is about seven pounds a gallon, so a full two-hundred-gallon tank is roughly fourteen hundred pounds sitting on your steer and drive axles. If you're close to a weight limit, fuel after you scale, or fuel at the shipper's yard before scaling so the weight's already counted. Some drivers run half-tanks to stay light and top off before a long stretch.",
+    keywords: 'fuel weight distribution, seven pounds per gallon, fourteen hundred pounds full tank, fuel after scale, half tank light, steer drive axle',
+  },
+  {
+    seedKey: 'qa-fuel-spread-out',
+    category: 'qa',
+    subcategory: 'fueling',
+    topic: 'Fuel all at once or spread it out?',
+    content:
+      "Spread it out. That lets you catch cheaper states and keeps you from overloading your axles with a full tank. Fill in the cheap states first, then top off as needed. A fuel-planning tool will map the optimal stops for your route.",
+    keywords: 'spread fuel out, cheaper states, avoid overload axle, top off as needed, fuel planning optimal stops',
+  },
+  {
+    seedKey: 'truckstop-chains-manual',
+    category: 'truck-stops',
+    subcategory: 'chains',
+    topic: 'The major truck stop chains',
+    content:
+      "Three big national chains cover most of the country. Pilot Flying J is the largest — over seven hundred fifty locations under the Pilot and Flying J names, both on the myRewards program; Pilot stores tend to be newer and cleaner, Flying J older. Love's runs over six hundred stops, strongest in the South, Midwest, and West, and drivers rate their showers and food highly; their program is myLove's. TA and Petro are the same company — TA is the standard brand, Petro is the premium one with bigger lots and nicer restaurants like Iron Skillet — both on UltraONE. Then there are strong regionals like Sapp Bros in the Midwest and Kwik Trip up north, plus independents that are often cheaper on fuel but hit-or-miss on parking and amenities.",
+    keywords: 'truck stop chains, pilot flying j, loves, ta petro, myrewards mylove ultraone, sapp bros, kwik trip, independents, national regional',
+  },
+  {
+    seedKey: 'qa-chains-best-showers',
+    category: 'qa',
+    subcategory: 'chains',
+    topic: 'Which chain has the best showers?',
+    content:
+      "Drivers consistently put Love's and TA/Petro at the top for clean showers. Pilot and Flying J are decent but vary by location. All the big chains give you a free shower when you fill up — usually fifty to seventy-five gallons — and most let you reserve a shower on their app.",
+    keywords: 'best showers, loves ta petro cleanest, pilot varies, free shower with fill, reserve shower app',
+  },
+  {
+    seedKey: 'qa-chains-pilot-vs-flyingj',
+    category: 'qa',
+    subcategory: 'chains',
+    topic: 'Are all Pilot and Flying J locations the same?',
+    content:
+      "No. Pilot locations are generally newer, bigger, and cleaner. Flying J stores, which Pilot bought back in 2010, are older and a bit less modern. They share the same rewards program and amenities, but most drivers prefer the Pilot experience when they have the choice.",
+    keywords: 'pilot vs flying j, pilot newer cleaner, flying j older, same rewards, acquired 2010, driver preference',
+  },
+  {
+    seedKey: 'qa-chains-price-varies',
+    category: 'qa',
+    subcategory: 'chains',
+    topic: 'Why is fuel cheaper at one Love\u2019s than another?',
+    content:
+      "Prices aren't uniform even within one chain in one state. They come down to local competition, distance from a refinery, and delivery cost. A Love's right on the interstate can be pricier than one five miles off it. Always check a few locations on Trucker Path before you commit.",
+    keywords: 'price varies same chain, local competition, distance refinery, interstate pricier, check trucker path, loves',
+  },
+  {
+    seedKey: 'qa-chains-overnight-any',
+    category: 'qa',
+    subcategory: 'chains',
+    topic: 'Can I park overnight at any truck stop?',
+    content:
+      "Most of the big chains allow it, but some smaller urban locations cap you at two to four hours because space is tight. Look for an overnight-parking sign or just ask the cashier. Park overnight where it's not allowed and you can get towed.",
+    keywords: 'overnight any truck stop, urban limited hours, ask cashier, overnight sign, tow risk',
+  },
+  {
+    seedKey: 'qa-chains-ta-vs-petro',
+    category: 'qa',
+    subcategory: 'chains',
+    topic: 'Difference between TA and Petro',
+    content:
+      "TA is the original TravelCenters of America brand; Petro is its premium line. Petro stops usually have bigger lots, more truck lanes, and nicer sit-down restaurants like Iron Skillet. Both run on the same UltraONE loyalty program, so your points work at either.",
+    keywords: 'ta vs petro, travelcenters, petro premium, bigger lots iron skillet, shared ultraone, same company',
+  },
+  {
+    seedKey: 'truckstop-services-manual',
+    category: 'truck-stops',
+    subcategory: 'services',
+    topic: 'What truck stops offer',
+    content:
+      "A truck stop is a lot more than fuel. You've got diesel islands with high-flow nozzles and DEF at the pump, free overnight parking with a fill, showers (free when you fuel enough, otherwise twelve to eighteen bucks), and a CAT scale to get certified and legal — usually twelve to fifteen dollars with a discounted re-weigh inside twenty-four hours. Add food from fast food to sit-down spots like Iron Skillet or Country Pride, laundry, driver lounges with Wi-Fi, ATMs, truck washes, and at bigger TA and Petro locations, tire and mechanic bays. Every chain has a loyalty app that tracks fuel points and shower credits, and many let you stack credits for later. The lounge is for breaks and paperwork, not sleeping — that's what your bunk is for.",
+    keywords: 'truck stop services, diesel islands def, showers, cat scale certified, food iron skillet, laundry driver lounge wifi, truck wash, tire mechanic bay, loyalty app credits',
+  },
+  {
+    seedKey: 'qa-services-free-shower',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'How do I get a free shower?',
+    content:
+      "Fuel up and it comes with the fill — about fifty gallons at Pilot or Flying J, seventy-five at Love's. Your shower code shows up on the receipt, in the app, or by text. Give it to the cashier and they'll assign you a room. Most chains let you bank unused credits to use on a later day.",
+    keywords: 'free shower, fifty gallons pilot, seventy five loves, shower code receipt app text, cashier assigns, bank credits',
+  },
+  {
+    seedKey: 'qa-services-team-shower',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'Can both team drivers get showers?',
+    content:
+      "Yes. Each driver earns their own shower credit from a fuel fill, and some chains give a team-shower deal — two showers off one fill. Ask the cashier what your chain offers.",
+    keywords: 'team drivers shower, each earns credit, team shower deal, two showers one fill, ask cashier',
+  },
+  {
+    seedKey: 'qa-services-cat-scale-accurate',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'Are CAT scales accurate?',
+    content:
+      "Yes. CAT scales are certified to national standards and their readings hold up in court. If you weigh on a CAT scale and it says you're legal, that reading is solid evidence. Weigh before you hit a state DOT scale so you know where you stand.",
+    keywords: 'cat scale accurate, certified national standards, admissible court, legal evidence, weigh before dot scale',
+  },
+  {
+    seedKey: 'qa-services-slow-wifi',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'Truck stop Wi-Fi is slow — other options?',
+    content:
+      "Most drivers fall back on their phone hotspot if they've got unlimited data. Some stops sell faster premium Wi-Fi through a third party. If you lean on data heavy — load boards, video — a dedicated mobile hotspot is worth it.",
+    keywords: 'slow wifi, phone hotspot unlimited data, premium wifi paid, dedicated mobile hotspot, load board',
+  },
+  {
+    seedKey: 'qa-services-truck-wash',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'Can I wash my truck at a truck stop?',
+    content:
+      "Lots of TA, Petro, and Love's locations have truck washes, automated or by hand. Figure fifty to a hundred fifty dollars depending on whether it's a basic wash or a full detail. Many carriers reimburse it as part of maintenance, so keep the receipt.",
+    keywords: 'truck wash, ta petro loves, automated or hand, fifty to one fifty, basic vs detail, carrier reimburse receipt',
+  },
+  {
+    seedKey: 'qa-services-lounge-sleep',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'Can I sleep in the driver lounge?',
+    content:
+      "No. The lounge is for short breaks, paperwork, TV, and charging up — not sleeping. If you need real rest, use your sleeper berth or get a hotel. Lounges are shared space, so others need the seats too.",
+    keywords: 'driver lounge no sleeping, breaks paperwork charging, use sleeper berth, hotel, shared space',
+  },
+  {
+    seedKey: 'qa-services-def-jug',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'DEF pump is broken — can I use a jug?',
+    content:
+      "Yes, though jugs cost more per gallon. If the pump's down, grab two-and-a-half-gallon jugs from the store, and it's smart to always carry a spare in the cab. Make sure the DEF is ISO 22241-compliant so you don't foul the system.",
+    keywords: 'def pump broken, jug more expensive, two point five gallon, carry spare cab, iso 22241 compliant',
+  },
+  {
+    seedKey: 'qa-services-stack-showers',
+    category: 'qa',
+    subcategory: 'services',
+    topic: 'What is stacking shower credits?',
+    content:
+      "It means letting your shower credits build up. If you fuel three times without showering, those credits bank so you can use one today, one tomorrow, and save one. Most chains cap stacking somewhere around two to five credits, so check your chain's rule.",
+    keywords: 'stack shower credits, bank credits, fuel multiple times, use later, cap two to five, chain policy',
+  },
+  {
+    seedKey: 'truckstop-safety-manual',
+    category: 'truck-stops',
+    subcategory: 'safety',
+    topic: 'Safety and security at truck stops',
+    content:
+      "Truck stops are a favorite target for fuel theft, cargo theft, and the occasional break-in, so stay switched on. Park in well-lit areas, lock the cab, and use a locking fuel cap. Never leave the truck idling with the keys in it while you shower — that's an easy steal. If you see someone messing with your trailer or cargo, don't confront them; call the front desk or security, get a photo from a safe distance, and dial 911 if a crime's in progress. The major chains keep lots lit and cameras running, but you're your own best security. Solo drivers of any gender should park in the light, walk with purpose, and use a security escort if one's offered.",
+    keywords: 'truck stop safety, fuel theft cargo theft, locking fuel cap, dont idle with keys, dont confront, call security 911, well lit park, solo driver',
+  },
+  {
+    seedKey: 'qa-safety-fuel-theft',
+    category: 'qa',
+    subcategory: 'safety',
+    topic: 'How do I prevent fuel theft overnight?',
+    content:
+      "Use locking fuel caps, park in well-lit spots, and stay clear of dark industrial lots and known high-crime areas. Some drivers add anti-siphon devices. If you're worried about a particular stop, ask the front desk about its theft history and park near the cameras.",
+    keywords: 'prevent fuel theft, locking fuel cap, well lit, anti siphon, avoid high crime lot, ask theft history, park near cameras',
+  },
+  {
+    seedKey: 'qa-safety-tampering',
+    category: 'qa',
+    subcategory: 'safety',
+    topic: 'Someone is tampering with my trailer or cargo',
+    content:
+      "Don't confront them — that can turn dangerous fast. Call the truck stop's security or front desk and have them investigate. Get a photo from a safe distance and call 911 if you think a crime is underway. Note the person's description and any vehicle plates.",
+    keywords: 'tampering trailer cargo, dont confront, call security front desk, photo safe distance, 911, note plates description',
+  },
+  {
+    seedKey: 'qa-safety-idle-while-shower',
+    category: 'qa',
+    subcategory: 'safety',
+    topic: 'Is it safe to leave the truck idling while I shower?',
+    content:
+      "Not really. Idling means the keys are in it, which makes it an easy target. Most stops are secure, but theft happens. If you have to leave it running, lock the cab and use a steering-wheel lock or a hidden kill switch.",
+    keywords: 'idle while shower, keys in ignition easy target, lock cab, steering wheel lock, hidden kill switch, theft',
+  },
+  {
+    seedKey: 'qa-safety-solo-female',
+    category: 'qa',
+    subcategory: 'safety',
+    topic: 'Are truck stops safe for solo female drivers?',
+    content:
+      "The major chains are generally safe with lit lots and cameras, but any solo driver should park in the light, walk with purpose, and use the lounge or a security escort where one's available. Apps like Trucker Path carry driver safety ratings for individual stops, so check those before you shut down somewhere unfamiliar.",
+    keywords: 'solo female driver safety, major chains lit cameras, park in light walk with purpose, escort, trucker path safety ratings',
+  },
+  {
+    seedKey: 'truckstop-emergency-manual',
+    category: 'truck-stops',
+    subcategory: 'emergency',
+    topic: 'Emergencies at truck stops',
+    content:
+      "Things go wrong at truck stops too. If you break down at the fuel island and you're blocking others, call dispatch and roadside right away, and if you can push the truck clear with a spotter, do it; if not, ask staff to cone it off and warn other drivers. If you run dry near a stop, some offer emergency fuel delivery but it's pricey — usually your roadside provider or a friendly driver is the better call. And plan your stops so it never happens. If you witness a medical emergency, call 911, tell the staff, and don't move the person unless they're in danger; many stops have an AED and a first-aid kit, and if you're CPR-trained, help until paramedics arrive.",
+    keywords: 'truck stop emergency, breakdown fuel island, call dispatch roadside, cone off, ran out of fuel delivery expensive, medical emergency 911, aed first aid cpr',
+  },
+  {
+    seedKey: 'qa-emergency-broke-down-island',
+    category: 'qa',
+    subcategory: 'emergency',
+    topic: 'Broke down at the fuel island, blocking others',
+    content:
+      "Call dispatch and roadside first. If you can push the truck out of the island with a spotter, do it. If it won't move, ask the staff to cone it and warn other drivers, and stay with the truck. Most stops are understanding and will help get you towed to a repair bay.",
+    keywords: 'broke down fuel island, blocking, call dispatch roadside, push with spotter, staff cone warn, stay with truck, tow to bay',
+  },
+  {
+    seedKey: 'qa-emergency-out-of-fuel',
+    category: 'qa',
+    subcategory: 'emergency',
+    topic: 'Ran out of fuel a mile from the stop',
+    content:
+      "Some truck stops deliver emergency fuel, but it's expensive — a hundred-plus delivery fee on top of the diesel. The better move is your roadside assistance provider or a fellow driver who can tow you to the pump. Real fix: plan your fuel stops so you keep that fifty-mile cushion and never get here.",
+    keywords: 'out of fuel near stop, emergency delivery expensive, roadside assistance, driver tow to pump, plan stops fifty mile cushion',
+  },
+  {
+    seedKey: 'qa-emergency-medical',
+    category: 'qa',
+    subcategory: 'emergency',
+    topic: 'Witnessed a medical emergency at a truck stop',
+    content:
+      "Call 911 right away and tell the truck stop staff. Don't move the person unless they're in immediate danger. Many stops keep an AED and first-aid kit behind the counter, and if you're trained in CPR, help until the paramedics get there.",
+    keywords: 'medical emergency truck stop, call 911, notify staff, dont move person, aed first aid, cpr until paramedics',
+  },
+  {
+    seedKey: 'truckstop-etiquette-manual',
+    category: 'truck-stops',
+    subcategory: 'etiquette',
+    topic: 'Truck stop etiquette',
+    content:
+      "A truck stop is a shared community, and a courteous driver is a respected one. Don't idle right next to someone's sleeper at night — the noise, shake, and fumes wreck their rest; park away from the sleeping area or use shore power if it's there. Don't hog two spots in a full lot; if you're oversized, use the designated big spaces or park at the far end with cones. Keep CB volume down late at night. And in the shower line: put your name on the list, stay nearby so you don't miss your turn, report a dirty stall to the cashier, and clean up after yourself. Little things keep the whole lot running smooth.",
+    keywords: 'truck stop etiquette, dont idle by sleeper, shore power, dont hog two spots, oversized designated spaces cones, cb volume low, shower line, clean up',
+  },
+  {
+    seedKey: 'qa-etiquette-idle-by-sleeper',
+    category: 'qa',
+    subcategory: 'etiquette',
+    topic: 'Is it rude to idle next to another driver at night?',
+    content:
+      "Yes. The noise, vibration, and exhaust ruin the sleep of the driver next to you. If you have to idle for the APU or to hold temperature, park away from the sleeping rows, or use shore power if the stop has it. A lot of drivers keep a shut-it-off sign in the window for a reason.",
+    keywords: 'rude to idle by sleeper, noise vibration exhaust, park away, apu climate, shore power, shut it off sign',
+  },
+  {
+    seedKey: 'qa-etiquette-two-spaces',
+    category: 'qa',
+    subcategory: 'etiquette',
+    topic: 'Can I take two spots for a wide load?',
+    content:
+      "If your load's oversized, use the designated oversized spaces first. If there are none, park at the far end of the lot and set out cones to warn others. Don't take two spots in a packed lot for a normal truck — it's a fast way to get blocked in or ticketed.",
+    keywords: 'two parking spaces, wide load oversized, designated oversize space, far end cones, dont hog in full lot, blocked ticketed',
+  },
+  {
+    seedKey: 'qa-etiquette-shower-line',
+    category: 'qa',
+    subcategory: 'etiquette',
+    topic: 'Shower line etiquette',
+    content:
+      "Put your name on the list or in the app, then wait nearby in the lounge — wander off too long and you lose your turn. If the stall's dirty when you walk in, tell the cashier right away. And clean up after yourself: wipe the sink, don't leave towels on the floor. Simple courtesy keeps the line moving.",
+    keywords: 'shower line etiquette, name on list app, wait nearby, dont miss turn, report dirty stall, clean up wipe sink towels',
+  },
+  {
+    seedKey: 'qa-etiquette-cb-late',
+    category: 'qa',
+    subcategory: 'etiquette',
+    topic: 'Using the CB late at night in the lot',
+    content:
+      "It's fine, just keep the volume low. Drivers use the CB to check parking and road conditions all the time, but blasting it at two in the morning is disrespectful to everyone trying to sleep. Use a headset or keep it turned down.",
+    keywords: 'cb late night lot, keep volume low, check parking road conditions, dont blast 2am, headset, respectful',
+  },
 ];
