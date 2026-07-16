@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgeCheck, FileText, Truck, Users, MapPin, ShieldCheck, LogOut, Loader2, Check, Gauge, ScanLine, Bot, Mail, Lock, CheckCircle2 } from "lucide-react";
+import { BadgeCheck, FileText, Truck, Users, MapPin, ShieldCheck, LogOut, Loader2, Check, Gauge, ScanLine, Bot, Mail, Lock, CheckCircle2, Search, Trash2, Plus } from "lucide-react";
 import { PageHeader, Loading, ErrorState } from "@/components/ui";
 import { api, type CarrierDetail, type UsageMeter } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
@@ -44,6 +44,57 @@ function providerForHost(host: string): string {
   return match ? match.id : "other";
 }
 
+// Common commercial-trucking insurers. If a carrier isn't listed, the user can
+// pick "Other" and type it in.
+const INSURERS = [
+  "Progressive Commercial",
+  "Great West Casualty",
+  "Sentry Insurance",
+  "Nationwide / National Interstate",
+  "Northland (Travelers)",
+  "Canal Insurance",
+  "National Indemnity (Berkshire Hathaway)",
+  "The Hartford",
+  "Zurich North America",
+  "Liberty Mutual",
+  "Cincinnati Insurance",
+  "Old Republic",
+  "Acuity",
+  "Carolina Casualty",
+  "Lancer Insurance",
+  "Prime Insurance",
+  "Cover Whale",
+  "RLI",
+  "W.R. Berkley",
+  "Markel",
+  "Auto-Owners",
+  "State Farm Commercial",
+  "GEICO Commercial",
+  "biBERK",
+  "Knight Insurance",
+];
+
+// Common trailer/equipment types a carrier picks from when adding a unit.
+const EQUIPMENT_TYPES = [
+  "Dry Van",
+  "Reefer",
+  "Flatbed",
+  "Step Deck",
+  "Lowboy / RGN",
+  "Power Only",
+  "Box Truck",
+  "Hotshot",
+  "Tanker",
+  "Conestoga",
+  "Double Drop",
+  "Car Hauler",
+  "Dump",
+  "Other",
+];
+
+const CDL_CLASSES = ["Class A", "Class B", "Class C"];
+const DRIVER_STATUSES = ["Active", "Available", "On Load", "Off Duty", "Inactive"];
+
 export default function ProfilePage() {
   const { logout } = useAuth();
   const { data, loading, error } = useApi(() => api.carrier(), []);
@@ -53,6 +104,16 @@ export default function ProfilePage() {
   const [appPassword, setAppPassword] = useState(""); // never returned by API
   const [providerId, setProviderId] = useState("");
   const [saveErr, setSaveErr] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false);
+  const [emailErr, setEmailErr] = useState("");
+  const [insuranceManual, setInsuranceManual] = useState(false);
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [lookupErr, setLookupErr] = useState("");
+  const [lookupNote, setLookupNote] = useState("");
+  const [rosterBusy, setRosterBusy] = useState(false);
+  const [newEq, setNewEq] = useState({ type: EQUIPMENT_TYPES[0], unit: "", year: "" });
+  const [newDrv, setNewDrv] = useState({ name: "", cdlClass: CDL_CLASSES[0] });
 
   useEffect(() => {
     if (data) {
@@ -60,6 +121,10 @@ export default function ProfilePage() {
       // Preselect the provider: from a saved server, else guessed from the email.
       setProviderId(
         providerForHost(data.smtpHost) || providerForEmail(data.contactEmail),
+      );
+      // If the saved insurer isn't one of the known options, drop into manual mode.
+      setInsuranceManual(
+        !!data.insuranceProvider && !INSURERS.includes(data.insuranceProvider),
       );
     }
   }, [data]);
@@ -75,31 +140,35 @@ export default function ProfilePage() {
 
   const isOther = providerId === "other";
 
+  // Resolve the SMTP server from the chosen provider (deterministic), or the
+  // manual fields when "Other" is selected — guaranteeing a real server is
+  // stored even for custom company domains.
+  function buildEmailCfg(f: CarrierDetail) {
+    const chosen = PROVIDERS.find((p) => p.id === providerId);
+    if (isOther) {
+      return {
+        smtpHost: f.smtpHost,
+        smtpPort: f.smtpPort,
+        smtpSecure: f.smtpSecure,
+        smtpUser: f.smtpUser || f.contactEmail,
+      };
+    }
+    if (chosen) {
+      return {
+        smtpHost: chosen.host,
+        smtpPort: chosen.port,
+        smtpSecure: chosen.secure,
+        smtpUser: f.contactEmail,
+      };
+    }
+    return { smtpUser: f.contactEmail };
+  }
+
   async function save() {
     if (!form) return;
     setSaving(true);
     setSaveErr("");
     try {
-      // Resolve the SMTP server from the chosen provider (deterministic), or
-      // the manual fields when "Other" is selected. This guarantees a real
-      // server is stored even for custom company domains.
-      const chosen = PROVIDERS.find((p) => p.id === providerId);
-      const emailCfg = isOther
-        ? {
-            smtpHost: form.smtpHost,
-            smtpPort: form.smtpPort,
-            smtpSecure: form.smtpSecure,
-            smtpUser: form.smtpUser || form.contactEmail,
-          }
-        : chosen
-        ? {
-            smtpHost: chosen.host,
-            smtpPort: chosen.port,
-            smtpSecure: chosen.secure,
-            smtpUser: form.contactEmail,
-          }
-        : { smtpUser: form.contactEmail };
-
       const updated = await api.updateCarrier({
         companyName: form.companyName,
         contactEmail: form.contactEmail,
@@ -111,7 +180,7 @@ export default function ProfilePage() {
         serviceAreas: form.serviceAreas,
         mpg: form.mpg,
         fixedCostPerMile: form.fixedCostPerMile,
-        ...emailCfg,
+        ...buildEmailCfg(form),
         ...(appPassword ? { smtpPass: appPassword } : {}),
       });
       setForm(updated);
@@ -124,6 +193,143 @@ export default function ProfilePage() {
       setSaveErr(e?.message || "Could not save. Please try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Dedicated save for JUST the email connection, so changing your send-from
+  // address is one obvious click with its own confirmation.
+  async function saveEmail() {
+    if (!form) return;
+    setEmailErr("");
+    setEmailSaved(false);
+    const email = form.contactEmail.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setEmailErr("Enter a valid email address.");
+      return;
+    }
+    if (!providerId) {
+      setEmailErr("Pick your email provider.");
+      return;
+    }
+    setEmailSaving(true);
+    try {
+      const updated = await api.updateCarrier({
+        contactEmail: email,
+        ...buildEmailCfg(form),
+        ...(appPassword ? { smtpPass: appPassword } : {}),
+      });
+      setForm(updated);
+      setProviderId(
+        providerForHost(updated.smtpHost) || providerForEmail(updated.contactEmail),
+      );
+      setAppPassword("");
+      setEmailSaved(true);
+    } catch (e: any) {
+      setEmailErr(e?.message || "Could not save your email.");
+    } finally {
+      setEmailSaving(false);
+    }
+  }
+
+  // Pull registration details from the FMCSA registry and pre-fill the profile.
+  // Fields land in the form (editable); the user still clicks "Save changes".
+  async function runLookup() {
+    if (!form) return;
+    setLookupErr("");
+    setLookupNote("");
+    const dot = form.dotNumber.trim();
+    const mc = form.mcNumber.trim();
+    if (!dot && !mc) {
+      setLookupErr("Enter your DOT # (or MC #) first, then look up.");
+      return;
+    }
+    setLookupBusy(true);
+    try {
+      const r = await api.lookupCarrier(dot ? { dot } : { mc });
+      setForm((f) =>
+        f
+          ? {
+              ...f,
+              companyName: r.companyName || f.companyName,
+              dotNumber: r.dotNumber || f.dotNumber,
+              mcNumber: r.mcNumber || f.mcNumber,
+              serviceAreas:
+                r.phyState && !f.serviceAreas.includes(r.phyState)
+                  ? [...f.serviceAreas, r.phyState]
+                  : f.serviceAreas,
+            }
+          : f,
+      );
+      setSaved(false);
+      const bits: string[] = [];
+      if (r.powerUnits) bits.push(`${r.powerUnits} power unit${r.powerUnits === 1 ? "" : "s"}`);
+      if (r.drivers) bits.push(`${r.drivers} driver${r.drivers === 1 ? "" : "s"}`);
+      setLookupNote(
+        `Found ${r.companyName || "carrier"}${bits.length ? ` — FMCSA lists ${bits.join(" and ")}. Add them below.` : "."} Review, then Save changes.`,
+      );
+    } catch (e: any) {
+      setLookupErr(e?.message || "Lookup failed. Check the number and try again.");
+    } finally {
+      setLookupBusy(false);
+    }
+  }
+
+  // ---- Equipment / driver roster (mutations persist immediately) ----
+  async function addEquipmentRow() {
+    if (!newEq.type) return;
+    setRosterBusy(true);
+    try {
+      const updated = await api.addEquipment({
+        type: newEq.type,
+        unit: newEq.unit.trim(),
+        year: newEq.year ? Number(newEq.year) : undefined,
+      });
+      setForm(updated);
+      setNewEq({ type: EQUIPMENT_TYPES[0], unit: "", year: "" });
+    } catch {
+      /* surfaced via disabled state; keep inputs for retry */
+    } finally {
+      setRosterBusy(false);
+    }
+  }
+  async function removeEquipmentRow(id: string) {
+    setRosterBusy(true);
+    try {
+      setForm(await api.removeEquipment(id));
+    } finally {
+      setRosterBusy(false);
+    }
+  }
+  async function addDriverRow() {
+    if (!newDrv.name.trim()) return;
+    setRosterBusy(true);
+    try {
+      const updated = await api.addDriver({
+        name: newDrv.name.trim(),
+        cdlClass: newDrv.cdlClass,
+      });
+      setForm(updated);
+      setNewDrv({ name: "", cdlClass: CDL_CLASSES[0] });
+    } finally {
+      setRosterBusy(false);
+    }
+  }
+  async function removeDriverRow(id: string) {
+    setRosterBusy(true);
+    try {
+      setForm(await api.removeDriver(id));
+    } finally {
+      setRosterBusy(false);
+    }
+  }
+  async function cycleDriverStatus(id: string, current: string) {
+    const next =
+      DRIVER_STATUSES[(DRIVER_STATUSES.indexOf(current) + 1) % DRIVER_STATUSES.length];
+    setRosterBusy(true);
+    try {
+      setForm(await api.updateDriver(id, { status: next }));
+    } finally {
+      setRosterBusy(false);
     }
   }
 
@@ -165,12 +371,31 @@ export default function ProfilePage() {
               <LabeledInput label="DOT #" value={form.dotNumber} onChange={(v) => set("dotNumber", v)} />
               <LabeledInput label="MC #" value={form.mcNumber} onChange={(v) => set("mcNumber", v)} />
             </div>
-            <div className="mt-2 text-sm">
-              <LabeledInput
-                label="Company email (your send-from address)"
-                value={form.contactEmail}
-                onChange={(v) => set("contactEmail", v)}
-              />
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                onClick={runLookup}
+                disabled={lookupBusy}
+                className="btn-ghost flex items-center gap-1.5 text-xs"
+              >
+                {lookupBusy ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Search className="h-3.5 w-3.5" />
+                )}
+                Look up my DOT
+              </button>
+              <span className="text-xs text-white/40">
+                Auto-fills your company from the FMCSA registry.
+              </span>
+            </div>
+            {lookupErr && <p className="mt-2 text-xs text-danger">{lookupErr}</p>}
+            {lookupNote && !lookupErr && (
+              <p className="mt-2 text-xs text-success">{lookupNote}</p>
+            )}
+            <div className="mt-2 text-xs text-white/40">
+              Send-from email:{" "}
+              <span className="text-white/70">{form.contactEmail || "not set"}</span>{" "}
+              — set it under “Send email” below.
             </div>
           </div>
           <div className="text-right">
@@ -221,7 +446,11 @@ export default function ProfilePage() {
           <LabeledInput
             label="Your email address"
             value={form.contactEmail}
-            onChange={(v) => set("contactEmail", v)}
+            onChange={(v) => {
+              set("contactEmail", v);
+              setEmailSaved(false);
+              setEmailErr("");
+            }}
           />
           <label className="block py-1">
             <span className="mb-1 flex items-center gap-1 text-xs text-white/40">
@@ -233,6 +462,7 @@ export default function ProfilePage() {
               onChange={(e) => {
                 setAppPassword(e.target.value);
                 setSaved(false);
+                setEmailSaved(false);
               }}
               placeholder={form.emailConnected ? "•••••••• (leave blank to keep)" : "app password"}
               className="input"
@@ -274,6 +504,25 @@ export default function ProfilePage() {
           account&apos;s security settings) — not your normal login password.
         </p>
 
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button onClick={saveEmail} disabled={emailSaving} className="btn-primary">
+            {emailSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : emailSaved ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
+            {emailSaved ? "Email saved" : "Save email"}
+          </button>
+          {emailErr && <span className="text-xs text-danger">{emailErr}</span>}
+          {emailSaved && !emailErr && (
+            <span className="text-xs text-success">
+              Your send-from address is now {form.contactEmail}.
+            </span>
+          )}
+        </div>
+
         {saveErr && (
           <p className="mt-3 text-xs text-danger">{saveErr}</p>
         )}
@@ -281,7 +530,38 @@ export default function ProfilePage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Section icon={FileText} title="Compliance & Documents">
-          <LabeledInput label="Insurance provider" value={form.insuranceProvider} onChange={(v) => set("insuranceProvider", v)} />
+          <label className="block py-1">
+            <span className="mb-1 block text-xs text-white/40">Insurance provider</span>
+            <select
+              value={insuranceManual ? "__other__" : form.insuranceProvider}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "__other__") {
+                  setInsuranceManual(true);
+                  set("insuranceProvider", "");
+                } else {
+                  setInsuranceManual(false);
+                  set("insuranceProvider", v);
+                }
+              }}
+              className="input"
+            >
+              <option value="">Select your insurer…</option>
+              {INSURERS.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+              <option value="__other__">Other — enter manually</option>
+            </select>
+          </label>
+          {insuranceManual && (
+            <LabeledInput
+              label="Insurer name"
+              value={form.insuranceProvider}
+              onChange={(v) => set("insuranceProvider", v)}
+            />
+          )}
           <LabeledInput label="Insurance expiry" value={form.insuranceExpiry} onChange={(v) => set("insuranceExpiry", v)} />
           <label className="flex items-center justify-between py-2 text-sm">
             <span className="text-white/70">W-9 on file</span>
@@ -297,25 +577,111 @@ export default function ProfilePage() {
         <Section icon={Truck} title="Equipment">
           {form.equipment.length === 0 && <div className="py-2 text-sm text-white/40">No equipment on file yet.</div>}
           {form.equipment.map((e) => (
-            <div key={e.id} className="flex items-center justify-between py-2 text-sm">
+            <div key={e.id} className="flex items-center justify-between gap-2 py-2 text-sm">
               <span className="text-white/70">
                 {e.year} {e.type}
               </span>
-              <span className="text-white/40">{e.unit}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-white/40">{e.unit}</span>
+                <button
+                  onClick={() => removeEquipmentRow(e.id)}
+                  disabled={rosterBusy}
+                  className="text-white/40 hover:text-danger"
+                  aria-label="Remove equipment"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/5 pt-3">
+            <select
+              value={newEq.type}
+              onChange={(e) => setNewEq((s) => ({ ...s, type: e.target.value }))}
+              className="input col-span-2"
+            >
+              {EQUIPMENT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <input
+              value={newEq.unit}
+              onChange={(e) => setNewEq((s) => ({ ...s, unit: e.target.value }))}
+              placeholder="Unit # (optional)"
+              className="input"
+            />
+            <input
+              value={newEq.year}
+              onChange={(e) => setNewEq((s) => ({ ...s, year: e.target.value.replace(/\D/g, "") }))}
+              placeholder="Year"
+              inputMode="numeric"
+              className="input"
+            />
+            <button
+              onClick={addEquipmentRow}
+              disabled={rosterBusy}
+              className="btn-ghost col-span-2 flex items-center justify-center gap-1.5 text-xs"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add equipment
+            </button>
+          </div>
         </Section>
 
         <Section icon={Users} title="Drivers">
           {form.drivers.length === 0 && <div className="py-2 text-sm text-white/40">No drivers on file yet.</div>}
           {form.drivers.map((d) => (
-            <div key={d.id} className="flex items-center justify-between py-2 text-sm">
+            <div key={d.id} className="flex items-center justify-between gap-2 py-2 text-sm">
               <span className="text-white/70">
                 {d.name} · {d.cdlClass}
               </span>
-              <span className="chip bg-success/15 text-success">{d.status}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => cycleDriverStatus(d.id, d.status)}
+                  disabled={rosterBusy}
+                  className="chip bg-success/15 text-success"
+                  title="Click to change status"
+                >
+                  {d.status}
+                </button>
+                <button
+                  onClick={() => removeDriverRow(d.id)}
+                  disabled={rosterBusy}
+                  className="text-white/40 hover:text-danger"
+                  aria-label="Remove driver"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/5 pt-3">
+            <input
+              value={newDrv.name}
+              onChange={(e) => setNewDrv((s) => ({ ...s, name: e.target.value }))}
+              placeholder="Driver name"
+              className="input col-span-2"
+            />
+            <select
+              value={newDrv.cdlClass}
+              onChange={(e) => setNewDrv((s) => ({ ...s, cdlClass: e.target.value }))}
+              className="input"
+            >
+              {CDL_CLASSES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={addDriverRow}
+              disabled={rosterBusy || !newDrv.name.trim()}
+              className="btn-ghost flex items-center justify-center gap-1.5 text-xs"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add driver
+            </button>
+          </div>
         </Section>
 
         <Section icon={MapPin} title="Operating Economics">

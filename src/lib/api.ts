@@ -92,6 +92,18 @@ export interface CarrierDetail {
   equipment: { id: string; type: string; unit: string; year: number }[];
 }
 
+export interface CarrierLookup {
+  companyName: string;
+  dbaName: string;
+  dotNumber: string;
+  mcNumber: string;
+  phyCity: string;
+  phyState: string;
+  powerUnits: number;
+  drivers: number;
+  allowedToOperate: string;
+}
+
 export interface DashboardResponse {
   weekly: {
     revenue: number;
@@ -274,6 +286,27 @@ export const api = {
   carrier: () => apiFetch<CarrierDetail>("/carrier"),
   updateCarrier: (body: Partial<CarrierDetail> & { smtpPass?: string }) =>
     apiFetch<CarrierDetail>("/carrier", { method: "PUT", body: JSON.stringify(body) }),
+  // Auto-fill company profile from the FMCSA carrier registry.
+  lookupCarrier: (params: { dot?: string; mc?: string }) => {
+    const q = params.dot
+      ? `dot=${encodeURIComponent(params.dot)}`
+      : `mc=${encodeURIComponent(params.mc || "")}`;
+    return apiFetch<CarrierLookup>(`/carrier/lookup?${q}`);
+  },
+  // Drivers — each mutation returns the full refreshed carrier.
+  addDriver: (body: { name: string; cdlClass?: string; status?: string }) =>
+    apiFetch<CarrierDetail>("/carrier/drivers", { method: "POST", body: JSON.stringify(body) }),
+  updateDriver: (id: string, body: { name?: string; cdlClass?: string; status?: string }) =>
+    apiFetch<CarrierDetail>(`/carrier/drivers/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  removeDriver: (id: string) =>
+    apiFetch<CarrierDetail>(`/carrier/drivers/${id}`, { method: "DELETE" }),
+  // Equipment — each mutation returns the full refreshed carrier.
+  addEquipment: (body: { type: string; unit?: string; year?: number }) =>
+    apiFetch<CarrierDetail>("/carrier/equipment", { method: "POST", body: JSON.stringify(body) }),
+  updateEquipment: (id: string, body: { type?: string; unit?: string; year?: number }) =>
+    apiFetch<CarrierDetail>(`/carrier/equipment/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  removeEquipment: (id: string) =>
+    apiFetch<CarrierDetail>(`/carrier/equipment/${id}`, { method: "DELETE" }),
 
   // ---- Dispatcher ----
   ask: (message: string) =>
