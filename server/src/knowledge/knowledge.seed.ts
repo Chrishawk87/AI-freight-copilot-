@@ -606,4 +606,358 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "Own it with a little charm: you're their AI co-pilot. You find loads and reloads, hunt cheap diesel, read their paperwork, track their money, run navigation, and you can drive the app for them hands-free. Keep it to a sentence or two — offer to show, don't recite a manual.",
     keywords: 'what can you do, help, what are you, how do you work, capabilities, who are you',
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DOCUMENT TRAINING MANUAL — sub-categories + Q&A for the seven core freight
+  // documents. Written so the brain answers like a seasoned dispatcher, always
+  // leaning toward legal compliance and getting it in writing.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── 1. BILL OF LADING (BOL) ──────────────────────────────────────────────────
+  {
+    seedKey: 'doc-bol-types',
+    category: 'documents',
+    subcategory: 'bol',
+    topic: 'Types of Bill of Lading',
+    content:
+      "The BOL is the king of freight docs — it's three things at once: the contract of carriage, the receipt for the goods, and the title. A straight (non-negotiable) BOL delivers to one named consignee with no transfer of ownership. An order (negotiable) BOL is used with letters of credit and can be endorsed to transfer ownership. An eBOL is the digital version with electronic signature capture. An inland BOL covers the truck leg after cargo arrives by ship or rail. And a BOL is 'clean' when no damage is noted, or 'claused' when damage or shortage is written on it.",
+    keywords:
+      'bol, bill of lading, straight, order, negotiable, ebol, inland, clean, claused, title, contract of carriage, receipt',
+  },
+  {
+    seedKey: 'qa-bol-lost',
+    category: 'qa',
+    subcategory: 'bol',
+    topic: 'What happens if I lose the BOL before delivery?',
+    content:
+      "You can't legally deliver the freight without it. Call the shipper right away for a re-print or a letter of indemnity. That's the fix, but it delays both the delivery and your payment — so guard the BOL.",
+    keywords: 'lost bol, lose bill of lading, missing bol, no bol, letter of indemnity, reprint',
+  },
+  {
+    seedKey: 'qa-bol-damage-inspection',
+    category: 'qa',
+    subcategory: 'bol',
+    topic: "Receiver says freight is damaged but I don't see it — what do I write on the BOL?",
+    content:
+      "Write 'Subject to inspection' on the BOL before you sign. That protects you — it lets the receiver inspect later without you admitting any liability for damage you can't see.",
+    keywords: 'damage, subject to inspection, receiver claims damage, dont see damage, sign bol',
+  },
+  {
+    seedKey: 'qa-bol-nmfc',
+    category: 'qa',
+    subcategory: 'bol',
+    topic: 'Why is the NMFC number important on a BOL?',
+    content:
+      "The NMFC — National Motor Freight Classification — sets the freight class. If it's wrong, the load can get re-classed after delivery, which means a lower payout to you or a back-charge to the shipper. Make sure it matches.",
+    keywords: 'nmfc, freight class, national motor freight classification, re-class, reclass, class',
+  },
+  {
+    seedKey: 'qa-bol-alter',
+    category: 'qa',
+    subcategory: 'bol',
+    topic: 'Can I alter a BOL after the shipper signed it?',
+    content:
+      "No. Any change after signing voids the document and can be treated as fraud. If something's wrong, ask the shipper for a corrected re-issue — never scratch it out yourself.",
+    keywords: 'alter bol, change bol, edit after signing, fraud, corrected reissue, cross out',
+  },
+
+  // ── 2. INVOICE / FREIGHT BILL ────────────────────────────────────────────────
+  {
+    seedKey: 'doc-invoice-types',
+    category: 'documents',
+    subcategory: 'invoice',
+    topic: 'Types of invoice / freight bill',
+    content:
+      "The invoice is your demand for payment. A standard invoice goes straight to the shipper or broker on Net 30 or Net 60 terms. A factored invoice is assigned to a factoring company that buys it at a discount — say three percent — and fronts you cash within a day. Recourse factoring means you buy the invoice back if the broker doesn't pay a dispute; non-recourse means the factor eats the loss if the broker goes bankrupt (recourse is cheaper). An accessorial invoice is a separate line for detention, layover, pallet jack, or inside delivery.",
+    keywords:
+      'invoice, freight bill, factored, factoring, recourse, non-recourse, accessorial, net 30, net 60, standard invoice, discount',
+  },
+  {
+    seedKey: 'qa-invoice-tma',
+    category: 'qa',
+    subcategory: 'invoice',
+    topic: 'Factoring company rejected my invoice for a name mismatch — what is that?',
+    content:
+      "It means the legal carrier name on your invoice doesn't exactly match the name on the rate con and the BOL. The factor won't buy a mismatched invoice — you have to file a correction so all three names line up, and that delays payment.",
+    keywords: 'tma, name mismatch, factoring rejected, carrier name, invoice rejected, mismatch',
+  },
+  {
+    seedKey: 'qa-invoice-recourse',
+    category: 'qa',
+    subcategory: 'invoice',
+    topic: 'What is recourse factoring?',
+    content:
+      "Recourse factoring means if the broker fails to pay because of a dispute — not bankruptcy — you have to buy the invoice back from the factor. It's cheaper than non-recourse for exactly that reason: you're carrying more of the risk.",
+    keywords: 'recourse, factoring, buy back invoice, cheaper factoring, dispute, cash now',
+  },
+  {
+    seedKey: 'qa-invoice-attachments',
+    category: 'qa',
+    subcategory: 'invoice',
+    topic: 'What must go with the invoice for quick payment?',
+    content:
+      "Always attach the signed POD, the signed rate con, and the scale ticket if the rate depended on weight. A complete packet is what gets you paid fast — a missing POD is the number one reason payment stalls.",
+    keywords: 'invoice attachments, get paid, signed pod, signed rate con, scale ticket, packet',
+  },
+  {
+    seedKey: 'qa-invoice-interest',
+    category: 'qa',
+    subcategory: 'invoice',
+    topic: 'Can I charge interest on late payments?',
+    content:
+      "Only if your rate con or invoice already spells out an interest rate — like one and a half percent a month. You can't add it after the fact; it has to be stated up front to be enforceable.",
+    keywords: 'interest, late payment, late fee, charge interest, past due, one and a half percent',
+  },
+
+  // ── 3. LUMPER RECEIPT ────────────────────────────────────────────────────────
+  {
+    seedKey: 'doc-lumper-types',
+    category: 'documents',
+    subcategory: 'lumper',
+    topic: 'Types of lumper receipt',
+    content:
+      "A lumper receipt is your proof of the fee you paid a third-party crew to load or unload, so you can get reimbursed. A company-check receipt includes the check number. A cash receipt needs a witness signature and carries more fraud risk. A COD receipt is paid out of pocket at the receiver — scan it immediately. App-based digital receipts come from platforms like MyLumper. And some distribution centers bundle a scale-house receipt with the lumper fee.",
+    keywords:
+      'lumper, receipt, company check, cash, cod, cash on delivery, digital, mylumper, scale house, unloading fee, reimburse',
+  },
+  {
+    seedKey: 'qa-lumper-over-cap',
+    category: 'qa',
+    subcategory: 'lumper',
+    topic: 'Lumper charged more than the broker will reimburse — what do I do?',
+    content:
+      "Get the receipt to state the standard rate and pair it with the rate con showing the accessorial cap. If the charge is over the cap, you need the broker's pre-approval before the unload — otherwise you eat the difference. Call the broker before you pay, not after.",
+    keywords: 'lumper over cap, more than reimburse, exceeds limit, pre-approval, accessorial cap, broker approve',
+  },
+  {
+    seedKey: 'qa-lumper-lost',
+    category: 'qa',
+    subcategory: 'lumper',
+    topic: 'I lost the lumper receipt — can I still get reimbursed?',
+    content:
+      "It's tough. The broker needs proof to bill the shipper, so call the lumper service and ask for a duplicate — they'll usually re-issue for a twenty-five to fifty dollar admin fee. Without proof, reimbursement is rare.",
+    keywords: 'lost lumper receipt, missing lumper, duplicate, reissue, reimbursed, admin fee',
+  },
+  {
+    seedKey: 'qa-lumper-valid',
+    category: 'qa',
+    subcategory: 'lumper',
+    topic: 'What must a valid lumper receipt contain?',
+    content:
+      "Carrier name, the trailer or pro number, date and time, total pieces unloaded, the lumper company stamp, and the signature of the receiver's manager. Missing any of those and the broker can kick it back.",
+    keywords: 'valid lumper receipt, what on lumper receipt, required info, stamp, pro number, manager signature',
+  },
+  {
+    seedKey: 'qa-lumper-refused',
+    category: 'qa',
+    subcategory: 'lumper',
+    topic: 'The lumper refused to give me a receipt — why?',
+    content:
+      "Usually because the warehouse pays them, not you. If the shipper pre-pays lumpers, you don't get a receipt because you're not owed a reimbursement. No out-of-pocket, no receipt.",
+    keywords: 'lumper refused receipt, no receipt, warehouse pays lumper, prepaid lumper, shipper pays',
+  },
+
+  // ── 4. PACKING LIST / MANIFEST ───────────────────────────────────────────────
+  {
+    seedKey: 'doc-packing-types',
+    category: 'documents',
+    subcategory: 'packing',
+    topic: 'Types of packing list / manifest',
+    content:
+      "The packing list is the inventory map of what's in the trailer — SKUs, serial numbers, units. The plain packing list is usually sealed in a door pouch or handed over at pickup. A master manifest sums all pallets and total cube for dock scheduling. A serial-number manifest matters for high-value electronics or military freight and needs each barcode scanned. A hazmat manifest adds UN numbers, hazard class, and emergency contacts.",
+    keywords:
+      'packing list, manifest, master manifest, serial number, hazmat manifest, un number, sku, inventory, cube, barcode',
+  },
+  {
+    seedKey: 'qa-packing-short',
+    category: 'qa',
+    subcategory: 'packing',
+    topic: "Receiver says I'm short 2 pallets but the count matches — what's the process?",
+    content:
+      "Check your BOL count. If the BOL matches the packing list and your trailer seals were intact, the discrepancy is between shipper and receiver, not you. Note the receiver's claim on the POD, deliver what you have, and you're covered — that's concealed shortage, not your liability.",
+    keywords: 'short pallets, count matches, shortage, seals intact, concealed shortage, missing pallets, not liable',
+  },
+  {
+    seedKey: 'qa-packing-blind',
+    category: 'qa',
+    subcategory: 'packing',
+    topic: 'What is a blind shipment and how does it affect the packing list?',
+    content:
+      "A blind shipment hides the shipper's identity from the receiver, or the other way around. The packing list shows a generic name instead of the real manufacturer. Show the receiver only the blind version — never the original packing list, or you break the blind.",
+    keywords: 'blind shipment, double blind, hide shipper, generic name, blind bol, packing list blind',
+  },
+  {
+    seedKey: 'qa-packing-weight',
+    category: 'qa',
+    subcategory: 'packing',
+    topic: 'Packing list weight differs from my scale ticket — which one matters?',
+    content:
+      "For legal weight, the scale ticket rules — that's what DOT enforces. The packing list is for billing. If the packing list says forty thousand but you scale at forty-four, the packing list is wrong and you rework the load, because the scale is the law.",
+    keywords: 'packing list weight, scale ticket weight, which weight, billing weight, legal weight, discrepancy',
+  },
+  {
+    seedKey: 'qa-packing-barcode',
+    category: 'qa',
+    subcategory: 'packing',
+    topic: 'Why do receivers scan barcodes on the manifest?',
+    content:
+      "To update their inventory system. If a scan fails, they'll reject the pallet even when the physical count is right, and that causes a putaway delay. It's their ERP talking, not a knock on your load.",
+    keywords: 'barcode scan, manifest scan, erp, putaway, scan fails, reject pallet, inventory system',
+  },
+
+  // ── 5. PROOF OF DELIVERY (POD) ───────────────────────────────────────────────
+  {
+    seedKey: 'doc-pod-types',
+    category: 'documents',
+    subcategory: 'pod',
+    topic: 'Types of Proof of Delivery',
+    content:
+      "The POD is the unlock key for your invoice — it confirms the freight arrived, when, and in what shape. A signed POD is a physical signature from the receiver's clerk. A digital POD or ePOD is captured on a tablet or ELD through something like Transflo. A stamped POD uses the warehouse stamp as legal acceptance when no signature's available. An exception POD notes damage, shortage, or a late delivery. And a dated POD states the exact unload time — vital for proving you were on time.",
+    keywords:
+      'pod, proof of delivery, signed, digital, epod, stamped, exception, dated, transflo, unlock invoice, receiver signature',
+  },
+  {
+    seedKey: 'qa-pod-refuse-sign',
+    category: 'qa',
+    subcategory: 'pod',
+    topic: "Receiver refuses to sign because I'm late — how do I get a POD?",
+    content:
+      "On the BOL write 'Tendered for delivery at' the time, and 'Refused to sign,' with the reason. Snap a photo of the freight at the dock. That creates a legal record that you made a bona fide delivery attempt, which is what you need.",
+    keywords: 'refuse to sign, receiver wont sign, late delivery, tendered for delivery, refused, bona fide attempt',
+  },
+  {
+    seedKey: 'qa-pod-damage-noticed',
+    category: 'qa',
+    subcategory: 'pod',
+    topic: 'I noticed damage after unloading — should I sign the POD clean?',
+    content:
+      "No. Write 'Damage noted to outer packaging — subject to inspection.' Sign it clean and you give up the right to dispute a claim later. Always note what you see before you sign.",
+    keywords: 'damage after unload, sign clean, subject to inspection, pod damage, dispute claim, noted damage',
+  },
+  {
+    seedKey: 'qa-pod-digital-binding',
+    category: 'qa',
+    subcategory: 'pod',
+    topic: 'Is a digital signature on a tablet legally binding?',
+    content:
+      "Yes — under the ESIGN Act, as long as the device records the time, date, and GPS location of the signature. A proper ePOD holds up just like ink on paper.",
+    keywords: 'digital signature, tablet, legally binding, esign act, epod, gps, electronic signature',
+  },
+  {
+    seedKey: 'qa-pod-broker-lost',
+    category: 'qa',
+    subcategory: 'pod',
+    topic: "Broker claims they didn't get the POD I emailed — now what?",
+    content:
+      "Always send the POD with a read-receipt request and keep a copy in a cloud folder you can share by link. If you've got a sent confirmation, a bounced or 'missing' email isn't your problem — resend the link and move on.",
+    keywords: 'broker didnt get pod, email pod, read receipt, cloud copy, resend pod, missing email, proof sent',
+  },
+
+  // ── 6. RATE CONFIRMATION (RATE CON) ──────────────────────────────────────────
+  {
+    seedKey: 'doc-ratecon-types',
+    category: 'documents',
+    subcategory: 'ratecon',
+    topic: 'Types of Rate Confirmation',
+    content:
+      "The rate con is the binding contract between you and the broker. A spot rate con is a one-time deal for a single load. A contract rate con is a longer agreement — thirty to ninety days — with fixed lanes and rates. An accessorial rate con spells out the extras: detention at fifty an hour, layover at two-fifty a day. And a fuel-surcharge rate con separates the base rate from the diesel surcharge, often tied to the DOE national average.",
+    keywords:
+      'rate con, rate confirmation, spot, contract, accessorial, fuel surcharge, fsc, doe average, binding contract, detention, layover',
+  },
+  {
+    seedKey: 'qa-ratecon-reroute',
+    category: 'qa',
+    subcategory: 'ratecon',
+    topic: 'Broker offers $100 more to change my route — do I need a new Rate Con?',
+    content:
+      "Every time. Verbal agreements don't hold up in freight. Get an amended rate con by email before you change anything — no paper, and the broker can deny the extra money later.",
+    keywords: 'reroute, new rate con, verbal agreement, amended rate con, extra pay, change route, get it in writing',
+  },
+  {
+    seedKey: 'qa-ratecon-service-time',
+    category: 'qa',
+    subcategory: 'ratecon',
+    topic: 'What is the Service Time section on a Rate Con?',
+    content:
+      "It's the pickup and delivery windows — your appointment times. Miss them and the broker can dock your rate anywhere from fifty to two-fifty. Treat those windows as part of the pay.",
+    keywords: 'service time, appointment window, pickup delivery time, rate reduction, miss appointment, late penalty',
+  },
+  {
+    seedKey: 'qa-ratecon-no-accessorials',
+    category: 'qa',
+    subcategory: 'ratecon',
+    topic: "Rate Con says 'NO ACCESSORIALS' but I sat 4 hours loading — am I out of luck?",
+    content:
+      "If you signed a rate con that says no accessorials, yes — you waived detention pay. The move is to catch that line before you sign and negotiate it out. Once it's signed, it's binding.",
+    keywords: 'no accessorials, waived detention, sat loading, detention pay, negotiate rate con, signed away',
+  },
+  {
+    seedKey: 'qa-ratecon-stage',
+    category: 'qa',
+    subcategory: 'ratecon',
+    topic: 'How do I stage a load using a Rate Con in the app?',
+    content:
+      "Scan the rate con — the app pulls the numbers, dates, and reference info and creates a staged placeholder. When you confirm, it spins up a live booking. Head to Documents to snap it and I'll pull the details off it for you.",
+    keywords: 'stage load, scan rate con, booking, confirm load, placeholder, app rate con, parse',
+  },
+
+  // ── 7. SCALE / WEIGHT TICKET ─────────────────────────────────────────────────
+  {
+    seedKey: 'doc-scale-types',
+    category: 'documents',
+    subcategory: 'scale',
+    topic: 'Types of scale / weight ticket',
+    content:
+      "The scale ticket is your legal proof of gross, axle, and tare weight — how you stay DOT-compliant. A CAT scale ticket is the gold standard, accepted nationwide with a weigh-my-truck app. A shipper's scale ticket is for billing, not DOT. An axle scale ticket breaks out steer, drive, and trailer to keep you under bridge law. A re-weigh ticket is what you get after sliding your tandems or fifth wheel. And an empty or tare ticket is the truck with no cargo, used to figure net weight.",
+    keywords:
+      'scale ticket, weight ticket, cat scale, shipper scale, axle, re-weigh, reweigh, tare, empty weight, gross, bridge law',
+  },
+  {
+    seedKey: 'qa-scale-over-drives',
+    category: 'qa',
+    subcategory: 'scale',
+    topic: "I'm 34,500 on my drives but the limit's 34,000 — what do I do?",
+    content:
+      "Slide your trailer tandems to shift weight off the drives, then get a re-weigh ticket right away. You can't legally run over thirty-four thousand on the drives in most states, so fix it before the next scale house.",
+    keywords: 'overweight drives, 34000, slide tandems, re-weigh, axle overweight, redistribute weight, drive axle',
+  },
+  {
+    seedKey: 'qa-scale-shipper-vs-cat',
+    category: 'qa',
+    subcategory: 'scale',
+    topic: "Shipper's scale says legal, CAT scale says overweight — who do I believe?",
+    content:
+      "The CAT scale. If DOT stops you, they weigh on a certified scale, and the shipper's scale is only for billing. Adjust the load or get a re-weigh until the certified number is legal.",
+    keywords: 'shipper scale vs cat, which scale, certified scale, dot enforcement, overweight, believe scale',
+  },
+  {
+    seedKey: 'qa-scale-why-need',
+    category: 'qa',
+    subcategory: 'scale',
+    topic: 'Why do I need a scale ticket if the BOL already has a weight?',
+    content:
+      "To protect against a fraudulent weight or shortage claim. If the receiver says you delivered less than the BOL shows, your scale ticket proving what you picked up is your defense. The BOL is a claim; the scale ticket is proof.",
+    keywords: 'why scale ticket, bol weight, shortage claim, protect, proof of weight, fraudulent claim',
+  },
+  {
+    seedKey: 'qa-scale-steer',
+    category: 'qa',
+    subcategory: 'scale',
+    topic: 'Why does steer axle weight matter?',
+    content:
+      "You generally can't exceed twelve thousand pounds on the steer axle. If it's heavy, slide the fifth wheel back and get a re-weigh to prove you fixed it. Too much on the steers hurts handling and it's a violation.",
+    keywords: 'steer axle, 12000, fifth wheel, slide 5th wheel, front axle weight, re-weigh, steer heavy',
+  },
+
+  // ── GOLDEN RULE ──────────────────────────────────────────────────────────────
+  {
+    seedKey: 'doc-golden-rule',
+    category: 'documents',
+    subcategory: 'principles',
+    topic: 'The golden rule of freight paperwork',
+    content:
+      "If it isn't written down and signed, it didn't happen. Always take photos of every document in the app and store them in the cloud. Never hand over the original BOL unless the receiver signs and dates it first. When in doubt, protect yourself in writing and note anything unusual before you sign.",
+    keywords:
+      'golden rule, paperwork, in writing, take photos, cloud, protect yourself, sign date, best practice, document rule',
+  },
 ];
