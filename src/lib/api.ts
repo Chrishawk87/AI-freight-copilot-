@@ -234,11 +234,17 @@ export const api = {
   // ---- Documents (BOL / POD scanning) ----
   documents: () => apiFetch<FreightDocument[]>("/documents"),
   documentJobs: () => apiFetch<DocumentJob[]>("/documents/jobs"),
-  jobPackage: (jobId: string) =>
-    apiFetch<JobPackage>(`/documents/jobs/${encodeURIComponent(jobId)}/package`),
+  jobPackage: (jobId: string, docIds?: string[]) =>
+    apiFetch<JobPackage>(
+      `/documents/jobs/${encodeURIComponent(jobId)}/package${
+        docIds && docIds.length
+          ? `?docIds=${encodeURIComponent(docIds.join(","))}`
+          : ""
+      }`,
+    ),
   emailJobPackage: (
     jobId: string,
-    body: { to: string; subject?: string; message?: string },
+    body: { to: string; subject?: string; message?: string; docIds?: string[] },
   ) =>
     apiFetch<{ sent: boolean; to: string; filename: string }>(
       `/documents/jobs/${encodeURIComponent(jobId)}/email`,

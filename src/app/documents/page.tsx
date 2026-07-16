@@ -371,6 +371,18 @@ export default function DocumentsPage() {
   );
 }
 
+const DOC_LABEL: Record<string, string> = {
+  BOL: "BOL",
+  POD: "POD",
+  LUMPER: "Lumper receipt",
+  FUEL: "Fuel receipt",
+  OTHER: "Document",
+};
+function docLabel(d: FreightDocument) {
+  const name = DOC_LABEL[d.type] || d.type;
+  return d.bolNumber ? `${name} #${d.bolNumber}` : name;
+}
+
 function JobCard({
   job,
   onOpenDoc,
@@ -395,6 +407,26 @@ function JobCard({
   const [sent, setSent] = useState("");
   const [emailErr, setEmailErr] = useState("");
 
+  // Per-document selection — default to every doc in the job. The user can
+  // uncheck any to send/download just the ones they want (individually or as
+  // a package). An empty selection means "all".
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    job.docs.map((d) => d.id),
+  );
+  const selectedDocs = job.docs.filter((d) => selectedIds.includes(d.id));
+  const allSelected = selectedIds.length === job.docs.length;
+  const noneSelected = selectedIds.length === 0;
+  // Send everything when the whole job is selected (lets "unassigned" work too);
+  // otherwise send just the chosen subset.
+  const idsForSend = allSelected ? undefined : selectedIds;
+
+  function toggleDoc(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setSent("");
+  }
+
   function saveBlob(pkg: { dataUrl: string; filename: string }) {
     const a = document.createElement("a");
     a.href = pkg.dataUrl;
@@ -405,10 +437,11 @@ function JobCard({
   }
 
   async function downloadPackage() {
+    if (noneSelected) return;
     setDownloading(true);
     setErr("");
     try {
-      const pkg = await api.jobPackage(job.jobId);
+      const pkg = await api.jobPackage(job.jobId, idsForSend);
       saveBlob(pkg);
     } catch (e: any) {
       setErr(e.message || "Could not build the package");
@@ -423,10 +456,16 @@ function JobCard({
     setSending(true);
     setEmailErr("");
     setSent("");
+    if (noneSelected) {
+      setEmailErr("Select at least one document to send.");
+      setSending(false);
+      return;
+    }
     try {
       const res = await api.emailJobPackage(job.jobId, {
         to: to.trim(),
         message: message.trim() || undefined,
+        docIds: idsForSend,
       });
       setSent(`Sent to ${res.to}.`);
       setTo("");
@@ -476,11 +515,13 @@ function JobCard({
           </button>
           <button
             onClick={downloadPackage}
-            disabled={downloading}
+            disabled={downloading || noneSelected}
             className="flex items-center gap-1.5 rounded-lg bg-electric px-3 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-60"
           >
             {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Package PDF
+            {allSelected
+              ? "Package PDF"
+              : `Download (${selectedIds.length})`}
           </button>
         </div>
       </div>
@@ -495,7 +536,10 @@ function JobCard({
         <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
-              <Mail className="h-3.5 w-3.5 text-electric" /> Email this package as one PDF
+              <Mail className="h-3.5 w-3.5 text-electric" />
+              {selectedDocs.length === 1
+                ? `Email ${docLabel(selectedDocs[0])}`
+                : `Email ${selectedDocs.length} documents as one PDF`}
             </div>
             <button onClick={() => setEmailOpen(false)} className="text-white/40 hover:text-white/70">
               <X className="h-4 w-4" />
@@ -507,6 +551,24 @@ function JobCard({
             </div>
           ) : (
             <div className="grid gap-2">
+              <div>
+                <div className="mb-1 text-[11px] text-white/40">
+                  Including {selectedDocs.length} of {job.docs.length}:
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {noneSelected ? (
+                    <span className="text-[11px] text-warning">
+                      Nothing selected — pick documents below.
+                    </span>
+                  ) : (
+                    selectedDocs.map((d) => (
+                      <span key={d.id} className="chip bg-white/10 text-white/70">
+                        {docLabel(d)}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
               <input
                 type="email"
                 value={to}
@@ -521,6 +583,20 @@ function JobCard({
                 rows={2}
                 className="w-full rounded-lg border border-white/10 bg-navy-900 px-3 py-2 text-sm outline-none focus:border-electric/50"
               />
+              {!noneSelected && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const list = selectedDocs.map(docLabel).join(", ");
+                    setMessage((m) =>
+                      m.includes(list) ? m : `${m ? m + "\n\n" : ""}Attached: ${list}.`,
+                    );
+                  }}
+                  className="self-start text-[11px] font-semibold text-electric hover:underline"
+                >
+                  + Add document list to note
+                </button>
+              )}
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] leading-relaxed text-white/40">
                   {emailConnected
@@ -548,21 +624,46 @@ function JobCard({
 
       {open && (
         <div className="mt-3 grid gap-2 border-t border-white/10 pt-3">
-          {job.docs.map((d) => (
+          <div className="flex items-center justify-between px-1 text-[11px] text-white/40">
+            <span>Check the documents to send or download</span>
             <button
+              type="button"
+              onClick={() =>
+                setSelectedIds(allSelected ? [] : job.docs.map((d) => d.id))
+              }
+              className="font-semibold text-electric hover:underline"
+            >
+              {allSelected ? "Clear all" : "Select all"}
+            </button>
+          </div>
+          {job.docs.map((d) => (
+            <div
               key={d.id}
-              onClick={() => onOpenDoc(d)}
               className={clsx(
-                "flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] p-3 text-left transition hover:bg-white/[0.05]",
+                "flex items-center gap-3 rounded-xl bg-white/[0.02] p-3 transition hover:bg-white/[0.05]",
                 activeId === d.id && "ring-1 ring-electric/40"
               )}
             >
-              <div className="flex items-center gap-2 text-sm">
-                <span className="chip bg-white/10 text-white/70">{d.type}</span>
-                <span className="font-medium">{d.bolNumber || "—"}</span>
-              </div>
-              <StatusChip status={d.status} />
-            </button>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(d.id)}
+                onChange={() => toggleDoc(d.id)}
+                className="h-4 w-4 shrink-0 accent-electric"
+                aria-label={`Include ${docLabel(d)}`}
+              />
+              <button
+                onClick={() => onOpenDoc(d)}
+                className="flex flex-1 items-center justify-between gap-3 text-left"
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="chip bg-white/10 text-white/70">
+                    {DOC_LABEL[d.type] || d.type}
+                  </span>
+                  <span className="font-medium">{d.bolNumber || "—"}</span>
+                </div>
+                <StatusChip status={d.status} />
+              </button>
+            </div>
           ))}
         </div>
       )}

@@ -5,9 +5,11 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
+  IsArray,
   IsBoolean,
   IsInt,
   IsOptional,
@@ -30,6 +32,7 @@ class EmailPackageDto {
   @IsString() to!: string;
   @IsOptional() @IsString() subject?: string;
   @IsOptional() @IsString() message?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) docIds?: string[];
 }
 
 class UpdateDocDto {
@@ -68,8 +71,15 @@ export class DocumentsController {
   }
 
   @Get('jobs/:jobId/package')
-  jobPackage(@CurrentUser() user: AuthUser, @Param('jobId') jobId: string) {
-    return this.docs.jobPackage(user, jobId);
+  jobPackage(
+    @CurrentUser() user: AuthUser,
+    @Param('jobId') jobId: string,
+    @Query('docIds') docIds?: string,
+  ) {
+    const ids = docIds
+      ? docIds.split(',').map((s) => s.trim()).filter(Boolean)
+      : undefined;
+    return this.docs.jobPackage(user, jobId, ids);
   }
 
   @Post('jobs/:jobId/email')

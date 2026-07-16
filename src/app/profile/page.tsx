@@ -7,22 +7,41 @@ import { api, type CarrierDetail, type UsageMeter } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useAuth } from "@/lib/auth";
 
-// Known providers → SMTP server, so the client only enters email + app password.
-const SMTP_PRESETS: Record<string, { host: string; port: number; secure: boolean; label: string }> = {
-  "gmail.com": { host: "smtp.gmail.com", port: 465, secure: true, label: "Gmail" },
-  "googlemail.com": { host: "smtp.gmail.com", port: 465, secure: true, label: "Gmail" },
-  "outlook.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
-  "hotmail.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
-  "live.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
-  "msn.com": { host: "smtp-mail.outlook.com", port: 587, secure: false, label: "Outlook" },
-  "yahoo.com": { host: "smtp.mail.yahoo.com", port: 465, secure: true, label: "Yahoo" },
-  "aol.com": { host: "smtp.aol.com", port: 465, secure: true, label: "AOL" },
-  "icloud.com": { host: "smtp.mail.me.com", port: 587, secure: false, label: "iCloud" },
-  "me.com": { host: "smtp.mail.me.com", port: 587, secure: false, label: "iCloud" },
+// Pick your provider once; we know the server settings. Business domains
+// (your own @company.com) usually run on Google Workspace or Microsoft 365 —
+// pick that, not "Other", unless your IT gave you a specific mail server.
+const PROVIDERS = [
+  { id: "gmail", label: "Gmail (@gmail.com)", host: "smtp.gmail.com", port: 465, secure: true },
+  { id: "gworkspace", label: "Google Workspace (business Gmail on your own domain)", host: "smtp.gmail.com", port: 465, secure: true },
+  { id: "outlook", label: "Outlook.com / Hotmail / Live", host: "smtp-mail.outlook.com", port: 587, secure: false },
+  { id: "m365", label: "Microsoft 365 (business email on your own domain)", host: "smtp.office365.com", port: 587, secure: false },
+  { id: "yahoo", label: "Yahoo", host: "smtp.mail.yahoo.com", port: 465, secure: true },
+  { id: "aol", label: "AOL", host: "smtp.aol.com", port: 465, secure: true },
+  { id: "icloud", label: "iCloud", host: "smtp.mail.me.com", port: 587, secure: false },
+  { id: "other", label: "Other / custom mail server", host: "", port: 587, secure: false },
+] as const;
+
+// Consumer domains map straight to a provider so we can preselect it.
+const DOMAIN_PROVIDER: Record<string, string> = {
+  "gmail.com": "gmail",
+  "googlemail.com": "gmail",
+  "outlook.com": "outlook",
+  "hotmail.com": "outlook",
+  "live.com": "outlook",
+  "msn.com": "outlook",
+  "yahoo.com": "yahoo",
+  "aol.com": "aol",
+  "icloud.com": "icloud",
+  "me.com": "icloud",
 };
-function detectSmtp(email: string) {
+function providerForEmail(email: string): string {
   const domain = (email.split("@")[1] || "").trim().toLowerCase();
-  return SMTP_PRESETS[domain] || null;
+  return DOMAIN_PROVIDER[domain] || "";
+}
+function providerForHost(host: string): string {
+  if (!host) return "";
+  const match = PROVIDERS.find((p) => p.host && p.host === host);
+  return match ? match.id : "other";
 }
 
 export default function ProfilePage() {
@@ -32,10 +51,17 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [appPassword, setAppPassword] = useState(""); // never returned by API
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [providerId, setProviderId] = useState("");
+  const [saveErr, setSaveErr] = useState("");
 
   useEffect(() => {
-    if (data) setForm(data);
+    if (data) {
+      setForm(data);
+      // Preselect the provider: from a saved server, else guessed from the email.
+      setProviderId(
+        providerForHost(data.smtpHost) || providerForEmail(data.contactEmail),
+      );
+    }
   }, [data]);
 
   if (loading) return <Loading />;
@@ -47,25 +73,29 @@ export default function ProfilePage() {
     setSaved(false);
   }
 
+  const isOther = providerId === "other";
+
   async function save() {
     if (!form) return;
     setSaving(true);
+    setSaveErr("");
     try {
-      // Resolve the SMTP server: auto-detected from the email domain, or the
-      // manual values if the user opened Advanced.
-      const detected = detectSmtp(form.contactEmail);
-      const emailCfg = showAdvanced
+      // Resolve the SMTP server from the chosen provider (deterministic), or
+      // the manual fields when "Other" is selected. This guarantees a real
+      // server is stored even for custom company domains.
+      const chosen = PROVIDERS.find((p) => p.id === providerId);
+      const emailCfg = isOther
         ? {
             smtpHost: form.smtpHost,
             smtpPort: form.smtpPort,
             smtpSecure: form.smtpSecure,
             smtpUser: form.smtpUser || form.contactEmail,
           }
-        : detected
+        : chosen
         ? {
-            smtpHost: detected.host,
-            smtpPort: detected.port,
-            smtpSecure: detected.secure,
+            smtpHost: chosen.host,
+            smtpPort: chosen.port,
+            smtpSecure: chosen.secure,
             smtpUser: form.contactEmail,
           }
         : { smtpUser: form.contactEmail };
@@ -85,8 +115,13 @@ export default function ProfilePage() {
         ...(appPassword ? { smtpPass: appPassword } : {}),
       });
       setForm(updated);
+      setProviderId(
+        providerForHost(updated.smtpHost) || providerForEmail(updated.contactEmail),
+      );
       setAppPassword("");
       setSaved(true);
+    } catch (e: any) {
+      setSaveErr(e?.message || "Could not save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -159,15 +194,30 @@ export default function ProfilePage() {
           )}
         </div>
         <p className="mb-4 text-xs leading-relaxed text-white/40">
-          Connect your own email (Gmail, Outlook, Yahoo, any provider) and the app
-          sends document packages straight to brokers and factoring from your inbox.
-          {(() => {
-            const d = detectSmtp(form.contactEmail);
-            return d ? ` Detected ${d.label} — just add an app password below.` : "";
-          })()}
+          Connect your own email and the app sends document packages straight to
+          brokers and factoring from your inbox. Pick your provider, enter your
+          address and a one-time app password.
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block py-1 sm:col-span-2">
+            <span className="mb-1 block text-xs text-white/40">Email provider</span>
+            <select
+              value={providerId}
+              onChange={(e) => {
+                setProviderId(e.target.value);
+                setSaved(false);
+              }}
+              className="input"
+            >
+              <option value="">Select your provider…</option>
+              {PROVIDERS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <LabeledInput
             label="Your email address"
             value={form.contactEmail}
@@ -190,21 +240,11 @@ export default function ProfilePage() {
           </label>
         </div>
 
-        <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-          Gmail, Yahoo and Outlook need a one-time{" "}
-          <span className="text-white/60">app password</span> (from your email account&apos;s
-          security settings) — not your normal login password.
-        </p>
-
-        <button
-          onClick={() => setShowAdvanced((v) => !v)}
-          className="mt-3 text-xs font-semibold text-electric hover:underline"
-        >
-          {showAdvanced ? "Hide advanced server settings" : "Advanced server settings"}
-        </button>
-
-        {showAdvanced && (
+        {isOther && (
           <div className="mt-3 grid gap-3 rounded-xl bg-white/[0.02] p-3 sm:grid-cols-2">
+            <p className="text-[11px] leading-relaxed text-white/40 sm:col-span-2">
+              Enter the outgoing (SMTP) server your email host gave you.
+            </p>
             <LabeledInput label="SMTP host" value={form.smtpHost} onChange={(v) => set("smtpHost", v)} />
             <div>
               <label className="mb-1 block text-xs text-white/40">Port</label>
@@ -226,6 +266,16 @@ export default function ProfilePage() {
               Use TLS on port 465
             </label>
           </div>
+        )}
+
+        <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+          Gmail, Yahoo, Outlook, Google Workspace and Microsoft 365 need a one-time{" "}
+          <span className="text-white/60">app password</span> (from your email
+          account&apos;s security settings) — not your normal login password.
+        </p>
+
+        {saveErr && (
+          <p className="mt-3 text-xs text-danger">{saveErr}</p>
         )}
       </div>
 

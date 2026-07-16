@@ -268,11 +268,13 @@ export class DocumentsService {
    * Gather one job's documents + load + carrier and render the combined PDF.
    * Shared by the download and the email flows.
    */
-  private async buildPackage(user: AuthUser, jobId: string) {
-    const where =
+  private async buildPackage(user: AuthUser, jobId: string, docIds?: string[]) {
+    const where: any =
       jobId === 'unassigned'
         ? { userId: user.id, loadId: null }
         : { userId: user.id, loadId: jobId };
+    // Optional per-document selection: only include the chosen docs.
+    if (docIds && docIds.length) where.id = { in: docIds };
 
     const docs = await this.prisma.document.findMany({
       where,
@@ -303,17 +305,39 @@ export class DocumentsService {
       bytes,
       filename: `job-${String(ref).replace(/[^a-z0-9-_]+/gi, '-')}.pdf`,
       docCount: docs.length,
+      docs,
       load,
       carrier,
     };
+  }
+
+  /** Human-readable list of the documents in a package, for email bodies. */
+  private docSummary(docs: { type: string; bolNumber: string }[]): string {
+    const label: Record<string, string> = {
+      BOL: 'BOL',
+      POD: 'POD',
+      LUMPER: 'Lumper receipt',
+      FUEL: 'Fuel receipt',
+      OTHER: 'Document',
+    };
+    return docs
+      .map((d) => {
+        const name = label[d.type] || d.type;
+        return d.bolNumber ? `${name} #${d.bolNumber}` : name;
+      })
+      .join(', ');
   }
 
   /**
    * Combine every document under one job into a single downloadable PDF.
    * Returned as a data URL so the frontend can save or attach it as one file.
    */
-  async jobPackage(user: AuthUser, jobId: string) {
-    const { bytes, filename, docCount } = await this.buildPackage(user, jobId);
+  async jobPackage(user: AuthUser, jobId: string, docIds?: string[]) {
+    const { bytes, filename, docCount } = await this.buildPackage(
+      user,
+      jobId,
+      docIds,
+    );
     const base64 = Buffer.from(bytes).toString('base64');
     return {
       filename,
@@ -330,7 +354,7 @@ export class DocumentsService {
   async emailJobPackage(
     user: AuthUser,
     jobId: string,
-    body: { to: string; subject?: string; message?: string },
+    body: { to: string; subject?: string; message?: string; docIds?: string[] },
   ) {
     const to = (body.to || '').trim();
     if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
@@ -375,14 +399,23 @@ export class DocumentsService {
       );
     }
 
-    const { bytes, filename, load } = await this.buildPackage(user, jobId);
+    const { bytes, filename, load, docs } = await this.buildPackage(
+      user,
+      jobId,
+      body.docIds,
+    );
     const jobRef = load
       ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity} → ${load.destCity}`
       : 'documents';
     const subject = body.subject?.trim() || `Documents — ${jobRef}`;
+    const summary = this.docSummary(docs);
+    const single = docs.length === 1;
     const text =
       (body.message?.trim() ? `${body.message.trim()}\n\n` : '') +
-      `Attached is the document package for ${jobRef}.` +
+      (single
+        ? `Attached is the ${summary} for ${jobRef}.`
+        : `Attached is the document package for ${jobRef} (${docs.length} documents).`) +
+      (summary ? `\n\nIncluded: ${summary}.` : '') +
       (carrier?.companyName ? `\n\n${carrier.companyName}` : '') +
       `\n\nSent via AI Freight Co-Pilot.`;
 
