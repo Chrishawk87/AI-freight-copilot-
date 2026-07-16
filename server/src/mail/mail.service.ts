@@ -28,6 +28,40 @@ export class MailService {
   }
 
   /**
+   * Shared platform sending account (set once by us via env). This is the
+   * server-first default: every subscriber can email document packages without
+   * connecting their own inbox. Their company email is used as reply-to so
+   * broker replies still land with the carrier, not us.
+   */
+  platformConfig(): SmtpConfig | null {
+    const host = process.env.PLATFORM_SMTP_HOST;
+    const user = process.env.PLATFORM_SMTP_USER;
+    const pass = process.env.PLATFORM_SMTP_PASS;
+    if (!host || !user || !pass) return null;
+    const port = Number(process.env.PLATFORM_SMTP_PORT) || 587;
+    return {
+      host,
+      port,
+      // Default secure to true only on 465 unless explicitly set.
+      secure: process.env.PLATFORM_SMTP_SECURE
+        ? process.env.PLATFORM_SMTP_SECURE === 'true'
+        : port === 465,
+      user,
+      pass,
+      from: process.env.PLATFORM_SMTP_FROM || user,
+    };
+  }
+
+  /** Is the shared platform sender available? */
+  platformAvailable(): boolean {
+    return !!(
+      process.env.PLATFORM_SMTP_HOST &&
+      process.env.PLATFORM_SMTP_USER &&
+      process.env.PLATFORM_SMTP_PASS
+    );
+  }
+
+  /**
    * Send a real email using the CARRIER's own SMTP account. Nothing is shared
    * across tenants — each client's provider credentials send their own mail.
    */

@@ -62,10 +62,20 @@ class EquipmentDto {
 function serialize(carrier: any) {
   if (!carrier) return null;
   const { smtpPass, ...rest } = carrier;
+  const emailConnected = !!(carrier.smtpHost && carrier.smtpUser && smtpPass);
+  // Shared platform sender configured by us — lets every carrier send without
+  // connecting their own inbox.
+  const platformEmailAvailable = !!(
+    process.env.PLATFORM_SMTP_HOST &&
+    process.env.PLATFORM_SMTP_USER &&
+    process.env.PLATFORM_SMTP_PASS
+  );
   return {
     ...rest,
     serviceAreas: JSON.parse(carrier.serviceAreas || '[]'),
-    emailConnected: !!(carrier.smtpHost && carrier.smtpUser && smtpPass),
+    emailConnected, // carrier connected their OWN inbox
+    platformEmailAvailable,
+    canSendEmail: emailConnected || platformEmailAvailable,
   };
 }
 

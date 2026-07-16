@@ -385,18 +385,42 @@ export class DocumentsService {
       smtpPass: string;
     } | null;
 
-    const cfg = {
+    // The carrier's own reply address — where a broker's reply should land.
+    const carrierReply = carrier?.contactEmail || carrier?.smtpUser || '';
+
+    // Prefer the carrier's own SMTP if they connected one (mail originates from
+    // their inbox). Otherwise fall back to the shared platform sender so email
+    // works out of the box for every subscriber — with replies routed back to
+    // the carrier.
+    const byok = {
       host: carrier?.smtpHost || '',
       port: carrier?.smtpPort || 587,
       secure: !!carrier?.smtpSecure,
       user: carrier?.smtpUser || carrier?.contactEmail || '',
       pass: decryptSecret(carrier?.smtpPass || ''),
-      from: carrier?.contactEmail || carrier?.smtpUser || '',
+      from: carrierReply,
     };
-    if (!this.mail.configured(cfg)) {
-      throw new BadRequestException(
-        'Connect your email first — open Profile and add your email address and app password under "Send email".',
-      );
+
+    let cfg: typeof byok;
+    let replyTo: string | undefined;
+    if (this.mail.configured(byok)) {
+      cfg = byok;
+      replyTo = carrierReply || undefined;
+    } else {
+      const platform = this.mail.platformConfig();
+      if (!platform) {
+        throw new BadRequestException(
+          "Email sending isn't set up yet. Either connect your own inbox in Profile \u2192 Send email, or (admin) configure the platform mail account.",
+        );
+      }
+      const label = (carrier?.companyName
+        ? `${carrier.companyName} via AI Freight Co-Pilot`
+        : 'AI Freight Co-Pilot'
+      ).replace(/"/g, '');
+      // Send from the platform address but present the carrier's name; set
+      // reply-to so responses go to the carrier, not us.
+      cfg = { ...platform, from: `"${label}" <${platform.from}>` };
+      replyTo = carrierReply || undefined;
     }
 
     const { bytes, filename, load, docs } = await this.buildPackage(
@@ -421,7 +445,7 @@ export class DocumentsService {
 
     const result = await this.mail.send(cfg, {
       to,
-      replyTo: cfg.from || undefined,
+      replyTo,
       subject,
       text,
       attachments: [

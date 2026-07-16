@@ -319,6 +319,7 @@ export default function DocumentsPage() {
                 activeId={active?.id}
                 companyEmail={carrier?.contactEmail || ""}
                 emailConnected={!!carrier?.emailConnected}
+                canSendEmail={carrier?.canSendEmail ?? !!carrier?.emailConnected}
               />
             ))}
           </div>
@@ -389,12 +390,14 @@ function JobCard({
   activeId,
   companyEmail,
   emailConnected,
+  canSendEmail,
 }: {
   job: DocumentJob;
   onOpenDoc: (d: FreightDocument) => void;
   activeId?: string;
   companyEmail: string;
   emailConnected: boolean;
+  canSendEmail: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -601,7 +604,9 @@ function JobCard({
                 <p className="text-[11px] leading-relaxed text-white/40">
                   {emailConnected
                     ? `Sends the package PDF from ${companyEmail || "your email"} straight to the recipient.`
-                    : "Connect your email in Profile → Send email first, then this sends the PDF straight to the recipient."}
+                    : canSendEmail
+                    ? `Sends the package PDF straight to the recipient${companyEmail ? `, with replies going to ${companyEmail}` : ""}.`
+                    : "Add your company email in Profile so replies reach you, then send the PDF straight to the recipient."}
                 </p>
                 <button
                   onClick={sendEmail}

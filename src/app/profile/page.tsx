@@ -412,16 +412,19 @@ export default function ProfilePage() {
       <div className="mb-5 card p-5">
         <div className="mb-1 flex items-center gap-2 font-semibold">
           <Mail className="h-4 w-4 text-electric" /> Send email
-          {form.emailConnected && !appPassword && (
+          {form.emailConnected && !appPassword ? (
             <span className="chip ml-1 flex items-center gap-1 bg-success/15 text-success">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Connected
+              <CheckCircle2 className="h-3.5 w-3.5" /> Your inbox connected
             </span>
+          ) : (
+            <span className="chip ml-1 bg-white/5 text-white/50">Optional</span>
           )}
         </div>
         <p className="mb-4 text-xs leading-relaxed text-white/40">
-          Connect your own email and the app sends document packages straight to
-          brokers and factoring from your inbox. Pick your provider, enter your
-          address and a one-time app password.
+          Sending already works — document packages go out through AI Freight
+          Co-Pilot with replies coming back to your company email. You only need
+          this if you want mail to send from your own inbox instead. Pick your
+          provider, enter your address and a one-time app password.
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">

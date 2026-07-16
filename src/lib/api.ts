@@ -79,7 +79,9 @@ export interface CarrierDetail {
   smtpPort: number;
   smtpSecure: boolean;
   smtpUser: string;
-  emailConnected: boolean;
+  emailConnected: boolean; // carrier connected their OWN inbox (SMTP)
+  platformEmailAvailable?: boolean; // shared platform sender configured server-side
+  canSendEmail?: boolean; // emailConnected || platformEmailAvailable
   dotNumber: string;
   mcNumber: string;
   insuranceProvider: string;
