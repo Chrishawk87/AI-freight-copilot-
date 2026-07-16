@@ -170,6 +170,34 @@ model Document {
   invoiceAmount Float?
   invoiceStatus String @default("none") // none | staged | sent
 
+  // Rate Confirmation ("Rate Con") — the broker's binding assignment that
+  // STARTS a haul (vs. a BOL/POD which prove one at the dock). Parsed on intake
+  // by OCR + Claude; the driver reviews and confirms, which spins up a real
+  // Load + Booking. Broker-agnostic: no per-broker integration needed.
+  rateConNumber       String  @default("")
+  lineHaulRate        Float?
+  fuelSurcharge       Float?
+  accessorials        String  @default("[]") // JSON: [{ name, amount }] (lumper, detention, tarp…)
+  totalRate           Float?
+  originCity          String  @default("")
+  originState         String  @default("")
+  pickupAddress       String  @default("")
+  pickupAppt          String  @default("") // appointment time / window as printed
+  destCity            String  @default("")
+  destState           String  @default("")
+  deliveryAddress     String  @default("")
+  deliveryAppt        String  @default("")
+  commodity           String  @default("")
+  equipmentType       String  @default("") // Van, Reefer, Flatbed…
+  brokerName          String  @default("")
+  brokerContactName   String  @default("")
+  brokerPhone         String  @default("")
+  brokerEmail         String  @default("")
+  referenceNumber     String  @default("") // broker load/reference # (distinct from PO)
+  specialInstructions String  @default("")
+  loadStaged          Boolean @default(false) // parsed, awaiting driver confirmation
+  loadConfirmed       Boolean @default(false) // driver confirmed → Load+Booking created
+
   booking   Booking? @relation(fields: [bookingId], references: [id])
   bookingId String?
   load      Load?    @relation(fields: [loadId], references: [id])

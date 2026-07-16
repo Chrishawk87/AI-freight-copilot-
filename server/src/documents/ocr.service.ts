@@ -34,6 +34,39 @@ export interface OcrContext {
   } | null;
 }
 
+// Structured fields pulled off a Rate Confirmation. Broker-agnostic — every
+// broker's layout differs, so we parse with an LLM (Claude) rather than a
+// rigid template, which is the only approach that scales across carriers.
+export interface RateConFields {
+  rateConNumber: string;
+  brokerName: string;
+  brokerContactName: string;
+  brokerPhone: string;
+  brokerEmail: string;
+  commodity: string;
+  equipmentType: string;
+  weightLbs: number | null;
+  pieceCount: number | null;
+  poNumber: string;
+  referenceNumber: string;
+  lineHaulRate: number | null;
+  fuelSurcharge: number | null;
+  accessorials: { name: string; amount: number }[];
+  totalRate: number | null;
+  originCity: string;
+  originState: string;
+  pickupAddress: string;
+  pickupAppt: string;
+  destCity: string;
+  destState: string;
+  deliveryAddress: string;
+  deliveryAppt: string;
+  specialInstructions: string;
+  confidence: number;
+  provider: string;
+  raw: any;
+}
+
 /**
  * Dedicated document-OCR layer.
  *
@@ -74,6 +107,187 @@ export class OcrService {
     }
 
     return this.simulate(ctx);
+  }
+
+  /**
+   * Parse a Rate Confirmation into structured fields. Uses Claude (vision) so it
+   * works on ANY broker's layout — the scalable, integration-free path. Falls
+   * back to a load-aware simulation when no key is available or the tenant is
+   * over its monthly cap, so the confirm-to-create-load flow still demos end to
+   * end. `allowCompanyKey` gates spending the shared Anthropic account.
+   */
+  async extractRateCon(
+    imageData: string | undefined,
+    ctx: OcrContext = {},
+    opts: { allowCompanyKey?: boolean } = {},
+  ): Promise<RateConFields> {
+    const allowCompanyKey = opts.allowCompanyKey ?? true;
+    const key = allowCompanyKey ? (process.env.ANTHROPIC_API_KEY || '').trim() : '';
+
+    if (key && imageData) {
+      try {
+        const real = await this.extractRateConWithClaude(imageData, key);
+        if (real) return real;
+      } catch (e) {
+        this.logger.warn(`Rate Con LLM parse failed, using fallback: ${e}`);
+      }
+    }
+    return this.simulateRateCon(ctx);
+  }
+
+  // ---- Real Rate Con parse: Claude vision -------------------------------------
+  // Sends the scan (image OR PDF) to Claude and asks for strict JSON. Any shape
+  // problem throws and the caller falls back to the simulation.
+  private async extractRateConWithClaude(
+    imageData: string,
+    key: string,
+  ): Promise<RateConFields | null> {
+    const { buffer, mime } = decodeDataUrl(imageData);
+    const b64 = buffer.toString('base64');
+    const model =
+      process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5-20251001';
+
+    // PDFs go as a document block; everything else as an image block.
+    const isPdf = /pdf/i.test(mime);
+    const source = isPdf
+      ? { type: 'base64', media_type: 'application/pdf', data: b64 }
+      : { type: 'base64', media_type: mime || 'image/jpeg', data: b64 };
+    const fileBlock = isPdf
+      ? { type: 'document', source }
+      : { type: 'image', source };
+
+    const instruction =
+      'You are extracting fields from a freight Rate Confirmation ("Rate Con"). ' +
+      'Return ONLY a JSON object (no markdown, no prose) with EXACTLY these keys:\n' +
+      '{"rateConNumber":string,"brokerName":string,"brokerContactName":string,' +
+      '"brokerPhone":string,"brokerEmail":string,"commodity":string,' +
+      '"equipmentType":string,"weightLbs":number|null,"pieceCount":number|null,' +
+      '"poNumber":string,"referenceNumber":string,"lineHaulRate":number|null,' +
+      '"fuelSurcharge":number|null,"accessorials":[{"name":string,"amount":number}],' +
+      '"totalRate":number|null,"originCity":string,"originState":string,' +
+      '"pickupAddress":string,"pickupAppt":string,"destCity":string,' +
+      '"destState":string,"deliveryAddress":string,"deliveryAppt":string,' +
+      '"specialInstructions":string}\n' +
+      'Rules: money as plain numbers (no $ or commas). Use "" for missing text ' +
+      'and null for missing numbers. States as 2-letter codes. accessorials covers ' +
+      'lumper, detention, tarp, and similar extras. If a value is not present, do ' +
+      'not guess.';
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1500,
+        messages: [
+          {
+            role: 'user',
+            content: [fileBlock, { type: 'text', text: instruction }],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`Anthropic HTTP ${res.status}`);
+    const data: any = await res.json();
+    const text: string =
+      Array.isArray(data?.content) && data.content[0]?.type === 'text'
+        ? String(data.content[0].text || '')
+        : '';
+    const parsed = parseJsonLoose(text);
+    if (!parsed) throw new Error('Rate Con parse: no JSON in response');
+
+    const accessorials = Array.isArray(parsed.accessorials)
+      ? parsed.accessorials
+          .map((a: any) => ({
+            name: String(a?.name ?? '').trim(),
+            amount: Number(a?.amount) || 0,
+          }))
+          .filter((a: any) => a.name)
+      : [];
+
+    const fields: RateConFields = {
+      rateConNumber: str(parsed.rateConNumber),
+      brokerName: str(parsed.brokerName),
+      brokerContactName: str(parsed.brokerContactName),
+      brokerPhone: str(parsed.brokerPhone),
+      brokerEmail: str(parsed.brokerEmail),
+      commodity: str(parsed.commodity),
+      equipmentType: str(parsed.equipmentType),
+      weightLbs: numOrNull(parsed.weightLbs),
+      pieceCount: numOrNull(parsed.pieceCount),
+      poNumber: str(parsed.poNumber),
+      referenceNumber: str(parsed.referenceNumber),
+      lineHaulRate: numOrNull(parsed.lineHaulRate),
+      fuelSurcharge: numOrNull(parsed.fuelSurcharge),
+      accessorials,
+      totalRate: numOrNull(parsed.totalRate),
+      originCity: str(parsed.originCity),
+      originState: str(parsed.originState).toUpperCase().slice(0, 2),
+      pickupAddress: str(parsed.pickupAddress),
+      pickupAppt: str(parsed.pickupAppt),
+      destCity: str(parsed.destCity),
+      destState: str(parsed.destState).toUpperCase().slice(0, 2),
+      deliveryAddress: str(parsed.deliveryAddress),
+      deliveryAppt: str(parsed.deliveryAppt),
+      specialInstructions: str(parsed.specialInstructions),
+      confidence: 0,
+      provider: 'anthropic',
+      raw: parsed,
+    };
+
+    // If nothing meaningful came back, treat as a failed read.
+    const present = [
+      fields.brokerName,
+      fields.originCity,
+      fields.destCity,
+      fields.lineHaulRate,
+      fields.totalRate,
+    ].filter((v) => v !== '' && v != null).length;
+    if (present === 0) throw new Error('Rate Con parse: empty result');
+    fields.confidence = Math.min(96, 55 + present * 8);
+    return fields;
+  }
+
+  // Load-aware simulated Rate Con so the confirm flow works with no key.
+  private simulateRateCon(ctx: OcrContext): RateConFields {
+    const load = ctx.load || null;
+    const seq = Math.floor(100000 + Math.random() * 899999);
+    const lineHaul = load?.weightLbs ? 1800 + Math.floor(Math.random() * 1400) : 2200;
+    const fsc = Math.round(lineHaul * 0.18);
+    return {
+      rateConNumber: load?.externalId ? `RC-${load.externalId}` : `RC-${seq}`,
+      brokerName: load?.broker || 'Sample Logistics LLC',
+      brokerContactName: 'Dispatch Desk',
+      brokerPhone: '(555) 010-4821',
+      brokerEmail: 'dispatch@samplelogistics.com',
+      commodity: 'General freight',
+      equipmentType: "Dry Van 53'",
+      weightLbs: load?.weightLbs ?? 34000,
+      pieceCount: 22,
+      poNumber: `PO-${Math.floor(10000 + Math.random() * 89999)}`,
+      referenceNumber: `${Math.floor(1000000 + Math.random() * 8999999)}`,
+      lineHaulRate: lineHaul,
+      fuelSurcharge: fsc,
+      accessorials: [{ name: 'Lumper', amount: 150 }],
+      totalRate: lineHaul + fsc + 150,
+      originCity: load?.originCity || 'Dallas',
+      originState: load?.originState || 'TX',
+      pickupAddress: `${load?.originCity || 'Dallas'}, ${load?.originState || 'TX'} — dock hours 0700-1500`,
+      pickupAppt: load?.pickupDate ? String(load.pickupDate).slice(0, 10) : today(0),
+      destCity: load?.destCity || 'Atlanta',
+      destState: load?.destState || 'GA',
+      deliveryAddress: `${load?.destCity || 'Atlanta'}, ${load?.destState || 'GA'} — appt required`,
+      deliveryAppt: today(2),
+      specialInstructions:
+        'Driver assist unload. Check calls at pickup and every morning by 0900.',
+      confidence: 80,
+      provider: 'simulated',
+      raw: { note: 'Simulated Rate Con — set ANTHROPIC_API_KEY for live parsing.' },
+    };
   }
 
   // ---- Real provider: Mindee Bill of Lading API -------------------------------
@@ -169,6 +383,31 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; mime: string } {
 function numOrNull(v: any): number | null {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+}
+
+function str(v: any): string {
+  return v == null ? '' : String(v).trim();
+}
+
+// Claude usually returns clean JSON, but be defensive: strip code fences and
+// pull the first {...} block so a stray sentence never breaks the parse.
+function parseJsonLoose(text: string): any | null {
+  if (!text) return null;
+  const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
 }
 
 function firstQuantity(items: any): any {

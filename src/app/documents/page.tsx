@@ -32,6 +32,7 @@ import { readOcrKey } from "@/lib/plugins";
 import clsx from "clsx";
 
 const DOC_TYPES: { id: DocType; label: string }[] = [
+  { id: "RATECON", label: "Rate Con" },
   { id: "BOL", label: "Bill of Lading" },
   { id: "POD", label: "Proof of Delivery" },
   { id: "LUMPER", label: "Lumper Receipt" },
@@ -126,27 +127,75 @@ export default function DocumentsPage() {
     setActive((d) => (d ? { ...d, ...patch } : d));
   }
 
+  const [confirming, setConfirming] = useState(false);
+  const [confirmMsg, setConfirmMsg] = useState("");
+
   async function saveCorrections() {
     if (!active) return;
     setSaving(true);
     try {
-      const updated = await api.updateDocument(active.id, {
-        bolNumber: active.bolNumber,
-        proNumber: active.proNumber,
-        shipper: active.shipper,
-        consignee: active.consignee,
-        poNumber: active.poNumber,
-        pieceCount: active.pieceCount,
-        weightLbs: active.weightLbs,
-        shipDate: active.shipDate,
-        deliveryDate: active.deliveryDate,
-        signaturePresent: active.signaturePresent,
-        signedBy: active.signedBy,
-      });
+      const patch: Partial<FreightDocument> =
+        active.type === "RATECON"
+          ? {
+              rateConNumber: active.rateConNumber,
+              brokerName: active.brokerName,
+              brokerContactName: active.brokerContactName,
+              brokerPhone: active.brokerPhone,
+              brokerEmail: active.brokerEmail,
+              commodity: active.commodity,
+              equipmentType: active.equipmentType,
+              weightLbs: active.weightLbs,
+              poNumber: active.poNumber,
+              referenceNumber: active.referenceNumber,
+              lineHaulRate: active.lineHaulRate,
+              fuelSurcharge: active.fuelSurcharge,
+              totalRate: active.totalRate,
+              originCity: active.originCity,
+              originState: active.originState,
+              pickupAddress: active.pickupAddress,
+              pickupAppt: active.pickupAppt,
+              destCity: active.destCity,
+              destState: active.destState,
+              deliveryAddress: active.deliveryAddress,
+              deliveryAppt: active.deliveryAppt,
+              specialInstructions: active.specialInstructions,
+            }
+          : {
+              bolNumber: active.bolNumber,
+              proNumber: active.proNumber,
+              shipper: active.shipper,
+              consignee: active.consignee,
+              poNumber: active.poNumber,
+              pieceCount: active.pieceCount,
+              weightLbs: active.weightLbs,
+              shipDate: active.shipDate,
+              deliveryDate: active.deliveryDate,
+              signaturePresent: active.signaturePresent,
+              signedBy: active.signedBy,
+            };
+      const updated = await api.updateDocument(active.id, patch);
       setActive(updated);
       reloadAll();
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function confirmRateCon() {
+    if (!active) return;
+    setConfirming(true);
+    setConfirmMsg("");
+    try {
+      const res = await api.confirmRateConLoad(active.id);
+      setActive(res.doc);
+      setConfirmMsg(
+        `Load ${res.load.externalId} booked — ${res.load.originCity}, ${res.load.originState} → ${res.load.destCity}, ${res.load.destState}.`,
+      );
+      reloadAll();
+    } catch (e: any) {
+      setConfirmMsg(e.message || "Could not confirm the load.");
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -203,8 +252,12 @@ export default function DocumentsPage() {
                 <div className="grid h-14 w-14 place-items-center rounded-2xl bg-electric/15">
                   <ScanLine className="h-7 w-7 text-electric" />
                 </div>
-                <div className="text-sm font-semibold">Add your {docType}</div>
-                <div className="text-xs text-white/40">Take a photo, or pick a stored image or document (PDF)</div>
+                <div className="text-sm font-semibold">Add your {DOC_LABEL[docType] || docType}</div>
+                <div className="text-xs text-white/40">
+                  {docType === "RATECON"
+                    ? "Upload the broker's Rate Con — AI reads the terms and pre-fills a load you confirm"
+                    : "Take a photo, or pick a stored image or document (PDF)"}
+                </div>
                 <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
                   <button
                     onClick={() => cameraRef.current?.click()}
@@ -272,7 +325,26 @@ export default function DocumentsPage() {
       </div>
 
       {/* Review panel */}
-      {active && <ReviewPanel doc={active} onPatch={patchActive} onSave={saveCorrections} onInvoice={stageInvoice} saving={saving} />}
+      {active &&
+        (active.type === "RATECON" ? (
+          <RateConPanel
+            doc={active}
+            onPatch={patchActive}
+            onSave={saveCorrections}
+            onConfirm={confirmRateCon}
+            saving={saving}
+            confirming={confirming}
+            confirmMsg={confirmMsg}
+          />
+        ) : (
+          <ReviewPanel
+            doc={active}
+            onPatch={patchActive}
+            onSave={saveCorrections}
+            onInvoice={stageInvoice}
+            saving={saving}
+          />
+        ))}
 
       {/* History — grouped by job, or a flat list of everything */}
       <div className="mb-3 mt-8 flex items-center justify-between gap-2">
@@ -378,6 +450,7 @@ const DOC_LABEL: Record<string, string> = {
   LUMPER: "Lumper receipt",
   FUEL: "Fuel receipt",
   OTHER: "Document",
+  RATECON: "Rate Con",
 };
 function docLabel(d: FreightDocument) {
   const name = DOC_LABEL[d.type] || d.type;
@@ -806,6 +879,159 @@ function ReviewPanel({
           >
             <Receipt className="h-4 w-4" />
             {doc.invoiceStatus === "staged" ? "Invoice staged" : "Stage invoice"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RateConPanel({
+  doc,
+  onPatch,
+  onSave,
+  onConfirm,
+  saving,
+  confirming,
+  confirmMsg,
+}: {
+  doc: FreightDocument;
+  onPatch: (p: Partial<FreightDocument>) => void;
+  onSave: () => void;
+  onConfirm: () => void;
+  saving: boolean;
+  confirming: boolean;
+  confirmMsg: string;
+}) {
+  const confirmed = !!doc.loadConfirmed;
+  const total =
+    doc.totalRate ?? (doc.lineHaulRate ?? 0) + (doc.fuelSurcharge ?? 0);
+
+  return (
+    <div className="card p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-semibold">
+          <Truck className="h-4 w-4 text-electric" /> Rate Confirmation
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="chip bg-white/10 text-white/60">
+            {doc.ocrProvider === "simulated" ? "Simulated read" : `${doc.ocrProvider} · live`}
+          </span>
+          <span className="chip bg-white/10 text-white/60">{doc.confidence}% confidence</span>
+        </div>
+      </div>
+
+      {/* Status banner */}
+      {confirmed ? (
+        <div className="mb-4 flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm text-success ring-1 ring-success/30">
+          <CheckCircle2 className="h-4 w-4" /> {confirmMsg || "Load confirmed and created."}
+        </div>
+      ) : (
+        <div className="mb-4 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-sm text-warning ring-1 ring-warning/30">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            Review the extracted terms below, correct anything the AI missed, then confirm to
+            create the load. Nothing is booked until you confirm.
+          </div>
+        </div>
+      )}
+
+      {/* Broker */}
+      <div className="mb-1 mt-2 text-[11px] font-semibold uppercase tracking-wide text-white/40">Broker</div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Broker" value={doc.brokerName ?? ""} onChange={(v) => onPatch({ brokerName: v })} />
+        <Field label="Contact" value={doc.brokerContactName ?? ""} onChange={(v) => onPatch({ brokerContactName: v })} />
+        <Field label="Phone" value={doc.brokerPhone ?? ""} onChange={(v) => onPatch({ brokerPhone: v })} />
+        <Field label="Email" value={doc.brokerEmail ?? ""} onChange={(v) => onPatch({ brokerEmail: v })} />
+        <Field label="Rate Con #" value={doc.rateConNumber ?? ""} onChange={(v) => onPatch({ rateConNumber: v })} />
+        <Field label="Reference #" value={doc.referenceNumber ?? ""} onChange={(v) => onPatch({ referenceNumber: v })} />
+      </div>
+
+      {/* Financials */}
+      <div className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-white/40">Financials</div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Line haul ($)" value={doc.lineHaulRate ?? null} type="number" onChange={(v) => onPatch({ lineHaulRate: v ? Number(v) : null })} />
+        <Field label="Fuel surcharge ($)" value={doc.fuelSurcharge ?? null} type="number" onChange={(v) => onPatch({ fuelSurcharge: v ? Number(v) : null })} />
+        <Field label="Total rate ($)" value={doc.totalRate ?? null} type="number" onChange={(v) => onPatch({ totalRate: v ? Number(v) : null })} />
+      </div>
+      {doc.accessorials && doc.accessorials.length > 0 && (
+        <div className="mt-2 text-xs text-white/50">
+          Accessorials: {doc.accessorials.map((a) => `${a.name} ${money(a.amount)}`).join(" · ")}
+        </div>
+      )}
+      <div className="mt-2 text-sm text-white/70">
+        Load pays <span className="font-semibold text-electric">{money(total)}</span>
+      </div>
+
+      {/* Pickup */}
+      <div className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-white/40">Pickup</div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Origin city" value={doc.originCity ?? ""} onChange={(v) => onPatch({ originCity: v })} />
+        <Field label="Origin state" value={doc.originState ?? ""} onChange={(v) => onPatch({ originState: v })} />
+        <Field label="Pickup appt" value={doc.pickupAppt ?? ""} onChange={(v) => onPatch({ pickupAppt: v })} />
+        <div className="sm:col-span-2 lg:col-span-3">
+          <Field label="Pickup address" value={doc.pickupAddress ?? ""} onChange={(v) => onPatch({ pickupAddress: v })} />
+        </div>
+      </div>
+
+      {/* Delivery */}
+      <div className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-white/40">Delivery</div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Dest city" value={doc.destCity ?? ""} onChange={(v) => onPatch({ destCity: v })} />
+        <Field label="Dest state" value={doc.destState ?? ""} onChange={(v) => onPatch({ destState: v })} />
+        <Field label="Delivery appt" value={doc.deliveryAppt ?? ""} onChange={(v) => onPatch({ deliveryAppt: v })} />
+        <div className="sm:col-span-2 lg:col-span-3">
+          <Field label="Delivery address" value={doc.deliveryAddress ?? ""} onChange={(v) => onPatch({ deliveryAddress: v })} />
+        </div>
+      </div>
+
+      {/* Load specs */}
+      <div className="mb-1 mt-4 text-[11px] font-semibold uppercase tracking-wide text-white/40">Load</div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Commodity" value={doc.commodity ?? ""} onChange={(v) => onPatch({ commodity: v })} />
+        <Field label="Equipment" value={doc.equipmentType ?? ""} onChange={(v) => onPatch({ equipmentType: v })} />
+        <Field label="Weight (lbs)" value={doc.weightLbs} type="number" onChange={(v) => onPatch({ weightLbs: v ? Number(v) : null })} />
+      </div>
+
+      {/* Special instructions */}
+      <div className="mt-4">
+        <label className="text-[11px] font-medium uppercase tracking-wide text-white/40">Special instructions</label>
+        <textarea
+          value={doc.specialInstructions ?? ""}
+          onChange={(e) => onPatch({ specialInstructions: e.target.value })}
+          rows={2}
+          className="mt-1 w-full rounded-lg border border-white/10 bg-navy-900 px-3 py-2 text-sm outline-none focus:border-electric/50"
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+        <div className="text-xs text-white/50">
+          {confirmed ? (
+            <span className="flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5 text-success" /> Load created and booked
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-white/40">
+              <Package className="h-3.5 w-3.5" /> Staged — not yet booked
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onSave}
+            disabled={saving || confirmed}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/5 disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save corrections"}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={confirming || confirmed}
+            className="flex items-center gap-1.5 rounded-lg bg-electric px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-60"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {confirmed ? "Load confirmed" : confirming ? "Creating load…" : "Confirm & create load"}
           </button>
         </div>
       </div>

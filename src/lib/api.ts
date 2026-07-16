@@ -162,7 +162,12 @@ export interface Booking {
   load: ScoredLoad;
 }
 
-export type DocType = "BOL" | "POD" | "LUMPER" | "FUEL" | "OTHER";
+export type DocType = "BOL" | "POD" | "LUMPER" | "FUEL" | "OTHER" | "RATECON";
+
+export interface Accessorial {
+  name: string;
+  amount: number;
+}
 export type DocStatus = "captured" | "needs_review" | "complete";
 
 export interface FreightDocument {
@@ -190,6 +195,44 @@ export interface FreightDocument {
   bookingId: string | null;
   createdAt: string;
   imageData?: string | null; // only returned by document(id)
+  // Rate Con fields (present on RATECON documents)
+  rateConNumber?: string;
+  lineHaulRate?: number | null;
+  fuelSurcharge?: number | null;
+  accessorials?: Accessorial[];
+  totalRate?: number | null;
+  originCity?: string;
+  originState?: string;
+  pickupAddress?: string;
+  pickupAppt?: string;
+  destCity?: string;
+  destState?: string;
+  deliveryAddress?: string;
+  deliveryAppt?: string;
+  commodity?: string;
+  equipmentType?: string;
+  brokerName?: string;
+  brokerContactName?: string;
+  brokerPhone?: string;
+  brokerEmail?: string;
+  referenceNumber?: string;
+  specialInstructions?: string;
+  loadStaged?: boolean;
+  loadConfirmed?: boolean;
+}
+
+export interface ConfirmedRateCon {
+  doc: FreightDocument;
+  load: {
+    id: string;
+    externalId: string;
+    originCity: string;
+    originState: string;
+    destCity: string;
+    destState: string;
+    rate: number;
+    broker: string;
+  };
 }
 
 export interface DocumentJob {
@@ -283,6 +326,10 @@ export const api = {
     }),
   stageInvoice: (id: string) =>
     apiFetch<FreightDocument>(`/documents/${id}/invoice`, { method: "POST" }),
+  confirmRateConLoad: (id: string) =>
+    apiFetch<ConfirmedRateCon>(`/documents/${id}/confirm-load`, {
+      method: "POST",
+    }),
 
   // ---- Fuel ----
   fuel: () => apiFetch<FuelResponse>("/fuel"),

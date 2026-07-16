@@ -19,6 +19,9 @@ const REQUIRED: Record<string, string[]> = {
   LUMPER: ['poNumber'],
   FUEL: [],
   OTHER: [],
+  // A Rate Con isn't "signed off" like a dock doc — it's confirmed into a load.
+  // Completeness is driven by the confirm step, not the missing-field check.
+  RATECON: [],
 };
 
 const FIELD_LABEL: Record<string, string> = {
@@ -66,6 +69,30 @@ export class DocumentsService {
     confidence: true,
     invoiceAmount: true,
     invoiceStatus: true,
+    // Rate Con fields
+    rateConNumber: true,
+    lineHaulRate: true,
+    fuelSurcharge: true,
+    accessorials: true,
+    totalRate: true,
+    originCity: true,
+    originState: true,
+    pickupAddress: true,
+    pickupAppt: true,
+    destCity: true,
+    destState: true,
+    deliveryAddress: true,
+    deliveryAppt: true,
+    commodity: true,
+    equipmentType: true,
+    brokerName: true,
+    brokerContactName: true,
+    brokerPhone: true,
+    brokerEmail: true,
+    referenceNumber: true,
+    specialInstructions: true,
+    loadStaged: true,
+    loadConfirmed: true,
     loadId: true,
     bookingId: true,
     createdAt: true,
@@ -92,6 +119,12 @@ export class DocumentsService {
     },
   ) {
     const type = (body.type || 'BOL').toUpperCase();
+
+    // Rate Con is a different animal: it STARTS a haul rather than proving one.
+    // Parse it, stage it, and let the driver confirm into a real load.
+    if (type === 'RATECON') {
+      return this.scanRateCon(user, body);
+    }
 
     // Resolve the load context for auto-match + smarter extraction.
     let bookingId = body.bookingId || null;
@@ -191,6 +224,171 @@ export class DocumentsService {
     });
 
     return this.serialize(doc);
+  }
+
+  /**
+   * Parse a Rate Confirmation and STAGE it — no load is created yet. The driver
+   * reviews the extracted terms and taps Confirm (see confirmRateConLoad),
+   * which is what actually commits them to the haul. We never auto-commit off an
+   * OCR read because a Rate Con is a binding contract.
+   */
+  private async scanRateCon(
+    user: AuthUser,
+    body: { type?: string; imageData?: string; ocrKey?: string },
+  ) {
+    const byok = !!body.ocrKey?.trim();
+    const allowCompanyKey =
+      byok || (await this.usage.withinCap('ocr_scan', user.id, user.carrierId));
+
+    const rc = await this.ocr.extractRateCon(
+      body.imageData,
+      {},
+      { allowCompanyKey },
+    );
+
+    const billable = !byok && rc.provider !== 'simulated';
+    await this.usage.record({
+      kind: 'ocr_scan',
+      provider: byok ? 'byok' : rc.provider,
+      billable,
+      userId: user.id,
+      carrierId: user.carrierId,
+    });
+
+    const doc = await this.prisma.document.create({
+      data: {
+        type: 'RATECON',
+        status: 'needs_review', // "review then confirm"
+        imageData: body.imageData ?? null,
+        // Reuse the shared columns where they map cleanly.
+        poNumber: rc.poNumber,
+        weightLbs: rc.weightLbs,
+        pieceCount: rc.pieceCount,
+        // Rate Con specifics.
+        rateConNumber: rc.rateConNumber,
+        lineHaulRate: rc.lineHaulRate,
+        fuelSurcharge: rc.fuelSurcharge,
+        accessorials: JSON.stringify(rc.accessorials ?? []),
+        totalRate: rc.totalRate,
+        originCity: rc.originCity,
+        originState: rc.originState,
+        pickupAddress: rc.pickupAddress,
+        pickupAppt: rc.pickupAppt,
+        destCity: rc.destCity,
+        destState: rc.destState,
+        deliveryAddress: rc.deliveryAddress,
+        deliveryAppt: rc.deliveryAppt,
+        commodity: rc.commodity,
+        equipmentType: rc.equipmentType,
+        brokerName: rc.brokerName,
+        brokerContactName: rc.brokerContactName,
+        brokerPhone: rc.brokerPhone,
+        brokerEmail: rc.brokerEmail,
+        referenceNumber: rc.referenceNumber,
+        specialInstructions: rc.specialInstructions,
+        loadStaged: true,
+        loadConfirmed: false,
+        missingFields: JSON.stringify([]),
+        extractedRaw: JSON.stringify(rc.raw ?? {}),
+        ocrProvider: rc.provider,
+        confidence: rc.confidence,
+        userId: user.id,
+        carrierId: user.carrierId ?? null,
+      },
+      select: this.listSelect,
+    });
+
+    return this.serialize(doc);
+  }
+
+  /**
+   * The driver confirms a staged Rate Con. THIS is where the haul becomes real:
+   * we synthesize a Load from the parsed terms and book it to the carrier, then
+   * link the document. Navigation, earnings and the later BOL/POD package all
+   * hang off this load.
+   */
+  async confirmRateConLoad(user: AuthUser, id: string) {
+    if (!user.carrierId) {
+      throw new BadRequestException('No carrier profile on this account.');
+    }
+    const doc = await this.prisma.document.findFirst({
+      where: { id, userId: user.id },
+    });
+    if (!doc) throw new NotFoundException('Rate Con not found');
+    if (doc.type !== 'RATECON') {
+      throw new BadRequestException('This document is not a Rate Con.');
+    }
+    if (doc.loadConfirmed && doc.loadId) {
+      // Already confirmed — return the current state instead of double-booking.
+      return this.getOne(user, id);
+    }
+
+    const rate =
+      doc.totalRate ?? (doc.lineHaulRate ?? 0) + (doc.fuelSurcharge ?? 0);
+
+    // A synthetic, collision-safe external id for a carrier-originated load.
+    const base = (doc.rateConNumber || doc.referenceNumber || '')
+      .replace(/[^A-Za-z0-9]/g, '')
+      .slice(0, 16);
+    let externalId = `RC-${base || doc.id.slice(0, 8)}`;
+    if (await this.prisma.load.findUnique({ where: { externalId } })) {
+      externalId = `${externalId}-${doc.id.slice(0, 4)}`;
+    }
+
+    const load = await this.prisma.load.create({
+      data: {
+        externalId,
+        equipment: doc.equipmentType || 'Van',
+        originCity: doc.originCity || '',
+        originState: doc.originState || '',
+        destCity: doc.destCity || '',
+        destState: doc.destState || '',
+        miles: 0, // unknown from the Rate Con; filled once routed
+        deadheadMiles: 0,
+        rate: rate || 0,
+        weightLbs: doc.weightLbs ?? 0,
+        broker: doc.brokerName || 'Broker',
+        brokerRating: 0,
+        pickupDate: (doc.pickupAppt || '').slice(0, 10),
+        source: 'RateCon',
+        demandIndex: 0,
+        reloadIndex: 0,
+      },
+    });
+
+    const booking = await this.prisma.booking.create({
+      data: {
+        loadId: load.id,
+        userId: user.id,
+        carrierId: user.carrierId,
+        status: 'booked',
+      },
+    });
+
+    const updated = await this.prisma.document.update({
+      where: { id },
+      data: {
+        loadId: load.id,
+        bookingId: booking.id,
+        loadConfirmed: true,
+        status: 'complete',
+      },
+      select: this.listSelect,
+    });
+
+    return {
+      doc: this.serialize(updated),
+      load: {
+        id: load.id,
+        externalId: load.externalId,
+        originCity: load.originCity,
+        originState: load.originState,
+        destCity: load.destCity,
+        destState: load.destState,
+        rate: load.rate,
+        broker: load.broker,
+      },
+    };
   }
 
   async list(user: AuthUser) {
@@ -601,8 +799,32 @@ export class DocumentsService {
       'deliveryDate',
       'signaturePresent',
       'signedBy',
+      // Rate Con fields the driver can correct before confirming into a load.
+      'rateConNumber',
+      'lineHaulRate',
+      'fuelSurcharge',
+      'totalRate',
+      'originCity',
+      'originState',
+      'pickupAddress',
+      'pickupAppt',
+      'destCity',
+      'destState',
+      'deliveryAddress',
+      'deliveryAppt',
+      'commodity',
+      'equipmentType',
+      'brokerName',
+      'brokerContactName',
+      'brokerPhone',
+      'brokerEmail',
+      'referenceNumber',
+      'specialInstructions',
     ]) {
       if (k in patch) data[k] = patch[k];
+    }
+    if ('accessorials' in patch) {
+      data.accessorials = JSON.stringify(patch.accessorials ?? []);
     }
     data.missingFields = JSON.stringify(missing);
     data.status = missing.length ? 'needs_review' : 'complete';
@@ -643,8 +865,17 @@ export class DocumentsService {
     } catch {
       missing = [];
     }
+    let accessorials: { name: string; amount: number }[] = [];
+    if ('accessorials' in doc) {
+      try {
+        accessorials = JSON.parse(doc.accessorials || '[]');
+      } catch {
+        accessorials = [];
+      }
+    }
     return {
       ...doc,
+      ...('accessorials' in doc ? { accessorials } : {}),
       missingFields: missing,
       missingLabels: missing.map((m) => FIELD_LABEL[m] || m),
     };

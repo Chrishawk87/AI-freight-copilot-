@@ -12,6 +12,7 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -48,6 +49,28 @@ class UpdateDocDto {
   @IsOptional() @IsString() deliveryDate?: string;
   @IsOptional() @IsBoolean() signaturePresent?: boolean;
   @IsOptional() @IsString() signedBy?: string;
+  // Rate Con fields (editable before confirming into a load)
+  @IsOptional() @IsString() rateConNumber?: string;
+  @IsOptional() @IsNumber() lineHaulRate?: number;
+  @IsOptional() @IsNumber() fuelSurcharge?: number;
+  @IsOptional() @IsNumber() totalRate?: number;
+  @IsOptional() @IsArray() accessorials?: { name: string; amount: number }[];
+  @IsOptional() @IsString() originCity?: string;
+  @IsOptional() @IsString() originState?: string;
+  @IsOptional() @IsString() pickupAddress?: string;
+  @IsOptional() @IsString() pickupAppt?: string;
+  @IsOptional() @IsString() destCity?: string;
+  @IsOptional() @IsString() destState?: string;
+  @IsOptional() @IsString() deliveryAddress?: string;
+  @IsOptional() @IsString() deliveryAppt?: string;
+  @IsOptional() @IsString() commodity?: string;
+  @IsOptional() @IsString() equipmentType?: string;
+  @IsOptional() @IsString() brokerName?: string;
+  @IsOptional() @IsString() brokerContactName?: string;
+  @IsOptional() @IsString() brokerPhone?: string;
+  @IsOptional() @IsString() brokerEmail?: string;
+  @IsOptional() @IsString() referenceNumber?: string;
+  @IsOptional() @IsString() specialInstructions?: string;
 }
 
 @UseGuards(JwtAuthGuard)
@@ -108,5 +131,11 @@ export class DocumentsController {
   @Post(':id/invoice')
   stageInvoice(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.docs.stageInvoice(user, id);
+  }
+
+  // Confirm a staged Rate Con → creates a Load + Booking and links the doc.
+  @Post(':id/confirm-load')
+  confirmRateConLoad(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.docs.confirmRateConLoad(user, id);
   }
 }
