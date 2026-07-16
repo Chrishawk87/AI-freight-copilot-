@@ -1,11 +1,11 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Controller, Get } from '@nestjs/common';
 import { MailService } from './mail.service';
 
 // Read-only diagnostic: which senders does the SERVER actually see configured?
 // Reports booleans + the non-secret "from" address so you can confirm env vars
-// landed on this service and redeployed — without ever exposing a key.
-@UseGuards(JwtAuthGuard)
+// landed on this service and redeployed — without ever exposing a key. Left
+// unauthenticated on purpose so it can be checked straight from the browser;
+// it exposes no secrets, only whether config is present.
 @Controller('mail')
 export class MailController {
   constructor(private readonly mail: MailService) {}
