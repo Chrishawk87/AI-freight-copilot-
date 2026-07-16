@@ -454,23 +454,19 @@ export class DocumentsService {
       return { sent: true, to, filename };
     }
 
-    // No OAuth — try the carrier's own SMTP (app password) next.
-    const byok = {
-      host: carrier?.smtpHost || '',
-      port: carrier?.smtpPort || 587,
-      secure: !!carrier?.smtpSecure,
-      user: carrier?.smtpUser || carrier?.contactEmail || '',
-      pass: decryptSecret(carrier?.smtpPass || ''),
-      from: carrierReply,
-    };
-
     const label = (carrier?.companyName
       ? `${carrier.companyName} via AI Freight Co-Pilot`
       : 'AI Freight Co-Pilot'
     ).replace(/"/g, '');
 
-    if (this.mail.configured(byok)) {
-      const result = await this.mail.send(byok, {
+    // No OAuth. Prefer the Resend HTTPS relay next — it works on hosts that
+    // BLOCK outbound SMTP (e.g. Railway), whereas any SMTP attempt (the
+    // carrier's own app password OR our SMTP relay) would just time out there.
+    // So a working HTTPS relay always wins over a doomed SMTP connection; the
+    // carrier's address rides along as reply-to.
+    if (this.mail.resendAvailable()) {
+      const from = `${label} <${this.mail.platformFromAddress()}>`;
+      const result = await this.mail.sendResend(from, {
         to,
         replyTo: carrierReply || undefined,
         subject,
@@ -483,11 +479,17 @@ export class DocumentsService {
       return { sent: true, to, filename };
     }
 
-    // Shared platform relay. Prefer Resend's HTTPS API (works on hosts that
-    // block outbound SMTP, e.g. Railway); fall back to the SMTP relay.
-    if (this.mail.resendAvailable()) {
-      const from = `${label} <${this.mail.platformFromAddress()}>`;
-      const result = await this.mail.sendResend(from, {
+    // No HTTPS relay configured — try the carrier's own SMTP (app password).
+    const byok = {
+      host: carrier?.smtpHost || '',
+      port: carrier?.smtpPort || 587,
+      secure: !!carrier?.smtpSecure,
+      user: carrier?.smtpUser || carrier?.contactEmail || '',
+      pass: decryptSecret(carrier?.smtpPass || ''),
+      from: carrierReply,
+    };
+    if (this.mail.configured(byok)) {
+      const result = await this.mail.send(byok, {
         to,
         replyTo: carrierReply || undefined,
         subject,
