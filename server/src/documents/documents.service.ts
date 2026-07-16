@@ -371,6 +371,8 @@ export class DocumentsService {
       select: {
         companyName: true,
         contactEmail: true,
+        dotNumber: true,
+        mcNumber: true,
         smtpHost: true,
         smtpPort: true,
         smtpSecure: true,
@@ -383,6 +385,8 @@ export class DocumentsService {
     })) as {
       companyName: string;
       contactEmail: string;
+      dotNumber: string;
+      mcNumber: string;
       smtpHost: string;
       smtpPort: number;
       smtpSecure: boolean;
@@ -406,16 +410,51 @@ export class DocumentsService {
     const jobRef = load
       ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity} → ${load.destCity}`
       : 'documents';
-    const subject = body.subject?.trim() || `Documents — ${jobRef}`;
+
+    // Carrier identity. Thousands of carriers share ONE sending domain
+    // (originmanagementsolutions.com), so the recipient must be able to tell
+    // instantly which carrier a package is from. We surface it two ways:
+    //   • the subject line — company name + the driver/operator who sent it
+    //   • a signature block in the body — company, driver, USDOT/MC, reply-to
+    const companyName = (carrier?.companyName || '').trim();
+    const driverName = (user.name || '').trim();
+    const dot = (carrier?.dotNumber || '').trim();
+    const mc = (carrier?.mcNumber || '').trim();
+
+    // Default subject clearly names the carrier (and driver). A user-supplied
+    // subject is still honored as-is.
+    const subjectWho = [companyName, driverName && `(${driverName})`]
+      .filter(Boolean)
+      .join(' ');
+    const subject =
+      body.subject?.trim() ||
+      (subjectWho ? `${subjectWho} — ${jobRef}` : `Documents — ${jobRef}`);
+
     const summary = this.docSummary(docs);
     const single = docs.length === 1;
+
+    // Always-appended signature so identity survives even a custom subject.
+    const idLine = [
+      dot && `USDOT ${dot}`,
+      mc && (/^mc/i.test(mc) ? mc : `MC ${mc}`),
+    ]
+      .filter(Boolean)
+      .join('  ·  ');
+    const sigLines = [
+      companyName,
+      driverName && `Driver: ${driverName}`,
+      idLine,
+      carrierReply && `Reply to: ${carrierReply}`,
+    ].filter(Boolean);
+    const signature = sigLines.length ? `\n\n—\n${sigLines.join('\n')}` : '';
+
     const text =
       (body.message?.trim() ? `${body.message.trim()}\n\n` : '') +
       (single
         ? `Attached is the ${summary} for ${jobRef}.`
         : `Attached is the document package for ${jobRef} (${docs.length} documents).`) +
       (summary ? `\n\nIncluded: ${summary}.` : '') +
-      (carrier?.companyName ? `\n\n${carrier.companyName}` : '') +
+      signature +
       `\n\nSent via AI Freight Co-Pilot.`;
 
     const attachments = [
