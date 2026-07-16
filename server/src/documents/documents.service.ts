@@ -1,13 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/current-user.decorator';
 import { OcrService } from './ocr.service';
 import { UsageService } from '../usage/usage.service';
-import { MailService } from '../mail/mail.service';
 import { buildJobPackagePdf } from './job-package';
 
 // What each document type needs before it's "complete" enough to invoice / file.
@@ -39,7 +34,6 @@ export class DocumentsService {
     private readonly prisma: PrismaService,
     private readonly ocr: OcrService,
     private readonly usage: UsageService,
-    private readonly mail: MailService,
   ) {}
 
   // Fields returned in list view — everything except the heavy image + raw blobs.
@@ -319,54 +313,6 @@ export class DocumentsService {
       dataUrl: `data:application/pdf;base64,${base64}`,
       docCount,
     };
-  }
-
-  /**
-   * Email a job's combined package as a single PDF attachment. Uses the
-   * company mailer; the carrier's contact email is the reply-to (and gets a
-   * copy) so replies land back with the driver's company.
-   */
-  async emailJobPackage(
-    user: AuthUser,
-    jobId: string,
-    body: { to: string; subject?: string; message?: string },
-  ) {
-    const to = (body.to || '').trim();
-    if (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
-      throw new BadRequestException('Please enter a valid recipient email.');
-    }
-    if (!this.mail.configured()) {
-      throw new BadRequestException(
-        'Email is not set up yet. Ask your company admin to add the mail (SMTP) settings.',
-      );
-    }
-
-    const { bytes, filename, load, carrier } = await this.buildPackage(user, jobId);
-    const replyTo = carrier?.contactEmail?.trim() || undefined;
-    const jobRef = load
-      ? `${load.externalId ?? load.id.slice(0, 6)} · ${load.originCity} → ${load.destCity}`
-      : 'documents';
-    const subject = body.subject?.trim() || `Documents — ${jobRef}`;
-    const text =
-      (body.message?.trim() ? `${body.message.trim()}\n\n` : '') +
-      `Attached is the document package for ${jobRef}.` +
-      (carrier?.companyName ? `\n\n${carrier.companyName}` : '') +
-      `\n\nSent via AI Freight Co-Pilot.`;
-
-    const result = await this.mail.send({
-      to,
-      cc: replyTo,
-      replyTo,
-      subject,
-      text,
-      attachments: [
-        { filename, content: Buffer.from(bytes), contentType: 'application/pdf' },
-      ],
-    });
-    if (!result.sent) {
-      throw new BadRequestException(result.reason || 'The email could not be sent.');
-    }
-    return { sent: true, to, filename };
   }
 
   async getOne(user: AuthUser, id: string) {

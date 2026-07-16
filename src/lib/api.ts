@@ -230,14 +230,6 @@ export const api = {
   documentJobs: () => apiFetch<DocumentJob[]>("/documents/jobs"),
   jobPackage: (jobId: string) =>
     apiFetch<JobPackage>(`/documents/jobs/${encodeURIComponent(jobId)}/package`),
-  emailJobPackage: (
-    jobId: string,
-    body: { to: string; subject?: string; message?: string },
-  ) =>
-    apiFetch<{ sent: boolean; to: string; filename: string }>(
-      `/documents/jobs/${encodeURIComponent(jobId)}/email`,
-      { method: "POST", body: JSON.stringify(body) },
-    ),
   document: (id: string) => apiFetch<FreightDocument>(`/documents/${id}`),
   scanDocument: (body: DocScanBody) =>
     apiFetch<FreightDocument>("/documents/scan", {

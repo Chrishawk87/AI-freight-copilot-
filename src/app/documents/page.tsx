@@ -82,6 +82,7 @@ export default function DocumentsPage() {
     () => api.documentJobs(),
     [],
   );
+  const { data: carrier } = useApi(() => api.carrier(), []);
   const [view, setView] = useState<"jobs" | "all">("jobs");
 
   function reloadAll() {
@@ -311,7 +312,13 @@ export default function DocumentsPage() {
         ) : (
           <div className="grid gap-3">
             {jobs.map((j) => (
-              <JobCard key={j.jobId} job={j} onOpenDoc={(d) => setActive(d)} activeId={active?.id} />
+              <JobCard
+                key={j.jobId}
+                job={j}
+                onOpenDoc={(d) => setActive(d)}
+                activeId={active?.id}
+                companyEmail={carrier?.contactEmail || ""}
+              />
             ))}
           </div>
         )
@@ -367,10 +374,12 @@ function JobCard({
   job,
   onOpenDoc,
   activeId,
+  companyEmail,
 }: {
   job: DocumentJob;
   onOpenDoc: (d: FreightDocument) => void;
   activeId?: string;
+  companyEmail: string;
 }) {
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -383,17 +392,21 @@ function JobCard({
   const [sent, setSent] = useState("");
   const [emailErr, setEmailErr] = useState("");
 
+  function saveBlob(pkg: { dataUrl: string; filename: string }) {
+    const a = document.createElement("a");
+    a.href = pkg.dataUrl;
+    a.download = pkg.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   async function downloadPackage() {
     setDownloading(true);
     setErr("");
     try {
       const pkg = await api.jobPackage(job.jobId);
-      const a = document.createElement("a");
-      a.href = pkg.dataUrl;
-      a.download = pkg.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      saveBlob(pkg);
     } catch (e: any) {
       setErr(e.message || "Could not build the package");
     } finally {
@@ -401,20 +414,33 @@ function JobCard({
     }
   }
 
+  // No server or SMTP account needed: build + download the combined PDF, then
+  // open the driver's OWN email app with a draft pre-filled from their on-file
+  // company email. They attach the downloaded PDF and hit send from their inbox.
   async function sendEmail() {
     setSending(true);
     setEmailErr("");
     setSent("");
     try {
-      const res = await api.emailJobPackage(job.jobId, {
-        to: to.trim(),
-        message: message.trim() || undefined,
-      });
-      setSent(`Package emailed to ${res.to}.`);
-      setTo("");
-      setMessage("");
+      const pkg = await api.jobPackage(job.jobId);
+      saveBlob(pkg);
+      const subject = `Freight documents — ${job.title}`;
+      const bodyLines = [
+        message.trim(),
+        message.trim() ? "" : undefined,
+        `Attached: ${pkg.filename} (${pkg.docCount} document${
+          pkg.docCount === 1 ? "" : "s"
+        }).`,
+        companyEmail ? `\n${companyEmail}` : undefined,
+      ].filter((l): l is string => l !== undefined);
+      const body = bodyLines.join("\n");
+      const mailto = `mailto:${to.trim()}?subject=${encodeURIComponent(
+        subject,
+      )}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+      setSent(`Email draft opened. Attach ${pkg.filename} and send.`);
     } catch (e: any) {
-      setEmailErr(e.message || "Could not send the email");
+      setEmailErr(e.message || "Could not prepare the email");
     } finally {
       setSending(false);
     }
@@ -504,16 +530,18 @@ function JobCard({
                 className="w-full rounded-lg border border-white/10 bg-navy-900 px-3 py-2 text-sm outline-none focus:border-electric/50"
               />
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] text-white/40">
-                  Sent from your company email; replies come back to you.
+                <p className="text-[11px] leading-relaxed text-white/40">
+                  {companyEmail
+                    ? `Opens your email app (${companyEmail}) with a draft ready. The package PDF downloads — just attach it and send.`
+                    : "Opens your email app with a draft ready. The package PDF downloads — just attach it and send. Add a company email in your Profile to sign it automatically."}
                 </p>
                 <button
                   onClick={sendEmail}
-                  disabled={sending || !to.trim()}
-                  className="flex items-center gap-1.5 rounded-lg bg-electric px-3 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-50"
+                  disabled={sending}
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg bg-electric px-3 py-2 text-xs font-semibold text-white shadow-glow transition hover:bg-electric/90 disabled:opacity-50"
                 >
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Send
+                  Open draft
                 </button>
               </div>
               {emailErr && (
