@@ -1364,4 +1364,322 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "It's the vapor recovery system sensing back-pressure. Make sure your vapor hose is on the terminal's recovery line and your pressure-relief valves work. Repeated cutoffs mean static is building — an explosion risk — so stop and ground the trailer immediately.",
     keywords: 'vapor recovery, pump cutoff, back pressure, hazmat terminal, static, ground trailer, pressure relief, explosion risk',
   },
+
+  // ── Freight / Cargo Types & Legal Limits manual ──────────────────────
+
+  {
+    seedKey: 'ftl-manual',
+    category: 'load-types',
+    subcategory: 'ftl',
+    topic: 'Full Truckload (FTL) and its sub-types',
+    content:
+      "Full truckload means one shipper's freight fills the whole trailer and runs direct from point A to point B — no terminals, no sorting. The main flavors: expedited FTL is time-critical, dedicated tractor, often a team running non-stop; drop-trailer FTL means you drop the loaded trailer and grab a pre-loaded backhaul so the tractor never waits; live load or unload means you stay with the trailer while they work it, which starts detention pay after the free time, usually two hours; spot-market FTL is a one-off load off a board or broker priced by the day's supply and demand; and dedicated contract FTL is a six to twelve month deal running the same lane over and over for a fixed rate.",
+    keywords: 'FTL, full truckload, expedited, drop trailer, live load, live unload, detention, spot market, dedicated contract, lane, direct',
+  },
+  {
+    seedKey: 'qa-ftl-simpler',
+    category: 'qa',
+    subcategory: 'ftl',
+    topic: 'Why is a full truckload simpler for the driver than LTL?',
+    content:
+      "Because you've got one bill of lading, one pickup, one delivery, and one set of paperwork. You're not sorting pallets, juggling appointments in different cities, or sitting at terminals waiting for a re-sort. It keeps your on-duty yard time to a minimum.",
+    keywords: 'FTL simpler, one BOL, single pickup, single delivery, no sorting, yard time, versus LTL',
+  },
+  {
+    seedKey: 'qa-ftl-pricing',
+    category: 'qa',
+    subcategory: 'ftl',
+    topic: 'Is a full truckload priced per mile or per load?',
+    content:
+      "Depends on the lane. Per mile is standard on long hauls of five hundred miles or more where fuel and distance are the big costs. Per load is used on short regional runs where the time spent loading and the empty deadhead miles matter more than the actual distance.",
+    keywords: 'FTL pricing, per mile, per load, long haul, short haul, regional, deadhead, lane rate',
+  },
+  {
+    seedKey: 'qa-ftl-light',
+    category: 'qa',
+    subcategory: 'ftl',
+    topic: 'The shipper only has twelve pallets but a 53-foot trailer — is it still FTL?',
+    content:
+      "Yes, it's still full truckload if you're taking it direct. It's just a light FTL, and the rate gets negotiated as a minimum charge because you're tying up the whole trailer even though the weight and cube aren't maxed out.",
+    keywords: 'light FTL, twelve pallets, minimum charge, whole trailer, direct, not maxed out, cube weight',
+  },
+  {
+    seedKey: 'qa-ftl-split-stop',
+    category: 'qa',
+    subcategory: 'ftl',
+    topic: 'A broker wants to add a split stop to my FTL load mid-trip — what do I do?',
+    content:
+      "Demand a new rate con and an added stop charge, usually a hundred fifty to three hundred dollars per extra stop. Your original rate was for a direct run — an extra stop means more fuel, more time, and more liability, so it has to be paid for and in writing before you agree.",
+    keywords: 'split stop, extra stop charge, new rate con, 150 to 300, direct route, accessorial, mid-trip, in writing',
+  },
+  {
+    seedKey: 'hazmat-manual',
+    category: 'load-types',
+    subcategory: 'hazmat',
+    topic: 'Hazmat loads and their hazard classes',
+    content:
+      "Hazmat is any shipment that's flammable, corrosive, toxic, explosive, or radioactive — it needs special handling, paperwork, and a driver with the endorsement. The classes you'll see: Class three flammable and combustible liquids like gas, diesel, ethanol, and paint; Class eight corrosives like sulfuric acid and battery fluid; Class two gases like propane, chlorine, and anhydrous ammonia, usually in pressure tankers; Class one explosives like fireworks and ammunition, heavily restricted; Class seven radioactive like medical isotopes needing radiation monitoring; and inhalation-hazard loads like anhydrous ammonia and chlorine gas that carry route restrictions and extra training.",
+    keywords: 'hazmat, hazardous materials, class 3 flammable, class 8 corrosive, class 2 gas, class 1 explosive, class 7 radioactive, inhalation hazard, endorsement, placards',
+  },
+  {
+    seedKey: 'qa-hazmat-docs',
+    category: 'qa',
+    subcategory: 'hazmat',
+    topic: 'What documents do I need in the cab for a hazmat load?',
+    content:
+      "You carry the hazmat shipping papers showing the UN number, proper shipping name, hazard class, packing group, and quantity. Keep the Emergency Response Guidebook within reach. Display the right placards — one on each side and each end of the trailer. And have a route plan that avoids restricted tunnels and bridges.",
+    keywords: 'hazmat documents, shipping papers, UN number, proper shipping name, hazard class, packing group, ERG, emergency response guidebook, placards, route plan',
+  },
+  {
+    seedKey: 'qa-hazmat-limited-qty',
+    category: 'qa',
+    subcategory: 'hazmat',
+    topic: 'The load is a limited quantity of hazmat — do I still need to placard?',
+    content:
+      "No. Limited-quantity and excepted-quantity shipments are exempt from placarding and most of the paperwork as long as each package stays under the weight threshold, usually under sixty-six pounds. But you still need the hazmat endorsement on your license just to haul it.",
+    keywords: 'limited quantity, excepted quantity, no placard, exempt, 66 pounds, endorsement required, small hazmat',
+  },
+  {
+    seedKey: 'qa-hazmat-tunnel',
+    category: 'qa',
+    subcategory: 'hazmat',
+    topic: "I'm coming up on a tunnel marked No Hazmat — what do I do?",
+    content:
+      "Take the posted alternate route. This is exactly why you plan the route before dispatch. Cross that tunnel anyway and you're looking at fines up to ten thousand dollars and possible arrest. You detour, even if it adds a hundred miles.",
+    keywords: 'no hazmat tunnel, alternate route, route restriction, ten thousand fine, arrest, detour, plan route, bridge restriction',
+  },
+  {
+    seedKey: 'qa-hazmat-packing-group',
+    category: 'qa',
+    subcategory: 'hazmat',
+    topic: 'What does the packing group — one, two, or three — mean on a hazmat BOL?',
+    content:
+      "It's the degree of danger. Packing group one is great danger, like a highly volatile gas. Group two is medium danger. Group three is minor. It drives how strong the packaging has to be, the placarding level, and the rules for keeping different classes apart on the same trailer.",
+    keywords: 'packing group, PG I, PG II, PG III, degree of danger, packaging strength, segregation, hazmat BOL, mixing classes',
+  },
+  {
+    seedKey: 'sizelimit-manual',
+    category: 'regulations',
+    subcategory: 'size-limits',
+    topic: 'Legal size limits — width, height, length, and overhang',
+    content:
+      "These are the max dimensions you can run without an oversize permit. Width is eight feet six inches, that's a hundred and two inches. Height is thirteen feet six inches from the ground to the highest point of the load — that's the national standard, though a few states allow fourteen feet on certain highways. Length is fifty-three feet for a semi-trailer on the national network, with some states allowing fifty-seven to sixty feet off the interstate. Rear overhang can't stick out more than four feet past the rear axle without a permit. Go over any of these and you're into the oversize permit process.",
+    keywords: 'legal size limits, width 8 foot 6, 102 inches, height 13 foot 6, length 53 foot, overhang 4 feet, oversize permit, national network, dimensions',
+  },
+  {
+    seedKey: 'qa-size-one-inch',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: "My flatbed load is eight foot seven — just one inch over. Do I really need a permit?",
+    content:
+      "Yes. There's no grace inch. One inch over eight foot six and you're legally an oversize load needing a permit. Officers use laser measurers at the scales, fines for an inch over run five hundred to a thousand dollars, and they'll make you unload right there on the shoulder.",
+    keywords: 'one inch over, no grace inch, 8 foot 7, oversize permit, laser measure, fine 500 1000, unload on shoulder, width',
+  },
+  {
+    seedKey: 'qa-size-air-down',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'My load is thirteen foot eight tall — can I air down the suspension to lower it?',
+    content:
+      "You can dump the air bags for a second to clear one low bridge, but you can't run highway speeds like that — it wrecks the suspension. For the whole trip you have to be under thirteen foot six at normal ride height. If you're over, you need a height permit, and that usually locks you onto specific low-clearance routes.",
+    keywords: 'air down suspension, dump air bags, low bridge, 13 foot 8, ride height, height permit, low clearance route, cannot run highway',
+  },
+  {
+    seedKey: 'qa-size-measure-height',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'How do I measure my load height to be sure I comply?',
+    content:
+      "Use a height stick — a telescoping pole with a tape — standing on level ground. Measure from the pavement to the highest fixed point on the load, including straps, dunnage, or any antenna. Never guess. Always measure before you pull off the shipper's lot.",
+    keywords: 'measure height, height stick, telescoping pole, level ground, highest point, straps dunnage, measure before leaving, compliance',
+  },
+  {
+    seedKey: 'qa-size-57-foot',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'Can I run a fifty-seven-foot trailer on any road?',
+    content:
+      "No. Fifty-seven footers are only legal on the designated national network — the interstates and certain highways. Take one onto a state or county road and you're violating the length law and can get cited.",
+    keywords: '57 foot trailer, national network, interstate only, state road, county road, length law, citation',
+  },
+  {
+    seedKey: 'weightlimit-manual',
+    category: 'regulations',
+    subcategory: 'weight-limits',
+    topic: 'Legal weight limits — gross, axle, and the bridge formula',
+    content:
+      "These are the max weights you can carry without an overweight permit, and the scales enforce them hard. Gross vehicle weight — truck, trailer, and cargo together — tops out at eighty thousand pounds federal. The steer axle maxes at twelve thousand, though some states allow thirteen or fourteen with heavy-duty tires. The drive tandems max at thirty-four thousand across two axles spaced at least four feet apart, and the trailer tandems also max at thirty-four thousand. On top of that the federal bridge formula limits weight based on how many axles you have and how far apart the first and last are — it keeps concentrated weight from crushing bridges.",
+    keywords: 'legal weight limits, gross vehicle weight, 80000 pounds, steer axle 12000, drive tandem 34000, trailer tandem 34000, bridge formula, overweight permit, axle spacing',
+  },
+  {
+    seedKey: 'qa-weight-slide-tandems',
+    category: 'qa',
+    subcategory: 'weight-limits',
+    topic: 'My CAT ticket shows seventy-nine five gross but drives at thirty-four five — can I run?',
+    content:
+      "No. You're overweight on the drives. Slide your trailer tandems forward to pull weight off the drives and onto the trailer axles, then get a re-weigh ticket proving you're under thirty-four thousand on the drives before you touch the road.",
+    keywords: 'CAT scale, overweight drives, 34500, slide tandems forward, shift weight, re-weigh, under 34000, gross under 80000',
+  },
+  {
+    seedKey: 'qa-weight-bridge-formula',
+    category: 'qa',
+    subcategory: 'weight-limits',
+    topic: 'What is the bridge formula and how does it affect me?',
+    content:
+      "The bridge formula says the weight on any group of axles can't be more than five hundred pounds times the distance in feet between the outermost axles of that group, capped at eighty thousand overall. In plain terms, if you're heavy you can't bunch your axles too close together — too short a spread and you're overweight for the bridge even when you're under eighty thousand gross.",
+    keywords: 'bridge formula, 500 pounds per foot, axle spread, outermost axles, concentrated weight, overweight bridge, under 80000 gross',
+  },
+  {
+    seedKey: 'qa-weight-steer-tire',
+    category: 'qa',
+    subcategory: 'weight-limits',
+    topic: "My steer is eleven five, under twelve thousand — why did the officer still write me?",
+    content:
+      "Because the tire's load rating counts too. If each steer tire is rated for six thousand pounds, eleven five is fine. But if you're on super singles rated for five thousand each — ten thousand total — you're over the tire limit even though you're under the axle limit. Always check the tire rating and the PSI.",
+    keywords: 'steer axle, 11500, tire load rating, super single, tire limit versus axle limit, PSI, 6000 per tire, ticket',
+  },
+  {
+    seedKey: 'qa-weight-tare',
+    category: 'qa',
+    subcategory: 'weight-limits',
+    topic: "Shipper says they loaded forty-five thousand of cargo but I'm over gross — how?",
+    content:
+      "Because you forgot the tractor, the trailer, and the fuel. A sleeper tractor runs eighteen to twenty thousand pounds, a dry van trailer fourteen to fifteen thousand, and a hundred fifty gallons of diesel about a thousand. That's around thirty-five thousand empty. So forty-five thousand of cargo already puts you at eighty thousand — one more pound of freight and you're over.",
+    keywords: 'tare weight, tractor weight, trailer weight, fuel weight, 35000 empty, 45000 cargo, 80000 gross, overweight math',
+  },
+  {
+    seedKey: 'ltl-manual',
+    category: 'load-types',
+    subcategory: 'ltl',
+    topic: 'Less-than-Truckload (LTL) and its sub-types',
+    content:
+      "LTL means freight from several shippers rides one trailer, moves through regional terminals, and gets split back out to different consignees. The types: standard LTL is pallets from a hundred up to ten thousand pounds moving through a hub-and-spoke network; expedited LTL is faster transit for a higher rate; residential LTL needs a liftgate and a two-person delivery, so it costs more; trade-show or exhibit LTL is time-critical and often needs last-mile delivery to a convention center; and the freight class, the NMFC, drives the price by density and stowability — class fifty is low density and cheap, class five hundred is high density and expensive.",
+    keywords: 'LTL, less than truckload, hub and spoke, terminals, consignees, standard, expedited, residential, liftgate, trade show, freight class, NMFC, density',
+  },
+  {
+    seedKey: 'qa-ltl-slower',
+    category: 'qa',
+    subcategory: 'ltl',
+    topic: 'Why does an LTL load take two or three days longer than FTL over the same distance?',
+    content:
+      "Because your pallet isn't going direct. It runs shipper to local terminal, gets sorted, linehauls to a hub, gets sorted again, goes to the destination terminal, sorts once more, then local delivery. It can be loaded and unloaded three or four times and waits at every terminal for its scheduled departure.",
+    keywords: 'LTL slower, not direct, terminal sort, linehaul, hub, multiple handling, departure window, transit time versus FTL',
+  },
+  {
+    seedKey: 'qa-ltl-consolidation',
+    category: 'qa',
+    subcategory: 'ltl',
+    topic: 'The dock has twenty BOLs for twenty shippers going to five destinations — what do I do?',
+    content:
+      "That's a consolidation load. Sort them by destination using the route sheet or stop sequence the app gives you. Don't mix them up — a pallet delivered to the wrong city triggers a big claim. And each BOL gets signed separately at its own stop.",
+    keywords: 'consolidation load, twenty BOLs, multiple shippers, sort by destination, route sheet, stop sequence, sign separately, wrong city claim',
+  },
+  {
+    seedKey: 'qa-ltl-density',
+    category: 'qa',
+    subcategory: 'ltl',
+    topic: 'What is the density rule in LTL pricing?',
+    content:
+      "If a pallet eats a lot of space but weighs little — like toilet paper — it's priced by volume, by cubic feet. If it's small but heavy — like machine parts — it's priced by weight. Carriers work out density in pounds per cubic foot to set the freight class. The lower the density, the higher the class and the higher the rate.",
+    keywords: 'density rule, LTL pricing, cubic feet, volume, weight, pounds per cubic foot, freight class, low density high class, rate',
+  },
+  {
+    seedKey: 'qa-ltl-refuse-damaged',
+    category: 'qa',
+    subcategory: 'ltl',
+    topic: 'Can I refuse an LTL pallet that is crushed or leaning at pickup?',
+    content:
+      "Yes, and you should. Accept damaged packaging at pickup and the receiver blames you for it at delivery. Write on the BOL that the packaging was damaged at pickup and refused by the driver, take photos, and call dispatch. Don't load a compromised pallet.",
+    keywords: 'refuse damaged pallet, crushed, leaning, packaging damaged at pickup, note on BOL, photos, call dispatch, protect against claim',
+  },
+  {
+    seedKey: 'partial-manual',
+    category: 'load-types',
+    subcategory: 'partial',
+    topic: 'Partial / Volume loads and their sub-types',
+    content:
+      "A partial sits between LTL and FTL — the trailer is shared with one to three other shippers, but the freight moves on a single dedicated route with no big sorting terminals. The flavors: exclusive-use partial has the broker reserve the whole trailer for a few shippers on a dedicated route; volume LTL is where one shipper takes six to twelve linear feet, say eight pallets, priced by the linear foot instead of freight class; transload partial combines with FTL freight at a cross-dock; and hot-shot partial is smaller freight on a pickup with a gooseneck, common in oilfield and expedited work.",
+    keywords: 'partial load, volume load, shared trailer, dedicated route, exclusive use, volume LTL, linear foot, transload, cross dock, hot shot, gooseneck',
+  },
+  {
+    seedKey: 'qa-partial-vs-ltl',
+    category: 'qa',
+    subcategory: 'partial',
+    topic: 'How is a partial different from an LTL load?',
+    content:
+      "LTL runs through a hub-and-spoke network with multiple terminals. A partial goes direct from A to B with just one to three pickups and one to three deliveries, skipping the sorting terminals. That makes a partial faster and lowers damage risk because the freight gets handled less.",
+    keywords: 'partial versus LTL, direct, no terminals, fewer stops, less handling, faster, lower damage risk, hub and spoke',
+  },
+  {
+    seedKey: 'qa-partial-per-mile',
+    category: 'qa',
+    subcategory: 'partial',
+    topic: 'I have eight pallets, the broker calls it a partial but the rate is per mile — is that right?',
+    content:
+      "Yes. Partials are often priced per mile like FTL because the truck makes a dedicated run. Since you're sharing the trailer, the per-mile rate is lower than a full truckload but still higher than LTL, which is priced per hundred pounds.",
+    keywords: 'partial per mile, eight pallets, dedicated run, lower than FTL, higher than LTL, per hundredweight, CWT, shared trailer',
+  },
+  {
+    seedKey: 'qa-partial-off-route',
+    category: 'qa',
+    subcategory: 'partial',
+    topic: 'The second pickup on my partial is forty miles off route — how do I get paid for it?',
+    content:
+      "Charge an accessorial for the off-route mileage, usually two to three dollars a mile for the deviation, or take the minimum charge the broker offers for the partial. Never run off-route until the extra rate is approved and written into the rate con.",
+    keywords: 'off route mileage, accessorial, 2 to 3 dollars per mile, deviation, minimum charge, approved in writing, rate con, second pickup',
+  },
+  {
+    seedKey: 'qa-partial-weight-dist',
+    category: 'qa',
+    subcategory: 'partial',
+    topic: 'First shipper loads twenty thousand, second adds five thousand — can I legally take it?',
+    content:
+      "Yes, as long as the total stays under eighty thousand gross. But check how it's spread across the axles. If the first shipper loaded heavy up front, the second shipper's lighter load in the rear can push your kingpin weight too high, and you'll have to re-position freight or slide the fifth wheel.",
+    keywords: 'partial weight distribution, 20000 plus 5000, under 80000 gross, axle spread, kingpin weight, heavy front, slide fifth wheel, reposition',
+  },
+  {
+    seedKey: 'tempcontrol-manual',
+    category: 'load-types',
+    subcategory: 'temp-controlled',
+    topic: 'Temperature-controlled freight and its sub-types',
+    content:
+      "Temp-controlled freight needs an active reefer, heater, or cryo unit holding a set range the whole trip so it doesn't spoil. The ranges: chilled produce runs thirty-two to fifty-five degrees and needs humidity and airflow to keep ethylene gas from over-ripening it; frozen goods run negative ten to zero and need continuous cooling — even a two-hour stop can start thawing the edges; dairy runs thirty-four to forty and hates temperature swings; pharma often runs two to eight Celsius, that's thirty-six to forty-six Fahrenheit, with a tight tolerance, data loggers, and sometimes a backup unit; confectionery runs fifty-five to sixty-five so chocolate doesn't melt or bloom; and heated freight like asphalt or glue rides warm using the reefer in heat mode or a heated tanker.",
+    keywords: 'temperature controlled, reefer, produce, frozen, dairy, pharma, data logger, confectionery, chocolate bloom, heated freight, setpoint, ethylene',
+  },
+  {
+    seedKey: 'qa-temp-probe-vs-air',
+    category: 'qa',
+    subcategory: 'temp-controlled',
+    topic: "Rate con setpoint is thirty-four but the receiver reads thirty-six — am I in trouble?",
+    content:
+      "Maybe not. First find out if they're using a probe stuck into the product or an air thermometer reading the box air. The FDA usually cares about product temperature, not air. If your reefer's data logger shows the air held thirty-four but the product never got below thirty-eight because the shipper didn't pre-cool it, that's on the shipper — note load not pre-cooled on the BOL.",
+    keywords: 'setpoint 34, receiver reads 36, probe thermometer, air thermometer, product temperature, FDA, data logger, not pre-cooled, note on BOL, shipper fault',
+  },
+  {
+    seedKey: 'qa-temp-continuous-cyclesentry',
+    category: 'qa',
+    subcategory: 'temp-controlled',
+    topic: "What's the difference between continuous run and cycle-sentry on a reefer?",
+    content:
+      "Continuous run keeps the unit going twenty-four seven — steadiest temperature but burns more fuel. Cycle-sentry cycles the unit on and off to hold the setpoint and saves diesel. Use continuous for frozen at zero degrees; for produce around thirty-four, cycle-sentry is usually fine as long as you set the tolerance to about two degrees of swing.",
+    keywords: 'continuous run, cycle sentry, reefer mode, steady temperature, fuel savings, frozen zero degrees, produce 34, tolerance 2 degrees',
+  },
+  {
+    seedKey: 'qa-temp-airflow',
+    category: 'qa',
+    subcategory: 'temp-controlled',
+    topic: 'The reefer is full and pallets are jammed against the front wall — what is the risk?',
+    content:
+      "You create a dead-air spot. The reefer blows cold along the ceiling, but if the pallets are flush to the front bulkhead the air can't circulate down the back and along the floor. That leaves hot spots in the middle where produce rots. Leave a six-inch air gap front and rear — that's the air-chute or T-shape loading.",
+    keywords: 'airflow, dead air spot, front bulkhead, cold air ceiling, hot spot, produce rots, six inch air gap, air chute, T-shape loading',
+  },
+  {
+    seedKey: 'qa-temp-out-of-fuel',
+    category: 'qa',
+    subcategory: 'temp-controlled',
+    topic: 'What happens if my reefer runs out of fuel and the load spoils?',
+    content:
+      "You're on the hook for the whole cargo claim — often fifty to a hundred thousand dollars. That's why the number one reefer rule is never let the reefer tank drop below a quarter. Fuel the reefer separately from the tractor and set a low-fuel alarm if you've got one.",
+    keywords: 'reefer out of fuel, load spoils, cargo claim, 50000 to 100000, liability, quarter tank rule, fuel reefer separately, low fuel alarm',
+  },
 ];
