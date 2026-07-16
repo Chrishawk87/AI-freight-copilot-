@@ -2318,4 +2318,241 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "A Class seven at thirty-three thousand gross usually weighs fifteen to eighteen thousand empty, leaving roughly fifteen to eighteen thousand pounds of payload. That's a lot less than a fifty-three-foot trailer's forty-five thousand, but it's faster and far more agile for smaller, time-critical loads.",
     keywords: 'expediter payload, Class 7 33000 gross, empty 15000 18000, payload 15000 18000, less than 53 foot 45000, faster agile time critical',
   },
+
+  // ── Brokers manual (insurance, negotiation, authority, setup) ────────
+
+  {
+    seedKey: 'broker-insurance-manual',
+    category: 'brokers',
+    subcategory: 'insurance',
+    topic: 'Insurance brokers expect from a carrier',
+    content:
+      "Brokers make you carry set minimum coverages to protect the shipper's freight, the public, and their own liability. The pieces: auto liability at a million minimum for bodily injury and property damage to third parties — that's the FMCSA floor for interstate; general liability at a million for injuries or damage on the shipper's or receiver's property; cargo coverage at a hundred thousand minimum for damage or loss to the freight itself, more like two-fifty to five hundred thousand on high-value loads; trailer interchange coverage for damage to a trailer you don't own, needed on power-only and drop-and-hook; workers' comp for driver injuries; and a certificate of insurance, the COI, proving it's all active, with the broker listed as certificate holder.",
+    keywords: 'broker insurance, auto liability 1 million, general liability, cargo coverage 100000, FMCSA minimum, trailer interchange, workers comp, certificate of insurance, COI, certificate holder',
+  },
+  {
+    seedKey: 'qa-broker-coi-holder',
+    category: 'qa',
+    subcategory: 'insurance',
+    topic: 'Why do brokers require me to list them as a certificate holder on my COI?',
+    content:
+      "It gives the broker the right to get cancellation notices straight from your insurer. If your policy lapses or gets cancelled, they're notified right away. That protects them from unknowingly putting freight on an uninsured carrier, which would blow back on them as huge liability.",
+    keywords: 'certificate holder, COI, cancellation notice, policy lapse, broker notified, uninsured carrier, liability protection',
+  },
+  {
+    seedKey: 'qa-broker-liability-limit',
+    category: 'qa',
+    subcategory: 'insurance',
+    topic: "My auto liability is seven-fifty — can I book a load that requires a million?",
+    content:
+      "No. The broker's system will auto-reject your COI. You'd have to raise your coverage to a million, which costs more in premium. Some brokers will take a million-dollar umbrella policy stacked on top of your primary, but it has to be spelled out clearly on the COI.",
+    keywords: 'auto liability 750000, requires 1 million, COI rejected, raise coverage, higher premium, umbrella policy, noted on COI',
+  },
+  {
+    seedKey: 'qa-broker-cargo-vs-auto',
+    category: 'qa',
+    subcategory: 'insurance',
+    topic: 'What is the difference between cargo coverage and auto liability in a claim?',
+    content:
+      "If you rear-end another vehicle, auto liability pays for their damage and injuries. If your trailer catches fire and destroys the freight inside, cargo coverage pays the shipper for the lost goods. Two completely separate policies with different limits.",
+    keywords: 'cargo coverage versus auto liability, rear end pays other vehicle, trailer fire pays shipper, separate policies, different limits',
+  },
+  {
+    seedKey: 'qa-broker-coi-expired',
+    category: 'qa',
+    subcategory: 'insurance',
+    topic: 'My COI expired yesterday and a broker has a hot load — can I book it?',
+    content:
+      "No. Their compliance team needs a current, unexpired COI before they'll assign the load. Renew right away and have your agent send a fresh COI to the broker. This is exactly why you set renewal reminders thirty days out.",
+    keywords: 'COI expired, hot load, compliance needs current COI, renew immediately, agent send new COI, 30 day renewal reminder',
+  },
+  {
+    seedKey: 'qa-broker-bond',
+    category: 'qa',
+    subcategory: 'insurance',
+    topic: 'What is a broker bond and is it the same as insurance?',
+    content:
+      "No. A broker bond, the BMC-84, is a seventy-five-thousand-dollar surety bond the FMCSA makes brokers carry. It protects carriers from not getting paid by the broker. It's not on you — it's a broker requirement, and you can check a broker's bond status on the FMCSA site before you take a load.",
+    keywords: 'broker bond, BMC-84, 75000 surety bond, FMCSA requires brokers, protects carrier payment, check bond status FMCSA',
+  },
+  {
+    seedKey: 'broker-negotiation-manual',
+    category: 'brokers',
+    subcategory: 'negotiation',
+    topic: 'Negotiating with a broker',
+    content:
+      "Getting the best rate is about data, communication, and trust, not just price. The levers: know your cost per mile — the floor that covers fuel, maintenance, driver pay, insurance, and overhead; know the lane's going rate off boards like DAT and Truckstop for leverage; use the ask-first move and let the broker name a price before you do; factor in your deadhead, the empty miles to the pickup; counter with logic, tying your number to deadhead, weight, or fuel instead of just wanting more; and play the relationship — taking a slightly soft rate on a slow day can earn you first call on the next good load.",
+    keywords: 'broker negotiation, cost per mile, CPM, lane rate, DAT, Truckstop, ask first, deadhead, counter with logic, relationship, first call',
+  },
+  {
+    seedKey: 'qa-broker-counter-cpm',
+    category: 'qa',
+    subcategory: 'negotiation',
+    topic: "Broker offers two dollars a mile but my CPM is two-ten — how do I counter without losing it?",
+    content:
+      "Give them a reason and a benefit. Something like: I appreciate the offer, but my floor on this lane is two twenty-five because I've got a hundred twenty miles of deadhead and the load's heavy on fuel — can you meet me at two twenty? I can pick up in two hours and deliver on time tomorrow morning. Reason plus reliability moves brokers.",
+    keywords: 'counter offer, CPM 210, offer 2.00, floor 2.25, deadhead 120 miles, heavy fuel, meet at 2.20, reason and benefit, reliability',
+  },
+  {
+    seedKey: 'qa-broker-backhaul',
+    category: 'qa',
+    subcategory: 'negotiation',
+    topic: 'Broker says it is a backhaul at a dollar-eighty a mile — should I take it?',
+    content:
+      "Depends on your situation. If you're already empty and heading that way, a dollar-eighty beats zero — loaded is better than deadhead. But if it drags you well off route or delays your next load, it's not worth it. Run your effective rate including the extra miles before you say yes.",
+    keywords: 'backhaul, 1.80 per mile, empty heading that way, loaded beats deadhead, off route, delay next load, effective rate, extra miles',
+  },
+  {
+    seedKey: 'qa-broker-fsc',
+    category: 'qa',
+    subcategory: 'negotiation',
+    topic: 'What is the fuel surcharge and is it negotiable?',
+    content:
+      "The fuel surcharge is a per-mile add-on that moves with diesel prices. Brokers often split the rate into linehaul plus FSC. The FSC itself is usually fixed because it's tied to the DOE national average, but the linehaul is negotiable. Always ask whether the quoted rate is with or without the FSC.",
+    keywords: 'fuel surcharge, FSC, per mile, diesel price, linehaul plus FSC, DOE national average, non negotiable, linehaul negotiable, rate including or excluding',
+  },
+  {
+    seedKey: 'qa-broker-detention-clause',
+    category: 'qa',
+    subcategory: 'negotiation',
+    topic: 'How do I negotiate detention into a load?',
+    content:
+      "Ask for it up front and get it on the rate con. Say something like: happy to take it at three dollars a mile, but I need a detention clause — fifty an hour after the first two hours at pickup and delivery. If they refuse, decide whether the guaranteed rate is worth the risk of a long wait. A lot of brokers will agree to detention if you just ask early.",
+    keywords: 'negotiate detention, on rate con, 50 per hour, after 2 hours, pickup and delivery, ask upfront, guaranteed rate versus wait risk',
+  },
+  {
+    seedKey: 'qa-broker-new-vs-established',
+    category: 'qa',
+    subcategory: 'negotiation',
+    topic: 'Why do brokers sometimes pay new carriers more and established ones less?',
+    content:
+      "It isn't always a trick. New carriers often accept low rates without realizing it, so the range is wider. Meanwhile a carrier with a track record of reliability and good communication earns the first-call premium — the broker will pay a little extra to lock in someone who won't cancel at the last minute.",
+    keywords: 'new versus established carriers, new accept low unknowingly, track record, reliability communication, first call premium, secure trusted driver',
+  },
+  {
+    seedKey: 'broker-authority-manual',
+    category: 'brokers',
+    subcategory: 'authority',
+    topic: 'Operating authority and safety rating',
+    content:
+      "These are the FMCSA credentials and scores that decide whether you can legally run and how much a broker trusts you. The pieces: the MC number, your motor-carrier operating-authority ID, needed for interstate freight; the DOT number, your safety and compliance ID, required on any commercial vehicle over ten thousand pounds; active versus revoked authority — lapsed insurance, unpaid fees, or violations can revoke you and brokers check it in real time; a safety rating of satisfactory, conditional, or unsatisfactory from compliance reviews and inspections; the SMS score across seven BASIC categories like unsafe driving and vehicle maintenance; and extra scrutiny for new authority under six to twelve months old.",
+    keywords: 'operating authority, safety rating, MC number, DOT number, active revoked, satisfactory conditional unsatisfactory, SMS score, BASIC categories, new entrant, FMCSA',
+  },
+  {
+    seedKey: 'qa-broker-conditional-rating',
+    category: 'qa',
+    subcategory: 'authority',
+    topic: 'My MC is active but my safety rating is conditional — will brokers still book me?',
+    content:
+      "Some will, but a lot of the big brokerages will turn you down flat. Conditional signals a pattern of violations, so you read as higher risk. Fix the root issues — maintenance, HOS compliance — and request a re-inspection to get back to satisfactory.",
+    keywords: 'conditional rating, MC active, big brokerages reject, pattern of violations, higher risk, fix maintenance HOS, request re-inspection, satisfactory',
+  },
+  {
+    seedKey: 'qa-broker-new-entrant',
+    category: 'qa',
+    subcategory: 'authority',
+    topic: 'What is a new-entrant carrier and why do brokers treat me differently?',
+    content:
+      "A new entrant is a carrier whose authority was issued in the last twelve months, and the FMCSA runs a safety audit within your first eighteen months. Brokers see new entrants as higher risk with no proven track record, so expect to hand over extra documentation and maybe take slightly softer rates until you've got twelve-plus months of clean inspections.",
+    keywords: 'new entrant, authority under 12 months, FMCSA safety audit 18 months, higher risk, no track record, extra documentation, lower rates, clean inspection history',
+  },
+  {
+    seedKey: 'qa-broker-check-scores',
+    category: 'qa',
+    subcategory: 'authority',
+    topic: 'How do brokers check my safety scores?',
+    content:
+      "Through the FMCSA's Safety Measurement System portal, which is public — they can see your roadside inspection history, violations, and crashes. They also lean on third-party compliance platforms like Carrier411 or MyCarrier that pull it all together and flag high-risk carriers.",
+    keywords: 'check safety scores, FMCSA SMS portal, public, roadside inspection history, violations, crashes, Carrier411, MyCarrier, third party compliance',
+  },
+  {
+    seedKey: 'qa-broker-sms-maintenance',
+    category: 'qa',
+    subcategory: 'authority',
+    topic: 'My inspection record looks clean but my SMS score is high in vehicle maintenance — why?',
+    content:
+      "SMS scoring weighs both severity and frequency. One serious violation, like brakes out of adjustment, can spike the category on its own. Fix the root cause, then the score works its way back down as you stack up more clean inspections over time.",
+    keywords: 'SMS score high maintenance, severity and frequency, one major violation, brakes out of adjustment, spike, fix root cause, clean inspections lower it',
+  },
+  {
+    seedKey: 'qa-broker-revoked-reapply',
+    category: 'qa',
+    subcategory: 'authority',
+    topic: 'If my authority is revoked, can I reapply?',
+    content:
+      "Yes, but it's a haul. You clear all outstanding debts, re-file the application, pay the fees, and restart the new-entrant safety audit. Revocation is serious — brokers won't book you until your authority is reinstated and showing active in the FMCSA database.",
+    keywords: 'authority revoked reapply, clear debts, re-file application, pay fees, restart new entrant audit, reinstated active, FMCSA database',
+  },
+  {
+    seedKey: 'broker-setup-manual',
+    category: 'brokers',
+    subcategory: 'setup',
+    topic: 'What a broker needs to set you up',
+    content:
+      "This is the onboarding checklist a broker needs before assigning any load — have it ready and setup flies. The items: your MC and DOT numbers, verified active and matching your legal name; a certificate of insurance naming the broker as certificate holder at the required limits; a W-9 with your legal business name, EIN, and address for tax reporting; a signed carrier agreement covering payment terms like Net thirty, liability, and indemnification; a notice of assignment if you factor, telling them where to send payment; a carrier packet bundling all of it plus a voided check and CDL copy; and often an electronic onboarding portal like MyCarrier or Truckstop that verifies documents instantly.",
+    keywords: 'broker setup, onboarding, MC DOT numbers, certificate of insurance, W-9, EIN, carrier agreement, Net 30, notice of assignment, factoring, carrier packet, voided check, CDL, onboarding portal',
+  },
+  {
+    seedKey: 'qa-broker-setup-48h',
+    category: 'qa',
+    subcategory: 'setup',
+    topic: 'I have all my documents but the broker says setup takes forty-eight hours — why so long?',
+    content:
+      "Their compliance team has to verify your insurance with your agent or the portal, confirm your FMCSA authority is active, and vet your safety scores. Their credit team may also need to approve your profile, and if you factor they have to validate the factor. It's standard — not a stall.",
+    keywords: 'setup 48 hours, compliance verify insurance, confirm authority active, vet safety scores, credit team approval, validate factor, standard practice',
+  },
+  {
+    seedKey: 'qa-broker-carrier-packet',
+    category: 'qa',
+    subcategory: 'setup',
+    topic: 'What is a carrier packet and why do brokers ask for it every time?',
+    content:
+      "It's a master PDF holding all your onboarding docs in one place — COI, W-9, MC authority letter, CDL copies. Brokers ask because their compliance teams audit it. Keep a clean, current packet on your phone or in the cloud and you send it in five minutes instead of five hours.",
+    keywords: 'carrier packet, master PDF, COI W-9 authority letter CDL, compliance audit, keep current on phone cloud, send in 5 minutes',
+  },
+  {
+    seedKey: 'qa-broker-w9-expired',
+    category: 'qa',
+    subcategory: 'setup',
+    topic: 'I just booked a load but the broker says my W-9 is expired — what do I do?',
+    content:
+      "A W-9 doesn't really expire, but the IRS wants a fresh one whenever your business name, address, or EIN changes. If they call it expired they've probably got an old version, so send a current W-9 right away — they can't process your payment without it.",
+    keywords: 'W-9 expired, does not really expire, new if name address EIN changes, outdated version, send current W-9, cannot process payment',
+  },
+  {
+    seedKey: 'qa-broker-noa',
+    category: 'qa',
+    subcategory: 'setup',
+    topic: 'I factor my invoices — why does the broker need a notice of assignment?',
+    content:
+      "The NOA legally tells the broker your invoices are assigned to a factoring company, so they send payment to the factor instead of you. Without it they might pay you directly, and then you're forwarding money to the factor — which means delays, duplicate payments, and headaches.",
+    keywords: 'notice of assignment, NOA, factoring, invoices assigned, pay factor not carrier, without NOA pay directly, delays duplicate payments',
+  },
+  {
+    seedKey: 'qa-broker-haul-before-setup',
+    category: 'qa',
+    subcategory: 'setup',
+    topic: 'Can I start hauling the load before the broker finishes my setup?',
+    content:
+      "No. Brokers won't dispatch a load or issue a rate con until onboarding is a hundred percent done — it's a hard liability rule; they can't run a carrier without a signed agreement and verified insurance. Wait for the signed rate con before you head to the pickup.",
+    keywords: 'haul before setup, no, no dispatch or rate con until onboarding complete, liability rule, signed agreement verified insurance, wait for signed rate con',
+  },
+  {
+    seedKey: 'qa-broker-cdl-copy',
+    category: 'qa',
+    subcategory: 'setup',
+    topic: "The broker wants a copy of my CDL — isn't that private?",
+    content:
+      "It's a standard onboarding ask. They need to confirm the driver on the rate con is licensed for the vehicle, and many require the driver be listed on the carrier's insurance. You can redact personal details like your home address, but your name, license number, and class have to stay visible.",
+    keywords: 'CDL copy, standard onboarding, verify driver licensed, listed on insurance, redact home address, name license number class visible',
+  },
+  {
+    seedKey: 'qa-broker-binder',
+    category: 'qa',
+    subcategory: 'setup',
+    topic: "I'm waiting on a new COI but the broker has a load today — what do I do?",
+    content:
+      "Call your insurance agent and ask for a binder — a temporary certificate proving coverage is in place while the formal COI is processed. A lot of agents can email a binder in one to two hours. Send it to the broker noting the formal COI is coming; many will accept it conditionally.",
+    keywords: 'waiting on COI, load today, insurance binder, temporary certificate, coverage in place, agent email 1 to 2 hours, formal COI forthcoming, accept conditionally',
+  },
 ];
