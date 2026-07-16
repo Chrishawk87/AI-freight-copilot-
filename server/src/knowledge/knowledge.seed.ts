@@ -960,4 +960,408 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
     keywords:
       'golden rule, paperwork, in writing, take photos, cloud, protect yourself, sign date, best practice, document rule',
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TRAILER TRAINING MANUAL — deep-dive sub-categories + Q&A for the 10 core
+  // trailer types. The brain answers like a driver who's pulled every one of
+  // these, always leaning toward safety, securement, and legal compliance.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── 1. CAR HAULER ────────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-carhauler-types',
+    category: 'trailers',
+    subcategory: 'car-hauler',
+    topic: 'Car hauler sub-types',
+    content:
+      "A car hauler moves passenger vehicles, trucks, and vans on a multi-level deck. An open hauler is the standard eight-to-ten car wedge or stinger-steered trailer — cheap but exposes cars to weather and debris. An enclosed hauler is fully boxed in for classics, exotics, and high-value cars. Stinger-steered means the gooseneck extends forward for a tighter turning radius. A hydraulic or power-ramp deck raises and lowers to load low-clearance sports cars. Multi-level triples are rare because of height laws and mostly do OEM factory runs.",
+    keywords: 'car hauler, auto transport, open, enclosed, stinger, hydraulic ramp, power ramp, multi level, exotic, classic car',
+  },
+  {
+    seedKey: 'qa-carhauler-loading',
+    category: 'qa',
+    subcategory: 'car-hauler',
+    topic: 'Why does loading a car hauler take so much longer than backing into a dock?',
+    content:
+      "Because it's a puzzle. Every car goes on in a set sequence to balance axle weights, and straps cross at about forty-five degrees over the tires. Low-profile cars need special over-wheel straps so you don't scratch the paint. It's slow, careful work, not a dock-and-go.",
+    keywords: 'car hauler loading, load sequence, axle balance, over wheel strap, strap cars, takes long, puzzle',
+  },
+  {
+    seedKey: 'qa-carhauler-enclosed-risk',
+    category: 'qa',
+    subcategory: 'car-hauler',
+    topic: 'Biggest risk hauling an enclosed classic car?',
+    content:
+      "Temperature and humidity swings inside the box cause condensation and rust. Protect yourself with a signed condition report and photos of the odometer and every body panel before the car rolls onto the ramp — that's your defense against a damage claim.",
+    keywords: 'enclosed classic car, condensation, rust, condition report, damage claim, humidity, photos before load',
+  },
+  {
+    seedKey: 'qa-carhauler-antitheft',
+    category: 'qa',
+    subcategory: 'car-hauler',
+    topic: 'A car has an anti-theft system that locks the wheels — how do I load it?',
+    content:
+      "Get the transport-mode key or have the shipper disable the system. Drag it and you'll burn out the drivetrain. Note it on the BOL as an exception before you touch it.",
+    keywords: 'anti theft, wheel lock, transport mode, locked wheels, drag car, drivetrain, exception bol',
+  },
+  {
+    seedKey: 'qa-carhauler-enclosed-pay',
+    category: 'qa',
+    subcategory: 'car-hauler',
+    topic: 'Why do enclosed haulers pay significantly more?',
+    content:
+      "Liability — vehicles often top a hundred grand — plus the specialized strap-down gear, worse fuel economy from a heavy, boxy trailer, and lots of empty miles since enclosed backhauls are scarce. You're paid for the risk and the deadhead.",
+    keywords: 'enclosed hauler pay, pays more, liability, high value, fuel economy, empty miles, backhaul',
+  },
+
+  // ── 2. CONESTOGA ─────────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-conestoga-types',
+    category: 'trailers',
+    subcategory: 'conestoga',
+    topic: 'Conestoga sub-types',
+    content:
+      "A Conestoga is a flatbed with a rolling, retractable tarp on a steel frame — a flatbed with a sliding fabric roof and sides. A manual Conestoga is pushed along the track by hand-crank or pull-cord. A hydraulic or pneumatic one slides automatically on air or hydraulics. A drop-deck Conestoga pairs the rolling tarp with a step-deck for taller freight. A full-side curtain slides completely open so you can load overhead by crane.",
+    keywords: 'conestoga, rolling tarp, retractable, manual, hydraulic, pneumatic, drop deck, curtain, crane load, sliding roof',
+  },
+  {
+    seedKey: 'qa-conestoga-bent-track',
+    category: 'qa',
+    subcategory: 'conestoga',
+    topic: "The tarp track is bent and won't slide smoothly — can I still run the load?",
+    content:
+      "No. If the curtain won't slide, you can't secure the freight properly. Report it to the shop right away. Your only workarounds are rejecting the load or hand-tarping it like a regular flatbed — which kills the whole point and adds hours.",
+    keywords: 'bent track, tarp stuck, wont slide, conestoga damage, report shop, hand tarp, reject load',
+  },
+  {
+    seedKey: 'qa-conestoga-steel-coil',
+    category: 'qa',
+    subcategory: 'conestoga',
+    topic: 'Broker offers coiled steel on a Conestoga — is that safe?',
+    content:
+      "Depends on weight. The Conestoga frame adds fifteen hundred to two thousand pounds over a plain flatbed, so your payload drops. Coils go eye-to-the-sky, chained, and the side rails can fight standard coil racking — verify the deck width, usually eight-six, fits the coil stands before you commit.",
+    keywords: 'conestoga coil, coiled steel, payload, frame weight, eye to the sky, coil rack, deck width, suicide coil',
+  },
+  {
+    seedKey: 'qa-conestoga-weather-proof',
+    category: 'qa',
+    subcategory: 'conestoga',
+    topic: 'How do I prove the freight stayed weather-protected in transit?',
+    content:
+      "Timestamped photo of the tarp fully closed over the load at the shipper, and another still closed at the receiver. If it's open on arrival, the receiver can reject it for possible water damage. Photos are your proof.",
+    keywords: 'weather protected, tarp closed photo, timestamp, water damage, prove covered, conestoga proof',
+  },
+
+  // ── 3. DRY VAN ───────────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-dryvan-types',
+    category: 'trailers',
+    subcategory: 'dry-van',
+    topic: 'Dry van sub-types',
+    content:
+      "The dry van is the workhorse — an enclosed, non-temp-controlled box for palletized freight. Standard is 53 by 102 (fifty-three feet long, eight and a half wide, about nine feet interior). A pup is a 28-foot trailer for LTL doubles. A high-cube adds six to twelve inches of height for light, bulky freight. Swing doors are standard for docks; roll-up doors suit ground-level urban loading. An air-ride van uses air suspension to protect fragile electronics or glass.",
+    keywords: 'dry van, box, 53 foot, pup trailer, high cube, swing door, roll up door, air ride, palletized, workhorse',
+  },
+  {
+    seedKey: 'qa-dryvan-payload',
+    category: 'qa',
+    subcategory: 'dry-van',
+    topic: 'My van is 53 feet — why can I only load about 45,000 lbs, not 48,000?',
+    content:
+      "Because the tractor-trailer weighs roughly thirty-five thousand empty, and the legal gross is eighty thousand — that leaves you about forty-five thousand of payload. Heavier trailers with liftgates or thick floors leave even less.",
+    keywords: 'dry van payload, 45000, why not more, empty weight, gross weight, capacity, liftgate weight',
+  },
+  {
+    seedKey: 'qa-dryvan-dock-height',
+    category: 'qa',
+    subcategory: 'dry-van',
+    topic: 'Warehouse has dock-high freight but my air-ride trailer is dumped — what do I do?',
+    content:
+      "Set the air suspension to dock height, or inflate the bags with the leveling valve. If the trailer sits too low the forklift can't get in. Dump the air only after the forklift's inside to lock it — never before you're aligned with the dock.",
+    keywords: 'dock height, air ride, dumped, inflate bags, leveling valve, forklift, dock high, suspension',
+  },
+  {
+    seedKey: 'qa-dryvan-floor-load',
+    category: 'qa',
+    subcategory: 'dry-van',
+    topic: 'I have a floor-load with no pallets — how does that affect unload time?',
+    content:
+      "Big difference — thirty minutes with a forklift becomes three or four hours hand-stacking, which triggers detention. Note 'floor loaded, hand unload required' on your rate con so the accessorial is justified.",
+    keywords: 'floor load, no pallets, hand unload, hand stack, unload time, detention, accessorial, floor loaded',
+  },
+
+  // ── 4. FLATBED ───────────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-flatbed-types',
+    category: 'trailers',
+    subcategory: 'flatbed',
+    topic: 'Flatbed sub-types',
+    content:
+      "A flatbed is an open deck, no walls or roof, for oversized or irregular freight loaded by crane, forklift, or from the end. A 48-foot deck is common for steel and lumber; 53 feet handles lighter, longer material like PVC pipe. A spread-axle flatbed spaces the axles farther apart to carry more legal weight under bridge laws. A curtainside has removable side curtains but no rolling roof. An extendable stretches on pins to carry sixty-to-eighty-foot loads like beams or wind blades.",
+    keywords: 'flatbed, open deck, 48 foot, 53 foot, spread axle, curtainside, extendable, stretch, steel, lumber, bridge law',
+  },
+  {
+    seedKey: 'qa-flatbed-tiedowns',
+    category: 'qa',
+    subcategory: 'flatbed',
+    topic: 'Load of sheet steel — how many chains and straps do I legally need?',
+    content:
+      "FMCSA minimum is two tiedowns for anything under five feet, then one more for every additional ten feet of length. But by weight you also need enough working load limit to cover half the cargo weight — a forty-thousand-pound coil takes four chains rated around fifty-four hundred pounds each, crossed in an X.",
+    keywords: 'tiedowns, chains, straps, securement, fmcsa, working load limit, wll, steel coil, how many chains, cross pattern',
+  },
+  {
+    seedKey: 'qa-flatbed-tarp-charge',
+    category: 'qa',
+    subcategory: 'flatbed',
+    topic: 'What is a tarp charge and who pays it?',
+    content:
+      "It's an accessorial — usually fifty to a hundred fifty dollars paid to you for covering the freight with heavy vinyl against rain. It's per tarp and negotiated on the rate con. You're not required to tarp unless the rate con says so.",
+    keywords: 'tarp charge, tarp fee, accessorial, who pays tarp, vinyl tarp, per tarp, rate con tarp',
+  },
+  {
+    seedKey: 'qa-flatbed-rain-lumber',
+    category: 'qa',
+    subcategory: 'flatbed',
+    topic: 'It starts raining while I strap down lumber — what do I do?',
+    content:
+      "Stop strapping and tarp it now. Strap wet lumber under a sealed tarp and it rots or molds by delivery, and that claim's on you. Lumber gets strapped, tarped, and ventilated — never sealed airtight.",
+    keywords: 'rain lumber, wet lumber, tarp immediately, mold, rot, ventilate, dont seal, lumber claim',
+  },
+
+  // ── 5. HOPPER BOTTOM / PNEUMATIC ─────────────────────────────────────────────
+  {
+    seedKey: 'trailer-hopper-types',
+    category: 'trailers',
+    subcategory: 'hopper',
+    topic: 'Hopper bottom & pneumatic sub-types',
+    content:
+      "These haul dry, flowable bulk. A gravity hopper (bottom dump) opens gates underneath to drop grain, sand, or gravel into a pit. A pneumatic dry-bulk tanker pressurizes an aluminum or steel tank and blows product like cement, pellets, or flour through a hose. Aluminum is lighter for food and ag; steel is heavier but tougher for abrasive sand and rock. A compartmented tanker splits into separate hoppers to carry several products at once.",
+    keywords: 'hopper bottom, pneumatic, gravity, bottom dump, dry bulk, aluminum, steel, compartment, grain, cement, pellets, blower',
+  },
+  {
+    seedKey: 'qa-hopper-washout',
+    category: 'qa',
+    subcategory: 'hopper',
+    topic: 'Hauling cement in a pneumatic — why does the receiver want a washout certificate?',
+    content:
+      "Because cement reacts with water and hardens inside the tank, and any leftover residue from a prior product contaminates their batch. The washout certificate proves the tank was professionally cleaned and dried before you loaded.",
+    keywords: 'washout certificate, cement, pneumatic, contamination, residue, clean tank, batch, dried',
+  },
+  {
+    seedKey: 'qa-hopper-bridged',
+    category: 'qa',
+    subcategory: 'hopper',
+    topic: "The hopper won't dump — the grain is 'bridged' and stuck. What do I do?",
+    content:
+      "Bang the side of the hopper with a rubber mallet to break the bridge. Never put a steel rod inside with the gate open — it can shoot out like a bullet. Bridging usually means moisture, so note on the BOL that the product came in wet to keep the liability off you.",
+    keywords: 'bridged, hopper stuck, wont dump, rubber mallet, break bridge, grain stuck, moisture, wet product',
+  },
+  {
+    seedKey: 'qa-hopper-endorsement',
+    category: 'qa',
+    subcategory: 'hopper',
+    topic: 'Do I need a special endorsement for a pneumatic tanker?',
+    content:
+      "The tanker (N) endorsement is for tanks carrying liquid or gas. A dry-bulk pneumatic hauls a solid, so technically you don't need the N — but you still need to understand air brakes and weight shift, so learn the tank before you pull it.",
+    keywords: 'pneumatic endorsement, tanker endorsement, n endorsement, dry bulk, cdl, air brake, weight shift',
+  },
+
+  // ── 6. LOWBOY / RGN ──────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-lowboy-types',
+    category: 'trailers',
+    subcategory: 'lowboy',
+    topic: 'Lowboy / RGN sub-types',
+    content:
+      "A lowboy is a very low deck for tall, heavy equipment, often oversize or overweight. A fixed-gooseneck lowboy has a permanent neck and loads up steel ramps. An RGN — removable gooseneck — detaches and lowers to the ground so equipment drives straight on at a zero-degree angle, essential for low-clearance dozers. A double-drop steps down over the axles and again in the middle. A detachable tail pivots into a ramp for very long machines like pavement millers.",
+    keywords: 'lowboy, rgn, removable gooseneck, fixed gooseneck, double drop, detachable tail, heavy haul, dozer, ramp, oversize',
+  },
+  {
+    seedKey: 'qa-lowboy-hydraulic-fail',
+    category: 'qa',
+    subcategory: 'lowboy',
+    topic: "My RGN hydraulic pump won't drop the neck — can I improvise?",
+    content:
+      "Absolutely not. The neck weighs several tons and is held by pins; bypass the hydraulic interlock and it can slam down and kill you. Call a mobile hydraulic repair service — this is not a roadside fix.",
+    keywords: 'rgn hydraulic, wont drop neck, pump failure, dont improvise, gooseneck, mobile repair, interlock, dangerous',
+  },
+  {
+    seedKey: 'qa-lowboy-oversize',
+    category: 'qa',
+    subcategory: 'lowboy',
+    topic: 'The excavator is 12 feet wide — what do I need?',
+    content:
+      "Oversize permits for each state you cross, escort or pilot cars with flags and roof signs, and WIDE LOAD banners front and rear. In most states you can only run dawn to dusk. Plan the whole trip before you roll.",
+    keywords: 'oversize, 12 feet wide, wide load, permits, escort, pilot car, daylight only, excavator, banners',
+  },
+  {
+    seedKey: 'qa-lowboy-secure-excavator',
+    category: 'qa',
+    subcategory: 'lowboy',
+    topic: 'How do I secure a rubber-tracked excavator to an RGN?',
+    content:
+      "Chains and binders on the designated tie-down points, not the tracks. Add boomers — tamper locks — on the binders, and chain the bucket down separately so it can't swing during hard braking.",
+    keywords: 'secure excavator, chains, binders, tie down points, boomers, chain bucket, rgn securement, tracks',
+  },
+
+  // ── 7. POWER ONLY ────────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-poweronly-types',
+    category: 'trailers',
+    subcategory: 'power-only',
+    topic: 'Power only sub-types',
+    content:
+      "Power only means you bring just the tractor and pull someone else's trailer. Drop-and-hook: the shipper pre-loads a trailer, you hook, haul, drop, and grab a pre-loaded backhaul. Live unload: you pull the shipper's trailer and wait at the dock, then leave empty. Intermodal chassis pulling powers a 20, 40, or 53-foot marine container from the rail yard. Stored-trailer relocation moves an empty trailer yard-to-yard — non-revenue but needed.",
+    keywords: 'power only, drop and hook, live unload, intermodal, chassis, container, relocation, tractor only, backhaul',
+  },
+  {
+    seedKey: 'qa-poweronly-flat-tire',
+    category: 'qa',
+    subcategory: 'power-only',
+    topic: "The shipper's trailer has a flat — am I responsible for fixing it?",
+    content:
+      "No. In power only you're responsible for the tractor; the trailer owner owns the equipment. Call the broker or shipper, photograph it, and note the defect on the trailer inspection form before you hook. Move it and you accept the liability.",
+    keywords: 'power only flat tire, trailer defect, not responsible, trailer owner, inspection form, photo, liability',
+  },
+  {
+    seedKey: 'qa-poweronly-paid',
+    category: 'qa',
+    subcategory: 'power-only',
+    topic: 'How do I get paid on drop-and-hook when there are no signed BOLs?',
+    content:
+      "Through the trailer interchange agreement. The receiver signs the POD for the trailer number being dropped, not the freight, and the yard manager's electronic signature confirming the trailer is empty and repositioned triggers payment.",
+    keywords: 'drop and hook pay, no bol, trailer interchange, get paid, yard manager, trailer number, pod trailer',
+  },
+  {
+    seedKey: 'qa-poweronly-gladhands',
+    category: 'qa',
+    subcategory: 'power-only',
+    topic: "Trailer brake lines don't match my tractor's gladhands — now what?",
+    content:
+      "Use an adapter. Always carry a gladhand adapter kit — standard, coil, and flat types. An old wedge-brake trailer may need the lines rerouted. If you can't connect safely, you reject the load with no penalty on you.",
+    keywords: 'gladhand, brake lines, adapter, dont match, gladhand kit, wedge brake, connect trailer, reject',
+  },
+
+  // ── 8. REEFER ────────────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-reefer-types',
+    category: 'trailers',
+    subcategory: 'reefer',
+    topic: 'Reefer sub-types',
+    content:
+      "A reefer is a temp-controlled van with a refrigeration unit on the front bulkhead for produce, meat, dairy, and pharma. Single-temp holds one temperature end to end, from about minus ten to eighty. Multi-temp uses insulated bulkheads to split the box into zones — frozen up front, fresh in back. Continuous runs the compressor nonstop; cycle-sentry cycles the engine to save fuel but risks temp swings. Cryogenic uses liquid nitrogen or CO2 instead of a diesel engine — silent, for sensitive pharma.",
+    keywords: 'reefer, refrigerated, single temp, multi temp, continuous, cycle sentry, cryogenic, setpoint, bulkhead, produce, pharma',
+  },
+  {
+    seedKey: 'qa-reefer-froze',
+    category: 'qa',
+    subcategory: 'reefer',
+    topic: "Reefer set to 34°F but the produce froze — what happened?",
+    content:
+      "Cold air drops, so the floor runs colder than the ceiling, and the discharge air is colder than your setpoint. Set the return-air temperature to thirty-four, not the discharge air. Rule of thumb: setpoint minus return air is your delta — read the return sensor near the floor.",
+    keywords: 'reefer froze, produce frozen, setpoint, return air, discharge air, delta, cold air drops, sensor',
+  },
+  {
+    seedKey: 'qa-reefer-rejection',
+    category: 'qa',
+    subcategory: 'reefer',
+    topic: 'Receiver says the meat is 2°F too warm and is rejecting it — what do I do?',
+    content:
+      "Don't let them reject on the spot. Ask for a calibration check of their probe against a certified thermometer — if their probe's off, the product's fine. If your reefer actually failed, call dispatch for emergency repair; if it truly spoiled, the cargo claim can be fifty grand or more, so document everything.",
+    keywords: 'reefer rejection, meat too warm, calibration check, probe, certified thermometer, cargo claim, spoiled, reject load',
+  },
+  {
+    seedKey: 'qa-reefer-pretrip',
+    category: 'qa',
+    subcategory: 'reefer',
+    topic: 'Why is a pretrip different for a reefer vs a dry van?',
+    content:
+      "You also check the reefer's diesel, coolant, belts, and error codes, and you pre-cool the box to the setpoint an hour or two before loading. Pick up with a hot trailer and you'll never pull the freight down to temp in time.",
+    keywords: 'reefer pretrip, pull down, precool, diesel level, coolant, belts, error codes, hot trailer, setpoint before load',
+  },
+
+  // ── 9. STEP DECK (DROP DECK) ──────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-stepdeck-types',
+    category: 'trailers',
+    subcategory: 'step-deck',
+    topic: 'Step deck (drop deck) sub-types',
+    content:
+      "A step deck is a flatbed with two heights — a short upper deck over the tractor and a longer, lower deck — so freight can beat the flatbed height limit. A straight step deck has a fixed four-to-five-foot upper and a ten-to-twelve-foot lower. A sliding-axle step deck moves the rear axles to shift weight for different cargo lengths. Single-drop steps down once; double-drop steps down twice and sits even lower. Some come with detachable ramps for loading machinery onto the lower deck.",
+    keywords: 'step deck, drop deck, straight, sliding axle, single drop, double drop, ramps, lower deck, upper deck, height',
+  },
+  {
+    seedKey: 'qa-stepdeck-vs-flatbed',
+    category: 'qa',
+    subcategory: 'step-deck',
+    topic: 'Why choose a step deck over a flatbed for the same load?',
+    content:
+      "Legal height — thirteen-six. A flatbed deck sits about five feet off the ground; a step deck's lower deck sits around three and a half. That extra foot and a half of clearance lets you haul tall cargo without an oversize permit.",
+    keywords: 'step deck vs flatbed, why step deck, height clearance, 13 6, lower deck, tall cargo, avoid permit',
+  },
+  {
+    seedKey: 'qa-stepdeck-weight-placement',
+    category: 'qa',
+    subcategory: 'step-deck',
+    topic: "I'm loading a large tank on a step deck — where does the weight go?",
+    content:
+      "Put the heaviest part over the upper deck or over the trailer axles, never in the middle of the lower deck where there's less structural support. Run a weight-distribution check so your kingpin weight isn't too light.",
+    keywords: 'step deck weight, weight placement, upper deck, over axles, kingpin weight, distribution, structural support',
+  },
+  {
+    seedKey: 'qa-stepdeck-backing',
+    category: 'qa',
+    subcategory: 'step-deck',
+    topic: 'Trick to backing a step deck into a tight bay?',
+    content:
+      "You can't see the lower deck over your mirrors, so use a spotter. Alone, get out and look, repeatedly. The longer wheelbase tracks wide, so you need a lot more room to swing than a van.",
+    keywords: 'backing step deck, spotter, goal, get out and look, blind, wheelbase, tracks wide, tight bay',
+  },
+
+  // ── 10. TANKER ───────────────────────────────────────────────────────────────
+  {
+    seedKey: 'trailer-tanker-types',
+    category: 'trailers',
+    subcategory: 'tanker',
+    topic: 'Tanker sub-types',
+    content:
+      "A tanker hauls liquids, gases, or food-grade fluids and needs careful handling for liquid surge. A compartmented tanker splits into two to five compartments for multiple liquids at once — gas, diesel, ethanol. A food-grade sanitary tanker is polished stainless for milk, juice, oil, or wine, and demands strict washout certs. A hazmat tanker carries flammable, corrosive, or explosive liquids and needs the hazmat (H) endorsement. An asphalt or molten tanker is insulated with heating coils. A gas or pressure tanker holds liquefied gas like propane or anhydrous ammonia under high PSI.",
+    keywords: 'tanker, compartmented, food grade, sanitary, hazmat, asphalt, molten, pressure, propane, ammonia, liquid surge, baffle',
+  },
+  {
+    seedKey: 'qa-tanker-surge',
+    category: 'qa',
+    subcategory: 'tanker',
+    topic: 'What is liquid surge and why is it dangerous?',
+    content:
+      "When you brake, the liquid sloshes forward against the front bulkhead then rebounds, surging the truck forward and stretching your stopping distance by up to thirty percent. Brake gradually, no sudden lane changes, and know that a partially filled tank is more dangerous in a turn than a full one.",
+    keywords: 'liquid surge, sloshing, stopping distance, brake gradually, bulkhead, partial load, tanker danger, surge',
+  },
+  {
+    seedKey: 'qa-tanker-baffles',
+    category: 'qa',
+    subcategory: 'tanker',
+    topic: 'Why do I need baffles, and are they always good?',
+    content:
+      "Baffles are internal walls with holes that cut surge and smooth your braking. The trade-off: they make cleaning hard, so food-grade tanks often skip them. A non-baffled smooth-bore tank surges harder, so you drive even slower.",
+    keywords: 'baffles, smooth bore, surge reduction, food grade no baffle, cleaning, slower, tanker walls',
+  },
+  {
+    seedKey: 'qa-tanker-overload',
+    category: 'qa',
+    subcategory: 'tanker',
+    topic: 'The shipper overloaded my tanker — how do I know without a scale?',
+    content:
+      "Check the load line or dip stick. Every tank has a max fill for the product's specific gravity. Heavy products like sulfuric acid only fill to about eighty percent capacity or you're over weight. You fill by weight, not by volume.",
+    keywords: 'tanker overload, load line, dip stick, specific gravity, fill by weight, sulfuric acid, 80 percent, overweight',
+  },
+  {
+    seedKey: 'qa-tanker-vapor-cutoff',
+    category: 'qa',
+    subcategory: 'tanker',
+    topic: 'The hazmat pump at the terminal keeps cutting off — why?',
+    content:
+      "It's the vapor recovery system sensing back-pressure. Make sure your vapor hose is on the terminal's recovery line and your pressure-relief valves work. Repeated cutoffs mean static is building — an explosion risk — so stop and ground the trailer immediately.",
+    keywords: 'vapor recovery, pump cutoff, back pressure, hazmat terminal, static, ground trailer, pressure relief, explosion risk',
+  },
 ];
