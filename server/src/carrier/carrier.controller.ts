@@ -74,11 +74,13 @@ function serialize(carrier: any) {
   const smtpConnected = !!(carrier.smtpHost && carrier.smtpUser && smtpPass);
   const emailConnected = oauthConnected || smtpConnected;
   // Shared platform sender configured by us — lets every carrier send without
-  // connecting their own inbox.
+  // connecting their own inbox. Either the Resend HTTP API (preferred; works
+  // where outbound SMTP is blocked) or a classic SMTP relay.
   const platformEmailAvailable = !!(
-    process.env.PLATFORM_SMTP_HOST &&
-    process.env.PLATFORM_SMTP_USER &&
-    process.env.PLATFORM_SMTP_PASS
+    process.env.RESEND_API_KEY ||
+    (process.env.PLATFORM_SMTP_HOST &&
+      process.env.PLATFORM_SMTP_USER &&
+      process.env.PLATFORM_SMTP_PASS)
   );
   return {
     ...rest,

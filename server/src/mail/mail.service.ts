@@ -53,13 +53,89 @@ export class MailService {
     };
   }
 
-  /** Is the shared platform sender available? */
-  platformAvailable(): boolean {
-    return !!(
-      process.env.PLATFORM_SMTP_HOST &&
-      process.env.PLATFORM_SMTP_USER &&
-      process.env.PLATFORM_SMTP_PASS
+  /**
+   * Shared platform sender over an HTTP email API (Resend). This is the
+   * scalable default on hosts like Railway that BLOCK outbound SMTP ports —
+   * Resend sends over HTTPS (443), which is never blocked. Preferred over the
+   * SMTP relay whenever RESEND_API_KEY is set.
+   */
+  resendAvailable(): boolean {
+    return !!process.env.RESEND_API_KEY;
+  }
+
+  /** The platform "from" address (must be on a Resend-verified domain). */
+  platformFromAddress(): string {
+    return (
+      process.env.RESEND_FROM ||
+      process.env.PLATFORM_SMTP_FROM ||
+      process.env.PLATFORM_SMTP_USER ||
+      ''
     );
+  }
+
+  /** Is any shared platform sender available (HTTP API or SMTP relay)? */
+  platformAvailable(): boolean {
+    return (
+      this.resendAvailable() ||
+      !!(
+        process.env.PLATFORM_SMTP_HOST &&
+        process.env.PLATFORM_SMTP_USER &&
+        process.env.PLATFORM_SMTP_PASS
+      )
+    );
+  }
+
+  /**
+   * Send the shared-platform email via Resend's HTTPS API. `from` should carry
+   * the carrier's display name over the platform's verified address; replies
+   * route to the carrier via replyTo.
+   */
+  async sendResend(
+    from: string,
+    input: SendInput,
+  ): Promise<{ sent: boolean; reason?: string }> {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: [input.to],
+          reply_to: input.replyTo ? [input.replyTo] : undefined,
+          subject: input.subject,
+          text: input.text,
+          attachments: (input.attachments || []).map((a) => ({
+            filename: a.filename,
+            content: a.content.toString('base64'),
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        this.logger.warn(`Resend send failed: ${res.status} ${body}`);
+        if (res.status === 403 || /domain/i.test(body)) {
+          return {
+            sent: false,
+            reason:
+              'The platform email domain isn\u2019t verified yet. (Admin: verify the sending domain in Resend.)',
+          };
+        }
+        return {
+          sent: false,
+          reason: 'The email could not be sent right now. Please try again shortly.',
+        };
+      }
+      return { sent: true };
+    } catch (e: any) {
+      this.logger.warn(`Resend send error: ${e?.message || e}`);
+      return {
+        sent: false,
+        reason: 'The email could not be sent right now. Please try again shortly.',
+      };
+    }
   }
 
   /**

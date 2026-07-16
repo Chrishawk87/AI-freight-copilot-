@@ -454,7 +454,7 @@ export class DocumentsService {
       return { sent: true, to, filename };
     }
 
-    // No OAuth — fall back to SMTP or the shared platform relay.
+    // No OAuth — try the carrier's own SMTP (app password) next.
     const byok = {
       host: carrier?.smtpHost || '',
       port: carrier?.smtpPort || 587,
@@ -464,35 +464,60 @@ export class DocumentsService {
       from: carrierReply,
     };
 
-    let cfg: typeof byok;
-    let replyTo: string | undefined;
+    const label = (carrier?.companyName
+      ? `${carrier.companyName} via AI Freight Co-Pilot`
+      : 'AI Freight Co-Pilot'
+    ).replace(/"/g, '');
+
     if (this.mail.configured(byok)) {
-      cfg = byok;
-      replyTo = carrierReply || undefined;
-    } else {
-      const platform = this.mail.platformConfig();
-      if (!platform) {
-        throw new BadRequestException(
-          "Email sending isn't set up yet. Either connect your own inbox in Profile \u2192 Send email, or (admin) configure the platform mail account.",
-        );
+      const result = await this.mail.send(byok, {
+        to,
+        replyTo: carrierReply || undefined,
+        subject,
+        text,
+        attachments,
+      });
+      if (!result.sent) {
+        throw new BadRequestException(result.reason || 'The email could not be sent.');
       }
-      const label = (carrier?.companyName
-        ? `${carrier.companyName} via AI Freight Co-Pilot`
-        : 'AI Freight Co-Pilot'
-      ).replace(/"/g, '');
-      // Send from the platform address but present the carrier's name; set
-      // reply-to so responses go to the carrier, not us.
-      cfg = { ...platform, from: `"${label}" <${platform.from}>` };
-      replyTo = carrierReply || undefined;
+      return { sent: true, to, filename };
     }
 
-    const result = await this.mail.send(cfg, {
-      to,
-      replyTo,
-      subject,
-      text,
-      attachments,
-    });
+    // Shared platform relay. Prefer Resend's HTTPS API (works on hosts that
+    // block outbound SMTP, e.g. Railway); fall back to the SMTP relay.
+    if (this.mail.resendAvailable()) {
+      const from = `${label} <${this.mail.platformFromAddress()}>`;
+      const result = await this.mail.sendResend(from, {
+        to,
+        replyTo: carrierReply || undefined,
+        subject,
+        text,
+        attachments,
+      });
+      if (!result.sent) {
+        throw new BadRequestException(result.reason || 'The email could not be sent.');
+      }
+      return { sent: true, to, filename };
+    }
+
+    const platform = this.mail.platformConfig();
+    if (!platform) {
+      throw new BadRequestException(
+        "Email sending isn't set up yet. Either connect your own inbox in Profile \u2192 Send email, or (admin) configure the platform mail account.",
+      );
+    }
+    // Send from the platform address but present the carrier's name; set
+    // reply-to so responses go to the carrier, not us.
+    const result = await this.mail.send(
+      { ...platform, from: `"${label}" <${platform.from}>` },
+      {
+        to,
+        replyTo: carrierReply || undefined,
+        subject,
+        text,
+        attachments,
+      },
+    );
     if (!result.sent) {
       throw new BadRequestException(result.reason || 'The email could not be sent.');
     }
