@@ -3732,4 +3732,420 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "Usually yes. APUs are typically exempt from idling bans because they cut emissions, but check the specific rest area — some limit them at night for noise. If there's an electric shore-power hookup, use that instead.",
     keywords: 'no idling sign apu, apu exempt cuts emissions, check rest area night noise limit, shore power hookup',
   },
+
+  // ── Regulations, Compliance & Legal Limits ────────────────────────────────
+  {
+    seedKey: 'cdl-manual',
+    category: 'regulations',
+    subcategory: 'cdl',
+    topic: 'CDL classes and endorsements',
+    content:
+      "Your CDL class sets what you can drive. Class A covers combination vehicles rated twenty-six thousand one and up with a towed unit over ten thousand pounds — that's the standard tractor-trailer, and it steps down to cover Class B and C too. Class B is single heavy vehicles like straight trucks, dump trucks, and big box trucks. Class C is for sixteen-plus passengers or placarded hazmat under twenty-six thousand one. Endorsements add privileges: H for placarded hazmat, N for tanker, X for hazmat in a tanker, T for doubles and triples, P for passengers, S for school bus. Hazmat needs a written test plus a TSA background check and renews every five years. Every CDL holder also needs a current DOT medical card, usually renewed every two years — let it lapse and your license gets downgraded.",
+    keywords: 'cdl classes endorsements, class a b c, gcwr twenty six thousand, hazmat h tanker n x doubles t, tsa background five years, dot medical card two years, downgrade lapse',
+  },
+  {
+    seedKey: 'qa-cdl-a-drive-b',
+    category: 'qa',
+    subcategory: 'cdl',
+    topic: 'Can a Class A driver run a Class B straight truck?',
+    content:
+      "Yes. Class A is the top license — it steps down and covers Class B and Class C vehicles too. Hold an A and you're cleared for everything below it.",
+    keywords: 'class a drive class b, steps down, covers lower classes, top license',
+  },
+  {
+    seedKey: 'qa-cdl-h-vs-x',
+    category: 'qa',
+    subcategory: 'cdl',
+    topic: 'Difference between H and X endorsements',
+    content:
+      "H by itself lets you haul placarded hazmat in a van or on a flatbed. X is H and N combined, so it lets you haul hazmat in a tanker. If your hazmat's going in a tank, you need the X, not just the H.",
+    keywords: 'h vs x endorsement, h placarded hazmat van flatbed, x combines h and n, hazmat in tanker needs x',
+  },
+  {
+    seedKey: 'qa-cdl-hazmat-expired',
+    category: 'qa',
+    subcategory: 'cdl',
+    topic: 'Why did my hazmat endorsement expire at 3 years?',
+    content:
+      "The hazmat endorsement runs on a five-year TSA background check, but if you didn't renew that check it invalidates the endorsement even while the physical license is still good. Start the renewal about three months before it's due so you never get caught short.",
+    keywords: 'hazmat endorsement expired, five year tsa background renewal, invalidates even if license active, renew three months ahead',
+  },
+  {
+    seedKey: 'qa-cdl-e-restriction',
+    category: 'qa',
+    subcategory: 'cdl',
+    topic: 'E restriction (no manual transmission) for freight',
+    content:
+      "Depends on the carrier. Most big fleets run automatics now, so it rarely matters, but some heavy-haul and specialized outfits want manual experience. If you tested on an automatic you legally can't drive a manual — you'd have to retake the skills test in a manual to clear the restriction.",
+    keywords: 'e restriction no manual, tested automatic cant drive manual, most fleets automatic, retake skills test to remove',
+  },
+  {
+    seedKey: 'qa-cdl-medical-expired',
+    category: 'qa',
+    subcategory: 'cdl',
+    topic: 'Pulled over with an expired medical card',
+    content:
+      "You'll be put Out of Service and can't drive until you pass a new DOT physical and file the updated card with the state. You may also get a citation, and your carrier can face penalties. Keeping the medical card current is on you, the driver.",
+    keywords: 'expired medical card, out of service, new dot physical file with state, citation carrier penalty, drivers responsibility',
+  },
+  {
+    seedKey: 'qa-cdl-doubles',
+    category: 'qa',
+    subcategory: 'cdl',
+    topic: 'What do I need to haul doubles?',
+    content:
+      "The T endorsement for doubles and triples. It's a written test at the DMV — no new skills test needed — and once you pass it's added to your license. Some states fold in a separate doubles knowledge test for the combination.",
+    keywords: 'haul doubles t endorsement, written test dmv, no skills test, added to license',
+  },
+  {
+    seedKey: 'qa-cdl-b-tractor-trailer',
+    category: 'qa',
+    subcategory: 'cdl',
+    topic: 'Can a Class B driver run a tractor-trailer under 26,001 GCWR?',
+    content:
+      "Only if the numbers line up — tractor under twenty-six thousand one and trailer under ten thousand pounds could let a Class B work. But most tractor-trailers blow past twenty-six thousand one GCWR, so they need a Class A. When in doubt, read the GVWR and GCWR on the vehicle placard.",
+    keywords: 'class b tractor trailer, under 26001 gcwr, trailer under ten thousand, most need class a, check placard',
+  },
+  {
+    seedKey: 'inspection-manual',
+    category: 'regulations',
+    subcategory: 'inspections',
+    topic: 'DOT inspections and pre-trip',
+    content:
+      "Before every trip you owe a pre-trip: brakes and air system, tires and tread — at least two thirty-seconds on the steers, four thirty-seconds on drives and trailer — all the lights, the fifth wheel and kingpin coupling, load securement, fluids including DEF, mirrors and glass, and emergency gear like the extinguisher and triangles. Log it on a DVIR and fix any defect before you roll. On the road, DOT runs inspections by level: Level 1 is the full crawl-under, Level 2 a walk-around, Level 3 driver and paperwork only, Level 4 a targeted special check, Level 5 vehicle-only with no driver. A serious defect — bad brakes, blown tire, loose securement, expired credentials, an hours violation — puts you Out of Service and dings the carrier's CSA safety score. A clean pre-trip is your best defense.",
+    keywords: 'dot inspection pre-trip, brakes tires tread lights coupling securement fluids, dvir, inspection levels 1 2 3 4 5, out of service, csa safety score',
+  },
+  {
+    seedKey: 'qa-inspection-drop-hook-trailer',
+    category: 'qa',
+    subcategory: 'inspections',
+    topic: 'Do I re-inspect after a drop and hook?',
+    content:
+      "Yes. Pre-trip the new trailer before you pull it — flat tires, dead lights, bad coupling all become your liability the second you move it. Check its brakes, tires, lights, and the coupling before you hook and go.",
+    keywords: 'drop and hook re-inspect, pre-trip new trailer, defects become your liability, check brakes tires lights coupling',
+  },
+  {
+    seedKey: 'qa-inspection-slack-adjuster',
+    category: 'qa',
+    subcategory: 'inspections',
+    topic: 'Found a slack adjuster out of adjustment — fix it myself?',
+    content:
+      "Only if you're trained and authorized. Some drivers can adjust a manual slack adjuster within legal limits, but if the brake pads are worn past the limit, no adjustment fixes that — they need replacing. Not sure? Report it and let a mechanic handle it.",
+    keywords: 'slack adjuster out of adjustment, adjust if trained authorized, worn pads need replacing, report to mechanic if unsure',
+  },
+  {
+    seedKey: 'qa-inspection-cracked-windshield',
+    category: 'qa',
+    subcategory: 'inspections',
+    topic: 'Level 1 found a cracked windshield — Out of Service?',
+    content:
+      "Depends where the crack is. In the driver's line of sight, you're Out of Service until it's fixed. Off to the passenger side or out of your view, the officer may just warn you and let you roll. Carry a repair kit or line up a mobile glass service if it's borderline.",
+    keywords: 'cracked windshield level 1, drivers line of sight oos, passenger side warning, mobile glass repair',
+  },
+  {
+    seedKey: 'qa-inspection-abs-light',
+    category: 'qa',
+    subcategory: 'inspections',
+    topic: 'What am I checking on the ABS during pre-trip?',
+    content:
+      "The ABS dash light should flash on at startup and then go out. If it stays on or keeps flashing, the anti-lock system has a fault. You can usually still drive, but it flags a possible brake problem, so note it in your log and get it looked at.",
+    keywords: 'abs light pre-trip, flashes at startup then off, stays on fault, still drivable note in log, potential brake issue',
+  },
+  {
+    seedKey: 'qa-inspection-brake-after-clean',
+    category: 'qa',
+    subcategory: 'inspections',
+    topic: 'Clean pre-trip but pulled with a brake adjustment violation',
+    content:
+      "Brake adjustment can drift during the day, especially with worn brakes or after heavy braking on a long downgrade. Your morning check can be clean and still be out by afternoon. Check brakes at stops, particularly after steep hills, and a slack-stroke gauge lets you verify fast.",
+    keywords: 'clean pretrip brake violation, adjustment drifts heavy braking downgrade, check brakes at stops, slack stroke gauge',
+  },
+  {
+    seedKey: 'qa-inspection-aobrd-vs-eld',
+    category: 'qa',
+    subcategory: 'inspections',
+    topic: 'What is an AOBRD versus an ELD?',
+    content:
+      "The AOBRD was the older on-board recorder that ELDs replaced — it allowed more manual input and was easier to fudge. Since December 2019, ELDs are mandatory: they sync to the engine to log hours, speed, and location automatically and are much harder to tamper with.",
+    keywords: 'aobrd vs eld, older recorder more manual input, eld mandatory december 2019, syncs engine automatic harder to tamper',
+  },
+  {
+    seedKey: 'eld-manual',
+    category: 'regulations',
+    subcategory: 'eld',
+    topic: 'Electronic Logging Devices',
+    content:
+      "The ELD plugs into the engine's diagnostic port and automatically records drive time, on-duty, and off-duty based on engine status and movement, plus GPS location. You still manually log on-duty-not-driving like loading and paperwork, plus sleeper and off-duty. A few exemptions exist: the short-haul rule inside a hundred-fifty air-mile radius with a daily return to base, pre-2000 engines, some ag operations, and personal-conveyance mode when you're off-duty and not advancing the load. If the ELD malfunctions, switch to a paper log for the rest of the trip and get it repaired within eight days. During an inspection the officer pulls the ELD data and looks for unassigned drive time and logged violations, so keep it accurate.",
+    keywords: 'eld electronic logging, plugs into engine diagnostic port, automatic drive on off duty gps, short haul 150 air mile exemption, personal conveyance, malfunction paper log eight days, unassigned drive time',
+  },
+  {
+    seedKey: 'qa-eld-frozen',
+    category: 'qa',
+    subcategory: 'eld',
+    topic: 'ELD screen froze — what do I do?',
+    content:
+      "Try a reboot first. If it won't come back, start a paper log for the current shift and note the malfunction. FMCSA gives you eight days to repair or replace the unit, and you should always keep a blank paper log in the truck for exactly this.",
+    keywords: 'eld frozen, reboot first, paper log current shift note malfunction, eight days to repair, keep blank paper log',
+  },
+  {
+    seedKey: 'qa-eld-5-feet-driving',
+    category: 'qa',
+    subcategory: 'eld',
+    topic: 'ELD logs me driving when I creep 5 feet at the dock',
+    content:
+      "Under FMCSA rules, movement under five miles an hour shouldn't auto-log as driving. But if you roll more than a few feet pulling into a dock, log it as on-duty-not-driving. If the ELD wrongly tags it as driving, correct the log manually.",
+    keywords: 'eld logs driving creeping dock, under five mph not driving, log on duty not driving, correct manually if wrong',
+  },
+  {
+    seedKey: 'qa-eld-personal-conveyance',
+    category: 'qa',
+    subcategory: 'eld',
+    topic: 'Personal conveyance to a nearby restaurant',
+    content:
+      "Legal as long as you're truly off-duty, the truck isn't advancing the load, and you switch the ELD into personal-conveyance mode before you move. It logs the miles but doesn't count them as drive time. Check your carrier's policy — some cap the distance, like within fifty miles.",
+    keywords: 'personal conveyance restaurant, off duty not advancing load, switch pc mode before moving, miles not drive time, carrier distance cap',
+  },
+  {
+    seedKey: 'qa-eld-sleeper-split',
+    category: 'qa',
+    subcategory: 'eld',
+    topic: 'How do I log a sleeper berth split correctly?',
+    content:
+      "The split lets you break the ten-hour off-duty into two chunks — at least eight straight hours in the sleeper and at least two more consecutive hours off-duty. Log the eight as Sleeper Berth and the two as Off-Duty, and the ELD recalculates your remaining drive time from there.",
+    keywords: 'sleeper berth split, eight consecutive sleeper plus two off duty, log sleeper and off duty, eld recalculates drive time',
+  },
+  {
+    seedKey: 'qa-eld-11-5-hours',
+    category: 'qa',
+    subcategory: 'eld',
+    topic: 'ELD flagged a violation at 11.5 hours driving',
+    content:
+      "Correct — the hard limit is eleven hours of driving after ten off, and there's no stretching it. At eleven and a half you're in violation and must stop now. The ELD flags it and DOT will see it on inspection.",
+    keywords: 'eleven point five hours violation, eleven hour drive limit, no extension, stop immediately, eld flags dot sees',
+  },
+  {
+    seedKey: 'qa-eld-short-haul-paper',
+    category: 'qa',
+    subcategory: 'eld',
+    topic: 'Paper log under the 150-air-mile short-haul exemption?',
+    content:
+      "Yes, you can use paper if you stay inside a hundred-fifty air-mile radius, return to your reporting location every day, and don't blow the eleven-hour drive limit. Plenty of carriers still run ELDs anyway just for consistency and tracking.",
+    keywords: 'short haul paper log, 150 air mile radius, return daily, under eleven hours, carriers use eld anyway',
+  },
+  {
+    seedKey: 'hos-manual',
+    category: 'regulations',
+    subcategory: 'hos',
+    topic: 'Hours of Service',
+    content:
+      "The core property-carrier limits: you can drive up to eleven hours after ten consecutive hours off, but all your driving has to finish inside a fourteen-hour on-duty window that starts the moment you first go on-duty — and the fourteen doesn't pause for breaks. You need a thirty-minute off-duty or sleeper break by your eighth hour of driving. On the longer clocks it's sixty hours in seven days or seventy in eight, and a thirty-four-hour reset zeroes that out. The sleeper split lets you divide the ten into an eight-plus and a two-plus. Remember on-duty is any work — driving, loading, waiting at the dock, fueling, paperwork — while off-duty means no work at all. Blow eleven hours and you're stopped on the spot.",
+    keywords: 'hours of service, eleven hour drive ten off, fourteen hour window doesnt pause, thirty minute break by eighth hour, sixty seventy hour, thirty four hour restart, sleeper split, on duty vs off duty',
+  },
+  {
+    seedKey: 'qa-hos-dock-waiting',
+    category: 'qa',
+    subcategory: 'hos',
+    topic: 'Does waiting at the dock count as on-duty?',
+    content:
+      "Yes. Your fourteen-hour clock starts the moment you first go on-duty, including check-in, and sitting at the dock waiting to unload is on-duty time. You can't push the start of the clock later, so log the exact time you began work.",
+    keywords: 'dock waiting on duty, fourteen hour clock starts at check in, waiting counts on duty, log exact start time',
+  },
+  {
+    seedKey: 'qa-hos-745-break',
+    category: 'qa',
+    subcategory: 'hos',
+    topic: 'Do I need the 30-minute break at 7 hours 45 minutes driving?',
+    content:
+      "Not yet — you have until your eighth hour of driving. You can stop at seven forty-five, take at least thirty minutes off-duty or in the sleeper, then keep going. It can't be on-duty time.",
+    keywords: 'thirty minute break timing, until eighth hour driving, thirty minutes off duty or sleeper, not on duty',
+  },
+  {
+    seedKey: 'qa-hos-14-hour',
+    category: 'qa',
+    subcategory: 'hos',
+    topic: 'Under 11 driving hours but hit the 14-hour window',
+    content:
+      "You still can't drive. Once the fourteen-hour window closes you're done for the day even with drive time left on the clock. You need ten consecutive hours off to reset the fourteen.",
+    keywords: 'fourteen hour window expired, cant drive even with hours left, ten consecutive off to reset',
+  },
+  {
+    seedKey: 'qa-hos-34-restart',
+    category: 'qa',
+    subcategory: 'hos',
+    topic: 'When can I drive after a 34-hour restart?',
+    content:
+      "Once you complete thirty-four straight hours off-duty, your sixty or seventy-hour clock resets to zero and you're good to go. Hit sixty on Thursday, take thirty-four off over the weekend, and you start Monday with a clean clock.",
+    keywords: 'thirty four hour restart, thirty four consecutive off resets sixty seventy, clock back to zero, start monday clean',
+  },
+  {
+    seedKey: 'qa-hos-inspection-break',
+    category: 'qa',
+    subcategory: 'hos',
+    topic: 'Does a DOT inspection count as my 30-minute break?',
+    content:
+      "No. The break has to be off-duty or sleeper time, and sitting through a DOT inspection is on-duty. You'll still owe a full thirty-minute off-duty break separately.",
+    keywords: 'inspection not a break, break must be off duty sleeper, inspection is on duty, still owe thirty minutes',
+  },
+  {
+    seedKey: 'qa-hos-team',
+    category: 'qa',
+    subcategory: 'hos',
+    topic: 'How do HOS rules work for team drivers?',
+    content:
+      "Teams lean on the sleeper split: one drives while the other logs sleeper time toward their ten-hour break, so the truck can basically run around the clock. But each driver still has to live inside their own eleven-hour drive limit and fourteen-hour window.",
+    keywords: 'team drivers hos, sleeper split one drives one rests, truck runs 24/7, each driver own eleven fourteen',
+  },
+  {
+    seedKey: 'ifta-manual',
+    category: 'regulations',
+    subcategory: 'ifta',
+    topic: 'IFTA fuel tax',
+    content:
+      "IFTA is the agreement among the lower forty-eight states and the Canadian provinces that rolls all your fuel-tax reporting into one quarterly filing. You track total miles driven in each jurisdiction and total fuel bought in each, and because every state taxes diesel at a different rate, IFTA reconciles what you owe — you pay the difference to states where you drove more than you fueled, or get a credit where you fueled more than you drove. Keep every fuel receipt and your mileage records for three to four years for audits. Reports are due quarterly, and filing late brings penalties and interest. All miles count, loaded or empty, and Canada's in the system too.",
+    keywords: 'ifta fuel tax, forty eight states canadian provinces, one quarterly filing, track miles and fuel per state, reconcile difference, keep receipts three four years, all miles count canada included',
+  },
+  {
+    seedKey: 'qa-ifta-cheap-vs-expensive',
+    category: 'qa',
+    subcategory: 'ifta',
+    topic: 'Fueled cheap in Texas but drove miles in California — do I owe CA?',
+    content:
+      "Yes, IFTA squares it up. You paid Texas tax at the pump, but California's rate is higher, so you'll owe California the difference when you file your quarterly report. That's exactly why fueling in cheaper states lowers your total tax bill.",
+    keywords: 'ifta texas fuel california miles, reconciles difference, owe california higher rate, fuel cheap states lowers liability',
+  },
+  {
+    seedKey: 'qa-ifta-lost-receipt',
+    category: 'qa',
+    subcategory: 'ifta',
+    topic: 'Lost a New Mexico fuel receipt — claim it for IFTA?',
+    content:
+      "You can, but it's risky. In an audit you need the receipt to prove the purchase; without it the state can disallow the fuel credit and tax that fuel in your home state. Photograph every receipt or use a fuel-card app that stores digital copies.",
+    keywords: 'lost ifta receipt new mexico, risky in audit, disallow credit tax home state, photograph or app digital copy',
+  },
+  {
+    seedKey: 'qa-ifta-power-only',
+    category: 'qa',
+    subcategory: 'ifta',
+    topic: 'Power-only pulling a shipper trailer — do I record IFTA miles?',
+    content:
+      "Yes. IFTA is based on the tractor's operation, not who owns the trailer, so you record all the miles the tractor runs, loaded or empty.",
+    keywords: 'power only ifta miles, based on tractor operation, not trailer owner, all miles loaded empty',
+  },
+  {
+    seedKey: 'qa-ifta-canada',
+    category: 'qa',
+    subcategory: 'ifta',
+    topic: 'Does IFTA cover Canada?',
+    content:
+      "Yes. IFTA takes in the Canadian provinces — just not the territories. Record your Canadian miles and fuel the same as any U.S. state, and the Canadian fuel taxes get handled right through IFTA.",
+    keywords: 'ifta canada, includes provinces not territories, record canadian miles fuel, handled through ifta',
+  },
+  {
+    seedKey: 'qa-ifta-deadhead',
+    category: 'qa',
+    subcategory: 'ifta',
+    topic: 'How do I report deadhead miles for IFTA?',
+    content:
+      "Deadhead miles count exactly like loaded miles — IFTA makes no distinction. Every mile is taxed based on the state it's driven in, so your empty miles still add to your liability in that state.",
+    keywords: 'deadhead miles ifta, count like loaded, no distinction, taxed by state driven, empty miles count',
+  },
+  {
+    seedKey: 'qa-ifta-late-penalty',
+    category: 'qa',
+    subcategory: 'ifta',
+    topic: 'Penalty for filing IFTA late',
+    content:
+      "It varies by state but usually a late fee around fifty to a hundred dollars plus interest of a percent or two a month on what you owe. Keep blowing deadlines and the state can suspend your IFTA license, which forces you to buy temporary fuel permits at every state line — slow and expensive.",
+    keywords: 'ifta late penalty, fifty to hundred fee plus interest, suspend ifta license, temporary fuel permits each state costly',
+  },
+  {
+    seedKey: 'reg-size-manual',
+    category: 'regulations',
+    subcategory: 'size-limits',
+    topic: 'Legal size limits',
+    content:
+      "Stay under these and you skip the permit process. Width is eight feet six inches — a hundred two inches — nationwide; anything over needs an oversize permit, and past twelve feet usually needs escorts. Height is thirteen feet six to the highest point, though some western states allow fourteen on designated routes. Length is fifty-three feet for a semi-trailer on the National Network, with overall tractor-plus-trailer usually capped around eighty feet. Rear overhang past four feet beyond the rear axle needs a permit and red flags or lights; front overhang past three feet needs a permit too. There's no grace inch on any of these — an inch over is an oversize load.",
+    keywords: 'legal size limits, width eight six 102 inches, height thirteen six fourteen west, length fifty three national network eighty combination, rear overhang four feet front three feet, no grace inch',
+  },
+  {
+    seedKey: 'qa-regsize-one-inch',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'Load is 8\u20197\u201d wide — one inch over. Really need a permit?',
+    content:
+      "Yes. There's no grace inch — an inch over eight-six makes you a legal oversize load needing a permit. Weigh stations measure with lasers, fines for that inch run five hundred to a thousand dollars, and they can make you unload on the shoulder.",
+    keywords: 'one inch over width, no grace inch, laser measure, oversize permit, fine five hundred to thousand, unload on shoulder',
+  },
+  {
+    seedKey: 'qa-regsize-air-down',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'Load is 13\u20198\u201d tall — can I air down to lower it?',
+    content:
+      "Dumping the air bags can drop you enough to clear one low bridge slowly, but you can't run at highway speed on dumped air — it wrecks the suspension and handling. For the whole trip you have to be under thirteen-six at normal ride height, otherwise you need an oversize height permit and its restricted low-clearance route.",
+    keywords: 'thirteen eight air down, dump air one bridge slow, cant run highway on dumped air, under thirteen six normal ride, height permit restricted route',
+  },
+  {
+    seedKey: 'qa-regsize-height-stick',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'How do I measure my load height?',
+    content:
+      "Use a height stick — a telescoping pole with a tape — on level ground, measuring from the pavement to the highest fixed point including straps, dunnage, or antennas. Never guess; measure before you leave the shipper. No stick? Use a marked pole or a laser measure.",
+    keywords: 'measure load height, height stick telescoping pole level ground, highest fixed point straps dunnage, measure before leaving shipper, laser measure',
+  },
+  {
+    seedKey: 'qa-regsize-57-foot',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'Can I run a 57-foot trailer on any road?',
+    content:
+      "No. Fifty-seven-footers are only legal on the designated National Network — interstates and certain approved highways. Take one onto a state or county road and you're violating length law and can be cited, so check the route before you leave the interstate with a longer trailer.",
+    keywords: 'fifty seven foot trailer, only national network interstates, off network state county violation, check route before leaving interstate',
+  },
+  {
+    seedKey: 'qa-regsize-overhang-flag',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'Do I need a flag on a 4-foot rear overhang?',
+    content:
+      "At exactly four feet you're at the legal limit, so no flag is required. Go past four feet and you must show a red flag by day or a red light at night at the very end of the overhang. Plenty of drivers flag it anyway just for visibility.",
+    keywords: 'four foot rear overhang, at limit no flag, over four feet red flag day red light night, many flag anyway',
+  },
+  {
+    seedKey: 'qa-regsize-front-overhang',
+    category: 'qa',
+    subcategory: 'size-limits',
+    topic: 'Load sticks out 2 feet in front — legal?',
+    content:
+      "Yes, up to three feet of front overhang is legal without a permit. Just keep it secured and make sure it doesn't block your view or the front lights. Past three feet and you need a permit.",
+    keywords: 'front overhang two feet, up to three feet legal, keep secured dont block view lights, over three needs permit',
+  },
+  {
+    seedKey: 'reg-weight-manual',
+    category: 'regulations',
+    subcategory: 'weight-limits',
+    topic: 'Legal weight limits',
+    content:
+      "The federal gross limit is eighty thousand pounds all in — truck, trailer, and cargo — though some states permit more with an overweight permit. Per axle: steer axle around twelve thousand, drive tandems thirty-four thousand across two axles spaced at least four feet apart, and trailer tandems the same thirty-four thousand, with spread axles allowed more. On top of the axle caps you have to satisfy the federal bridge formula, which limits weight on any axle group based on how far apart the axles are spaced — so you can be legal on gross and still get cited if your axles are bunched too close. Watch for state and seasonal limits too, like spring-thaw restrictions up north.",
+    keywords: 'legal weight limits, eighty thousand gross federal, steer twelve thousand drive tandem thirty four, trailer tandem spread axle, federal bridge formula axle spacing, spring thaw seasonal',
+  },
+  {
+    seedKey: 'qa-regweight-slide-tandems',
+    category: 'qa',
+    subcategory: 'weight-limits',
+    topic: 'CAT scale shows 79,500 gross but drives at 34,500',
+    content:
+      "You can't run — you're legally overweight on the drive axles even though gross is fine. Slide your trailer tandems forward to shift weight off the drives and onto the trailer axles, then re-weigh to prove the drives are under thirty-four thousand before you hit the road.",
+    keywords: 'drives overweight 34500, gross legal but axle over, slide trailer tandems forward shift off drives, re-weigh under thirty four',
+  },
+  {
+    seedKey: 'qa-regweight-bridge-formula',
+    category: 'qa',
+    subcategory: 'weight-limits',
+    topic: 'What is the Bridge Formula and how does it affect me?',
+    content:
+      "It caps the weight allowed on any group of axles based on the distance between the first and last axle in that group and how many axles are in it — the more spread out, the more weight allowed. That's why two rigs at the same eighty-thousand gross can have different legal axle-group weights. If your axles are bunched too close, the formula limits you and you can be cited even under eighty thousand, so spacing matters as much as total weight.",
+    keywords: 'bridge formula, weight on axle group by spacing and number, more spread more weight, cited under eighty thousand if bunched, spacing matters',
+  },
 ];
