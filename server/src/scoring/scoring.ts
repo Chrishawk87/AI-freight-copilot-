@@ -53,12 +53,16 @@ export function scoreLoad(
   const totalCost = fuelCost + fixedCost;
   const netProfit = load.rate - totalCost;
 
-  const rpm = load.rate / load.miles;
-  const allInRpm = load.rate / totalMiles;
+  // Guard every per-mile figure: a load can arrive with 0/blank miles (e.g. a
+  // carrier-originated Rate Con before it's routed, or a sparse board record).
+  // Dividing by zero yields Infinity, which JSON-serializes to null and would
+  // crash any client that formats the number. Keep them finite.
+  const rpm = load.miles > 0 ? load.rate / load.miles : 0;
+  const allInRpm = totalMiles > 0 ? load.rate / totalMiles : 0;
 
   const benchmark = RPM_BENCHMARK[load.equipment] ?? 2.0;
 
-  const profitPerMile = netProfit / load.miles;
+  const profitPerMile = load.miles > 0 ? netProfit / load.miles : 0;
   const profit = clamp((profitPerMile / 0.9) * 65 + 20);
 
   const deadheadRatio = load.deadheadMiles / Math.max(load.miles, 1);

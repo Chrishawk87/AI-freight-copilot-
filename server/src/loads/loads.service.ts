@@ -16,7 +16,14 @@ export class LoadsService {
   }
 
   async list(user: AuthUser, equipment?: string): Promise<ScoredLoad[]> {
-    const where: any = { isReloadPool: false, active: true };
+    // Carrier-originated Rate Con loads are the driver's own committed freight,
+    // not open opportunities — they belong on the dashboard/booked view, not in
+    // this ranked feed of bookable loads.
+    const where: any = {
+      isReloadPool: false,
+      active: true,
+      source: { not: 'RateCon' },
+    };
     if (equipment && equipment !== 'All') where.equipment = equipment;
     const loads = await this.prisma.load.findMany({ where });
     return loads
