@@ -88,25 +88,141 @@ export class OcrService {
   ): Promise<ExtractedFields> {
     const provider = (process.env.OCR_PROVIDER || 'mindee').toLowerCase();
     const allowCompanyKey = opts.allowCompanyKey ?? true;
-    // A driver's own key always applies. The company's shared key only applies
-    // when we're allowed to spend on it (i.e. the tenant is under its monthly cap).
+
+    // 1) Claude vision on the shared ANTHROPIC key. This is the default reader:
+    // it works on ANY BOL/POD layout (image OR PDF) with zero per-tenant setup,
+    // the same integration-free approach we use for Rate Cons. Gated by
+    // allowCompanyKey so an over-cap tenant falls back instead of billing.
+    const anthropicKey = allowCompanyKey
+      ? (process.env.ANTHROPIC_API_KEY || '').trim()
+      : '';
+    if (anthropicKey && imageData) {
+      try {
+        const real = await this.extractWithClaude(imageData, anthropicKey, ctx);
+        if (real) return real;
+      } catch (e) {
+        this.logger.warn(`Document LLM parse failed, using fallback: ${e}`);
+      }
+    }
+
+    // 2) Optional paid OCR provider (Mindee), if a company or driver key is set.
+    // A driver's own key always applies; the company key only under-cap.
     const companyKey = allowCompanyKey ? process.env.OCR_API_KEY || '' : '';
     const key = (clientKey || companyKey).trim();
-
     if (key && imageData) {
       try {
         if (provider === 'mindee') {
           const real = await this.extractWithMindee(imageData, key);
           if (real) return real;
         }
-        // Unknown provider name but a key is set: fall through to simulated,
-        // but note the intended provider so the UI can show what was attempted.
       } catch (e) {
         this.logger.warn(`OCR provider "${provider}" failed, using fallback: ${e}`);
       }
     }
 
+    // 3) No key / everything failed: deterministic simulated read so the flow
+    // still works end-to-end.
     return this.simulate(ctx);
+  }
+
+  // ---- Real document parse: Claude vision --------------------------------------
+  // Reads a Bill of Lading / Proof of Delivery (image OR PDF) into structured
+  // fields. Broker/shipper-agnostic — no template needed. Any shape problem
+  // throws and the caller falls back to Mindee or the simulation.
+  private async extractWithClaude(
+    imageData: string,
+    key: string,
+    ctx: OcrContext,
+  ): Promise<ExtractedFields | null> {
+    const { buffer, mime } = decodeDataUrl(imageData);
+    const b64 = buffer.toString('base64');
+    const model =
+      process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5-20251001';
+    const docType = (ctx.type || 'BOL').toUpperCase();
+
+    const isPdf = /pdf/i.test(mime);
+    const source = isPdf
+      ? { type: 'base64', media_type: 'application/pdf', data: b64 }
+      : { type: 'base64', media_type: mime || 'image/jpeg', data: b64 };
+    const fileBlock = isPdf
+      ? { type: 'document', source }
+      : { type: 'image', source };
+
+    const instruction =
+      `You are extracting fields from a freight ${docType === 'POD' ? 'Proof of Delivery (POD)' : 'Bill of Lading (BOL)'}. ` +
+      'Return ONLY a JSON object (no markdown, no prose) with EXACTLY these keys:\n' +
+      '{"bolNumber":string,"proNumber":string,"shipper":string,"consignee":string,' +
+      '"poNumber":string,"pieceCount":number|null,"weightLbs":number|null,' +
+      '"shipDate":string,"deliveryDate":string,"signaturePresent":boolean,' +
+      '"signedBy":string}\n' +
+      'Rules: dates as YYYY-MM-DD when shown. weightLbs and pieceCount as plain ' +
+      'numbers (no commas/units). Use "" for missing text and null for missing ' +
+      'numbers. signaturePresent is true only if a delivery/receiving signature is ' +
+      'actually visible on the document; signedBy is the printed name if legible, ' +
+      'else "". Do not guess values that are not present.';
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1200,
+        messages: [
+          {
+            role: 'user',
+            content: [fileBlock, { type: 'text', text: instruction }],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`Anthropic HTTP ${res.status}`);
+    const data: any = await res.json();
+    const text: string =
+      Array.isArray(data?.content) && data.content[0]?.type === 'text'
+        ? String(data.content[0].text || '')
+        : '';
+    const parsed = parseJsonLoose(text);
+    if (!parsed) throw new Error('Document parse: no JSON in response');
+
+    const fields = {
+      bolNumber: str(parsed.bolNumber),
+      proNumber: str(parsed.proNumber),
+      shipper: str(parsed.shipper),
+      consignee: str(parsed.consignee),
+      poNumber: str(parsed.poNumber),
+      pieceCount: numOrNull(parsed.pieceCount),
+      weightLbs: numOrNull(parsed.weightLbs),
+      shipDate: str(parsed.shipDate),
+      deliveryDate: str(parsed.deliveryDate),
+      signaturePresent: parsed.signaturePresent === true,
+      signedBy: str(parsed.signedBy),
+    };
+
+    // Count only the substantive text/number fields — the signature boolean
+    // defaults to false and must not, by itself, look like a successful read.
+    const present = [
+      fields.bolNumber,
+      fields.proNumber,
+      fields.shipper,
+      fields.consignee,
+      fields.poNumber,
+      fields.pieceCount,
+      fields.weightLbs,
+      fields.shipDate,
+      fields.deliveryDate,
+      fields.signedBy,
+    ].filter((v) => v !== '' && v != null).length;
+    if (present === 0) throw new Error('Document parse: empty result');
+    return {
+      ...fields,
+      confidence: Math.min(96, 45 + present * 8),
+      provider: 'anthropic',
+      raw: parsed,
+    };
   }
 
   /**
