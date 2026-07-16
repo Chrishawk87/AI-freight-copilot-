@@ -1682,4 +1682,640 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "You're on the hook for the whole cargo claim — often fifty to a hundred thousand dollars. That's why the number one reefer rule is never let the reefer tank drop below a quarter. Fuel the reefer separately from the tractor and set a low-fuel alarm if you've got one.",
     keywords: 'reefer out of fuel, load spoils, cargo claim, 50000 to 100000, liability, quarter tank rule, fuel reefer separately, low fuel alarm',
   },
+
+  // ── Trucks manual (tractor & straight-truck types) ───────────────────
+
+  {
+    seedKey: 'daycab-manual',
+    category: 'trucks',
+    subcategory: 'day-cab',
+    topic: 'Day cab tractor and its sub-types',
+    content:
+      "A day cab is a Class eight tractor with no sleeper berth, built for regional, local, or dedicated runs where you get home or back to the yard at end of shift. It trades living space for maneuverability and payload. The flavors: standard day cab with a short wheelbase for port drayage, regional LTL, and foodservice; heavy-haul day cab with a beefed-up frame, bigger radiator, and five hundred plus horsepower for overweight construction and mining loads; slip-seat day cab shared by drivers across shifts on around-the-clock operations; and CNG or LNG day cabs running on natural gas for port yards and strict-emissions cities like California.",
+    keywords: 'day cab, no sleeper, Class 8, regional, local, drayage, short wheelbase, heavy haul, slip seat, CNG, LNG, payload, maneuverability',
+  },
+  {
+    seedKey: 'qa-daycab-vs-sleeper-400',
+    category: 'qa',
+    subcategory: 'day-cab',
+    topic: 'Why pick a day cab over a sleeper for a four-hundred-mile run?',
+    content:
+      "Weight and turning. A day cab is roughly fifteen hundred to two thousand pounds lighter, so you can carry an extra pallet — about forty-five thousand five hundred payload versus forty-four thousand with a sleeper. The shorter wheelbase also makes it far easier to back into tight urban docks and work city streets.",
+    keywords: 'day cab versus sleeper, 400 mile run, lighter 1500 2000, extra pallet, payload, short wheelbase, urban dock, city streets',
+  },
+  {
+    seedKey: 'qa-daycab-loading-delay',
+    category: 'qa',
+    subcategory: 'day-cab',
+    topic: "I'm in a day cab and the shipper says three-hour loading delay — what are my options?",
+    content:
+      "You've got no bunk to rest in, so that delay burns straight into your fourteen-hour on-duty clock. Tell dispatch right away and charge detention. If the delay pushes you past the fourteen-hour limit you have to demand a layover or reschedule the delivery — you can't just drive over the clock.",
+    keywords: 'day cab loading delay, no bunk, 14 hour clock, detention, layover, reschedule, over hours, HOS',
+  },
+  {
+    seedKey: 'qa-daycab-overnight',
+    category: 'qa',
+    subcategory: 'day-cab',
+    topic: 'Can I do an overnight run in a day cab legally?',
+    content:
+      "Yes, but you still owe the ten-hour off-duty break. With no sleeper berth you have to get a hotel or go home for those ten hours. Sleeping in the driver's seat does not count as off-duty time — only a sleeper berth counts for that.",
+    keywords: 'day cab overnight, 10 hour off duty, no sleeper berth, hotel, driver seat not off duty, HOS compliance',
+  },
+  {
+    seedKey: 'qa-daycab-drayage',
+    category: 'qa',
+    subcategory: 'day-cab',
+    topic: 'Why are day cabs so common in port drayage?',
+    content:
+      "Ports have tight stacking yards and narrow lanes, and the day cab's short wheelbase gives you a sharper turning radius to work them. On top of that, drayage drivers usually run local eight-to-ten-hour shifts and don't need a place to sleep, so there's no reason to carry the extra weight of a bunk.",
+    keywords: 'day cab drayage, port, tight yard, narrow lane, short wheelbase, turning radius, local shift, no sleeper needed',
+  },
+  {
+    seedKey: 'sleeper-manual',
+    category: 'trucks',
+    subcategory: 'sleeper-cab',
+    topic: 'Sleeper cab tractor and its sub-types',
+    content:
+      "A sleeper cab is a Class eight tractor with a bunk behind the seats, built for over-the-road drivers away from home for days or weeks — the standard for long haul. The types: mid-roof sleeper with a shorter bunk, thirty-six to forty-eight inches, lighter and better on fuel; raised-roof or high-rise sleeper, sixty to eighty inches, tall enough to stand up in; studio or flat-floor sleeper with the engine tunnel flattened for cabinets, a fridge, and a microwave; team sleeper with upper and lower bunks so two drivers can run the truck around the clock; and ultra-light sleeper that strips out amenities to save weight and max payload on heavy lanes.",
+    keywords: 'sleeper cab, bunk, over the road, OTR, long haul, mid roof, raised roof, high rise, studio, flat floor, team sleeper, dual bunk, ultra light',
+  },
+  {
+    seedKey: 'qa-sleeper-offduty',
+    category: 'qa',
+    subcategory: 'sleeper-cab',
+    topic: 'Does sleeper berth time count as off-duty even if I am not asleep?',
+    content:
+      "Yes. Under FMCSA rules any time in the sleeper berth counts as off-duty as long as you're resting and not working — not doing paperwork or taking dispatch calls. And you can split the ten-hour break into two pieces, an eight-and-two or seven-and-three, if you're running the sleeper-berth exception.",
+    keywords: 'sleeper berth off duty, FMCSA, resting not working, split break, 8 2, 7 3, sleeper berth exception, HOS',
+  },
+  {
+    seedKey: 'qa-sleeper-steer-weight',
+    category: 'qa',
+    subcategory: 'sleeper-cab',
+    topic: "I'm heavy at forty-four thousand and my steer is over — how does the sleeper factor in?",
+    content:
+      "The sleeper adds weight behind the cab, which pushes more load onto your steer axle. Slide your fifth wheel backward to shift weight off the steers. And remember that a sleeper generally costs you a thousand to two thousand pounds of payload versus a day cab at the same gross.",
+    keywords: 'sleeper steer axle overweight, 44000, weight behind cab, slide fifth wheel back, payload penalty, 1000 2000 pounds',
+  },
+  {
+    seedKey: 'qa-sleeper-team-single-bunk',
+    category: 'qa',
+    subcategory: 'sleeper-cab',
+    topic: 'Can I run team driving in a single-bunk sleeper?',
+    content:
+      "No. Team driving needs a dual-bunk sleeper. A single bunk only rests one driver at a time, so if you've got two drivers and one bunk somebody is always on duty — which kills the whole point of running as a team.",
+    keywords: 'team driving, single bunk, dual bunk required, two drivers, one always on duty, sleeper',
+  },
+  {
+    seedKey: 'qa-sleeper-split',
+    category: 'qa',
+    subcategory: 'sleeper-cab',
+    topic: 'What is the ten-hour sleeper-berth split rule?',
+    content:
+      "Instead of ten straight hours off, you split it: one stretch of at least eight consecutive hours in the sleeper, and another of at least two consecutive hours off-duty, in the sleeper or out. That pauses your fourteen-hour clock. The catch — the eight-hour piece has to be in the sleeper berth; you can't take it in a hotel and call it a split.",
+    keywords: 'sleeper berth split, 10 hour, 8 consecutive sleeper, 2 consecutive off, pause 14 hour clock, cannot use hotel, HOS',
+  },
+  {
+    seedKey: 'boxtruck-manual',
+    category: 'trucks',
+    subcategory: 'box-truck',
+    topic: 'Straight truck / box truck and its sub-types',
+    content:
+      "A straight truck has the cab and cargo box on one chassis — no fifth wheel, no separate trailer. It's built for local delivery, expedited freight, and smaller loads. The types: Class three through six box trucks under twenty-six thousand pounds, which need no CDL in most states, used for furniture, parcel carriers, and hot-shot work; Class seven box trucks from twenty-six to thirty-three thousand needing a Class B CDL with air brakes, for beverage and bigger palletized loads; refrigerated box trucks with a reefer unit for local produce and catering; liftgate-equipped trucks with a hydraulic tailgate for dockless delivery; and the rare box truck with a small sleeper for expedited team runs.",
+    keywords: 'straight truck, box truck, single chassis, no fifth wheel, local delivery, Class 3 to 6, Class 7, no CDL under 26000, Class B, reefer box, liftgate, sleeper',
+  },
+  {
+    seedKey: 'qa-box-cdl-26k',
+    category: 'qa',
+    subcategory: 'box-truck',
+    topic: 'Do I need a CDL to drive a twenty-six-thousand-pound box truck?',
+    content:
+      "No, as long as the truck's gross vehicle weight rating is twenty-six thousand or under and you're not hauling hazmat or pulling a trailer — a standard Class D license covers it. But the moment the combination of truck plus trailer goes over twenty-six thousand, you need a Class A.",
+    keywords: 'box truck CDL, 26000 GVWR, no CDL, Class D, no hazmat, no trailer, combination over 26000 needs Class A',
+  },
+  {
+    seedKey: 'qa-box-overweight-28k',
+    category: 'qa',
+    subcategory: 'box-truck',
+    topic: 'A broker offers a twenty-eight-thousand-pound load for my twenty-six-thousand box truck — can I take it?',
+    content:
+      "No. You can't legally haul cargo that puts you over the truck's gross rating. Twenty-six thousand includes the truck itself plus fuel plus cargo. Know your empty tare weight to figure your real payload — on a twenty-six-thousand truck that's usually only twelve to fourteen thousand pounds of freight.",
+    keywords: 'box truck overweight, 28000 load, 26000 GVWR, includes truck fuel cargo, tare weight, payload 12000 14000',
+  },
+  {
+    seedKey: 'qa-box-lastmile',
+    category: 'qa',
+    subcategory: 'box-truck',
+    topic: 'Why are box trucks preferred for last-mile delivery?',
+    content:
+      "They're short, agile, and can work residential streets, narrow alleys, and tight lots a fifty-three-foot trailer can't touch. Their lower load height also lets one driver with a hand truck or pallet jack deliver into stores that don't have a dock.",
+    keywords: 'box truck last mile, short agile, residential, alley, tight lot, low load height, hand truck, pallet jack, no dock',
+  },
+  {
+    seedKey: 'qa-box-airbrakes-cdl',
+    category: 'qa',
+    subcategory: 'box-truck',
+    topic: 'My box truck has air brakes — does that require a CDL?',
+    content:
+      "Not by itself. The CDL trigger is gross weight rating, not brake type. Under twenty-six thousand you don't need a CDL even with air brakes. That said, some states still want an air-brake endorsement on your non-CDL license to run air-brake systems, so check your state.",
+    keywords: 'box truck air brakes, CDL, based on GVWR not brakes, under 26000 no CDL, air brake endorsement, state rules',
+  },
+  {
+    seedKey: 'weightclass-manual',
+    category: 'trucks',
+    subcategory: 'weight-classes',
+    topic: 'Truck weight classes (FHWA GVWR system)',
+    content:
+      "The Federal Highway Administration sorts trucks by gross vehicle weight rating, and that drives licensing, road access, and registration cost. Class one and two, light duty up to ten thousand pounds — pickups and cargo vans. Class three through six, medium duty from ten to twenty-six thousand — box trucks, delivery trucks, stake beds, dump trucks. Class seven, heavy medium duty from twenty-six to thirty-three thousand, needing a Class B CDL — refuse trucks, big box trucks, city buses. Class eight, over thirty-three thousand — the semis, where sleepers, day cabs, and heavy-haul tractors live pulling fifty-three-foot vans, lowboys, and tankers, usually up to eighty thousand gross, more with permits.",
+    keywords: 'truck weight classes, FHWA, GVWR, Class 1 2 light duty, Class 3 to 6 medium, Class 7 Class B, Class 8 semi, 80000 gross, licensing',
+  },
+  {
+    seedKey: 'qa-class8-focus',
+    category: 'qa',
+    subcategory: 'weight-classes',
+    topic: 'Why is Class 8 the main focus of freight work?',
+    content:
+      "Because Class eight moves the vast majority of over-the-road freight — full truckload, LTL, reefer, flatbed. It's got the payload, up to forty-five thousand pounds, and the cube of a fifty-three-foot trailer to haul freight cost-effectively. Medium-duty Class three through six trucks are mostly local and regional with much smaller volumes.",
+    keywords: 'Class 8 focus, over the road freight, FTL LTL reefer flatbed, payload 45000, 53 foot cube, medium duty local',
+  },
+  {
+    seedKey: 'qa-class-gvwr-vs-actual',
+    category: 'qa',
+    subcategory: 'weight-classes',
+    topic: "My truck is rated thirty thousand GVWR — what's the difference between GVWR and actual weight?",
+    content:
+      "GVWR is the manufacturer's maximum for the fully loaded truck — chassis, body, fuel, driver, and cargo. Actual weight is what you really scale on the CAT. You never exceed the GVWR, and your payload capacity is simply the GVWR minus the truck's empty tare weight.",
+    keywords: 'GVWR versus actual weight, 30000 rating, manufacturer maximum, scale weight, never exceed, payload equals GVWR minus tare',
+  },
+  {
+    seedKey: 'qa-class8-any-trailer',
+    category: 'qa',
+    subcategory: 'weight-classes',
+    topic: 'If I have a Class 8 truck, can I legally pull any trailer?',
+    content:
+      "No. You have to match the tractor to the trailer's weight and hitch. You can't pull a pneumatic tanker on a standard van fifth wheel — tankers need a specific adapter and different air-line hookups. And your gross combined weight rating has to be higher than the truck, trailer, and cargo added together.",
+    keywords: 'Class 8 any trailer, match tractor to trailer, pneumatic tanker adapter, air lines, GCWR, gross combined weight rating',
+  },
+  {
+    seedKey: 'qa-class8-heavyhaul',
+    category: 'qa',
+    subcategory: 'weight-classes',
+    topic: 'What is a Class 8 heavy-haul truck and how is it different?',
+    content:
+      "A heavy-haul Class eight has a stronger frame, a bigger cooling system, more horsepower — five to six hundred — and a heavier front axle rated up to twenty thousand pounds. It's built to pull RGNs and lowboys carrying excavators, dozers, and transformers weighing sixty to a hundred twenty thousand pounds, which need overweight permits.",
+    keywords: 'Class 8 heavy haul, strong frame, big cooling, 500 600 horsepower, front axle 20000, RGN lowboy, excavator, overweight permit',
+  },
+  {
+    seedKey: 'qa-class6-weighstation',
+    category: 'qa',
+    subcategory: 'weight-classes',
+    topic: 'I drive a Class 6 box truck at twenty-five thousand — why do I still get pulled into scales?',
+    content:
+      "Because most states make any commercial vehicle over ten thousand pounds stop at the scales, no matter the class. The twenty-six-thousand line only decides whether you need a CDL — it has nothing to do with the weigh-station rule. Commercial and over ten thousand means you stop.",
+    keywords: 'Class 6 weigh station, over 10000 pounds must stop, 26000 only affects CDL, commercial vehicle scale rule',
+  },
+
+  // ── Transport vehicles manual (support & specialized equipment) ──────
+
+  {
+    seedKey: 'yarddog-manual',
+    category: 'trucks',
+    subcategory: 'yard-dog',
+    topic: 'Yard dog / yard jockey / spotter truck and its sub-types',
+    content:
+      "A yard dog is a short, nimble tractor used only inside freight yards and distribution centers to shuttle trailers between docks and staging spots — it almost never leaves the property. The types: a traditional yard dog with a fifth wheel, short wheelbase, single seat, and raised roof for visibility; an automatic spotter built for constant stop-and-go; an electric yard truck for zero-emission ports and warehouses; a remote-control yard dog run from the ground in tight high-precision yards; and a yard tractor with a lifting fifth wheel that hydraulically raises the trailer so you skip cranking the landing gear.",
+    keywords: 'yard dog, yard jockey, spotter truck, freight yard, distribution center, short wheelbase, raised roof, automatic, electric, remote control, lifting fifth wheel',
+  },
+  {
+    seedKey: 'qa-yarddog-public-road',
+    category: 'qa',
+    subcategory: 'yard-dog',
+    topic: 'Can a yard dog be driven on public roads?',
+    content:
+      "Generally no. Yard dogs aren't DOT-compliant — they're missing the required lighting, mud flaps, speedometers, and highway-rated brakes. They're strictly for private property and aren't registered for public road use.",
+    keywords: 'yard dog public road, not DOT compliant, no lighting mud flaps speedometer, private property, not registered',
+  },
+  {
+    seedKey: 'qa-yarddog-visibility',
+    category: 'qa',
+    subcategory: 'yard-dog',
+    topic: 'Why do yard dogs have a raised roof and extra windows?',
+    content:
+      "Visibility. A yard dog is constantly backing into tight dock doors and threading between parked trailers, so the raised roof and extra glass give you full three-sixty sightlines to kill blind spots and avoid clipping other trailers.",
+    keywords: 'yard dog raised roof, extra windows, visibility, backing tight docks, parked trailers, blind spots, 360 view',
+  },
+  {
+    seedKey: 'qa-yarddog-nolandinggear',
+    category: 'qa',
+    subcategory: 'yard-dog',
+    topic: 'How does a yard dog move a trailer without cranking the landing gear?',
+    content:
+      "Its fifth wheel has a hydraulic lift. It raises the trailer a little so you can pull out from under the landing gear, set the trailer down, and position the next one — all without ever touching the crank handle.",
+    keywords: 'yard dog hydraulic fifth wheel, lift trailer, no cranking landing gear, drop and position, spotter',
+  },
+  {
+    seedKey: 'qa-yarddog-detention',
+    category: 'qa',
+    subcategory: 'yard-dog',
+    topic: 'The yard dog took four hours to spot my trailer — is the shipper responsible for detention?',
+    content:
+      "Yes. The shipper has to provide a yard jockey to move your trailer to the dock in a reasonable time, usually one to two hours. If they're understaffed and you're stuck waiting in the queue, charge detention and note waiting for yard spotter on your BOL.",
+    keywords: 'yard dog detention, shipper responsible, yard jockey, one to two hours, understaffed, charge detention, note on BOL',
+  },
+  {
+    seedKey: 'hotshot-manual',
+    category: 'trucks',
+    subcategory: 'hot-shot',
+    topic: 'Hot shot truck and its sub-types',
+    content:
+      "A hot shot is a medium-duty truck — often a one-ton pickup or Class three-to-five straight truck — pulling a small gooseneck or bumper-pull trailer for urgent, time-sensitive, or LTL freight, big in oilfield, automotive, and emergency work. The types: a hot-shot pickup like an F-450 or Ram 5500 pulling a thirty-to-forty-foot gooseneck, no CDL needed under twenty-six thousand combined; a hot-shot straight truck for expedited LTL of one to five pallets; a hot shot with a small reefer gooseneck for produce or pharma like transplant organs; hot-shot towing that hauls a disabled truck; and expedited hot shot that guarantees a tight window, sometimes four to six hours, at premium rates of five to ten dollars a mile.",
+    keywords: 'hot shot, one ton pickup, gooseneck, bumper pull, expedited, LTL, oilfield, F-450, Ram 5500, no CDL under 26000, reefer gooseneck, premium rate',
+  },
+  {
+    seedKey: 'qa-hotshot-cdl',
+    category: 'qa',
+    subcategory: 'hot-shot',
+    topic: 'Do I need a CDL to drive a hot shot rig?',
+    content:
+      "It comes down to the gross combined weight rating. If the truck, trailer, and cargo together are twenty-six thousand or under, a standard Class D license works. Over twenty-six thousand you need at least a Class B for a straight truck, or a Class A for a tractor-trailer combination.",
+    keywords: 'hot shot CDL, GCWR, 26000 or under Class D, over 26000 Class B or Class A, gross combined weight',
+  },
+  {
+    seedKey: 'qa-hotshot-rates',
+    category: 'qa',
+    subcategory: 'hot-shot',
+    topic: 'Why do hot shot drivers charge such high rates per mile?',
+    content:
+      "Because hot shot sells speed and urgency, not capacity. You might only carry five thousand pounds, but you deliver it in four hours when a full truckload would take three days. The customer is paying for a dedicated truck, an expedited route, and a driver willing to run straight through, often as a team.",
+    keywords: 'hot shot high rates, speed urgency not capacity, 5000 pounds, four hours versus three days, dedicated asset, expedited, team',
+  },
+  {
+    seedKey: 'qa-hotshot-53van',
+    category: 'qa',
+    subcategory: 'hot-shot',
+    topic: 'Can I pull a fifty-three-foot dry van with a hot shot pickup?',
+    content:
+      "Absolutely not. A fifty-three-foot van needs a Class eight tractor with air brakes and a heavy-duty fifth wheel. A hot-shot pickup runs a gooseneck or bumper-pull hitch and tops out around twenty to forty feet — the weight and braking just aren't there for a full-size van.",
+    keywords: 'hot shot pickup 53 foot van, no, needs Class 8, air brakes, heavy fifth wheel, gooseneck limit 20 to 40 feet, braking capacity',
+  },
+  {
+    seedKey: 'qa-hotshot-vs-expedited',
+    category: 'qa',
+    subcategory: 'hot-shot',
+    topic: 'What is the difference between hot shot and expedited LTL?',
+    content:
+      "Hot shot usually means a single piece of equipment sent out right away for urgent freight, often a pickup. Expedited LTL is broader — it includes straight trucks and vans running a fast transit schedule, like two-day instead of four-day. All hot shot is expedited, but not all expedited is hot shot.",
+    keywords: 'hot shot versus expedited LTL, single equipment dispatched now, pickup, expedited broader, fast transit, two day versus four day',
+  },
+  {
+    seedKey: 'sprinter-manual',
+    category: 'trucks',
+    subcategory: 'sprinter-van',
+    topic: 'Sprinter van / cargo van and its sub-types',
+    content:
+      "A sprinter or cargo van is a small enclosed Class one-to-two vehicle for last-mile delivery, courier work, and small-package freight — the workhorse of the final leg from warehouse to store, home, or business. The types: a standard cargo van like a Mercedes Sprinter, Ford Transit, or Ram Promaster, around ten thousand pounds gross holding three to four thousand pounds of cargo; a refrigerated sprinter with a small electric reefer for catering, flowers, and local pharma; a high-roof van tall enough to stand in, up to seven feet; an extended-wheelbase van with fifteen to eighteen feet of floor; and a rare liftgate-equipped sprinter for heavy residential drops like appliances.",
+    keywords: 'sprinter van, cargo van, Class 1 2, last mile, courier, small package, Mercedes Sprinter, Ford Transit, Ram Promaster, 10000 GVWR, refrigerated, high roof, extended wheelbase, liftgate',
+  },
+  {
+    seedKey: 'qa-sprinter-cmv',
+    category: 'qa',
+    subcategory: 'sprinter-van',
+    topic: 'Is a sprinter van a commercial motor vehicle?',
+    content:
+      "Yes, it's commercial when used for business, but most sprinters are under ten thousand pounds gross, so they're exempt from most DOT rules — no ELD, no hours of service — and need no CDL. Even so, some states still make you stop at the scales if you're running commercial freight.",
+    keywords: 'sprinter CMV, commercial for business, under 10000 GVWR, exempt DOT, no ELD, no HOS, no CDL, may stop at scales',
+  },
+  {
+    seedKey: 'qa-sprinter-freight',
+    category: 'qa',
+    subcategory: 'sprinter-van',
+    topic: 'What kind of freight moves in a sprinter van?',
+    content:
+      "Small, time-critical stuff: auto parts, medical supplies, legal documents, pharma, flowers, catering, e-commerce parcels, and high-value electronics. It's not made for palletized freight unless the driver has a ramp and a pallet jack.",
+    keywords: 'sprinter freight, auto parts, medical, legal documents, pharma, flowers, catering, e-commerce, electronics, not palletized without ramp',
+  },
+  {
+    seedKey: 'qa-sprinter-4skids',
+    category: 'qa',
+    subcategory: 'sprinter-van',
+    topic: 'The broker offers four skids for my sprinter — can I take it?',
+    content:
+      "Depends on the skid size. Standard pallets are forty-eight by forty inches. A sprinter floor is about forty-eight inches wide and fifteen feet long, so you can fit exactly four standard pallets — two across and two deep, single-high. But check the weight: four pallets of heavy parts can blow past the van's thirty-five-hundred-pound payload.",
+    keywords: 'sprinter four skids, pallet 48 by 40, floor 48 wide 15 feet, four pallets two across two deep, payload 3500 pounds, check weight',
+  },
+  {
+    seedKey: 'qa-sprinter-multistop',
+    category: 'qa',
+    subcategory: 'sprinter-van',
+    topic: 'Why do sprinter vans make so many stops?',
+    content:
+      "Because they run multi-stop routes, often fifteen to thirty stops in a day, each just a package or a few boxes. That's the last mile — freight broken down from pallets into individual parcels and delivered to the end customer or the retail store.",
+    keywords: 'sprinter multi stop, 15 to 30 stops, package, last mile, broken from pallets to parcels, end customer, retail',
+  },
+  {
+    seedKey: 'chassis-manual',
+    category: 'trucks',
+    subcategory: 'chassis',
+    topic: 'Intermodal / container chassis and its sub-types',
+    content:
+      "A chassis is a specialized frame on wheels built to carry intermodal shipping containers — twenty, forty, forty-five, or fifty-three foot — that cranes lift on and off at ports and rail yards. The tractor pulls the chassis, not the container directly. The types: a twenty-foot chassis, lightweight for international boxes; a forty or forty-five-foot chassis, the standard, with extensions to reach fifty-three; a gooseneck chassis with a raised front to lower the container deck for clearance; a tri-axle chassis with three rear axles for containers over fifty thousand pounds; and a refrigerated chassis carrying a genset to power a reefer container for perishable imports.",
+    keywords: 'chassis, intermodal, container, 20 40 45 53 foot, crane, port, rail yard, gooseneck chassis, tri axle chassis, refrigerated genset, leasing pool',
+  },
+  {
+    seedKey: 'qa-chassis-owner',
+    category: 'qa',
+    subcategory: 'chassis',
+    topic: "I'm hauling an intermodal container — who owns the chassis?",
+    content:
+      "Usually not you. In most cases the chassis belongs to a marine terminal, a railroad, or a leasing pool like DCLI or TRAC. You check the chassis out from the port or rail yard, inspect it before you hook up, and you're responsible for its condition until you return it.",
+    keywords: 'chassis owner, marine terminal, railroad, leasing pool, DCLI, TRAC, check out, inspect, responsible until returned',
+  },
+  {
+    seedKey: 'qa-chassis-drop',
+    category: 'qa',
+    subcategory: 'chassis',
+    topic: 'What is the difference between dropping a container and dropping a trailer?',
+    content:
+      "You can't drop a container on landing gear like a dry van — the chassis has no landing gear, just a support frame that rests on the ground. When you disconnect, the container stays on the chassis and the chassis sits on its own suspension. You're dropping the chassis, not the container.",
+    keywords: 'drop container versus trailer, no landing gear, chassis support frame, container stays on chassis, drop the chassis',
+  },
+  {
+    seedKey: 'qa-chassis-tires',
+    category: 'qa',
+    subcategory: 'chassis',
+    topic: 'Why check the chassis tires so carefully before dispatch?',
+    content:
+      "Because chassis get abused and poorly maintained — they're often one-way assets and the last driver may have ignored a flat. Hook to a bad tire and blow it on the road and the repair is on you. Do a thorough pre-trip and reject any chassis with cracked tires, a rusted frame, or bad brake chambers.",
+    keywords: 'chassis tires, abused poorly maintained, one way asset, ignored flat, blow tire your cost, pre-trip, reject cracked tire rusted frame bad brakes',
+  },
+  {
+    seedKey: 'qa-chassis-length-mismatch',
+    category: 'qa',
+    subcategory: 'chassis',
+    topic: 'My container is fifty-three feet but the chassis is rated for forty — can I still pull it?',
+    content:
+      "No. The container would overhang the chassis, which is illegal and dangerous. Match the chassis length to the container. Some chassis have extendable rear frames for forty-five to fifty-three-foot boxes, but they have to be locked in the extended position before you load the container.",
+    keywords: 'chassis length mismatch, 53 container 40 chassis, overhang illegal dangerous, match length, extendable rear frame, lock extended before loading',
+  },
+  {
+    seedKey: 'bobtail-manual',
+    category: 'trucks',
+    subcategory: 'bobtail',
+    topic: 'Tractor only (bobtail) and its sub-types',
+    content:
+      "Bobtailing is running a Class eight tractor with no trailer attached — deadheading to a pickup, heading back to the yard, or repositioning for a wash or repair. The situations: an empty bobtail with no trailer at all; a bobtail with an empty trailer, which drivers loosely call bobtail but technically isn't; bobtailing for repairs to a shop; bobtail fueling to the island without the trailer; and a bobtail pickup, driving to a shipper's yard to grab a pre-loaded trailer.",
+    keywords: 'bobtail, tractor only, no trailer, deadhead, reposition, empty bobtail, bobtail with empty trailer, repairs, fueling, pickup',
+  },
+  {
+    seedKey: 'qa-bobtail-legal',
+    category: 'qa',
+    subcategory: 'bobtail',
+    topic: 'Is bobtailing legal on all roads?',
+    content:
+      "Yes — you can bobtail anywhere a tractor-trailer is allowed. Just know some states apply bridge laws to a tractor alone, your braking distance jumps way up without a trailer, and your rear axles give you very little traction in rain or snow.",
+    keywords: 'bobtail legal, anywhere tractor-trailer allowed, bridge laws, longer braking distance, poor rear traction, rain snow',
+  },
+  {
+    seedKey: 'qa-bobtail-danger',
+    category: 'qa',
+    subcategory: 'bobtail',
+    topic: 'Why is bobtailing more dangerous than hauling a trailer?',
+    content:
+      "With no trailer there's almost no weight on your drive axles, so you lose traction, especially in the wet. And your brakes are tuned for an eighty-thousand-pound combination — without that weight they can lock up and throw you into a jackknife. Brake gently and leave extra following distance.",
+    keywords: 'bobtail danger, no weight on drives, lose traction, wet, brakes tuned for 80000, lock up, jackknife, brake gently, following distance',
+  },
+  {
+    seedKey: 'qa-bobtail-pay',
+    category: 'qa',
+    subcategory: 'bobtail',
+    topic: 'Do I get paid for bobtail miles?',
+    content:
+      "Sometimes. Bobtailing to a pickup usually pays less than loaded miles, often fifty to seventy percent of the loaded rate. Some brokers add a deadhead fuel surcharge, but bobtail miles are generally the carrier's cost of doing business unless you negotiate them in.",
+    keywords: 'bobtail pay, less than loaded, 50 to 70 percent, deadhead fuel surcharge, carrier cost, negotiate',
+  },
+  {
+    seedKey: 'qa-bobtail-weighstation',
+    category: 'qa',
+    subcategory: 'bobtail',
+    topic: 'Do I stop at a weigh station when bobtailing?',
+    content:
+      "No. Scales are for loaded commercial vehicles, so a true bobtail with no trailer doesn't have to enter — take the bypass lane. But if you're pulling an empty trailer, you do have to stop.",
+    keywords: 'bobtail weigh station, no trailer skip scale, bypass lane, empty trailer must stop',
+  },
+  {
+    seedKey: 'triaxle-manual',
+    category: 'trucks',
+    subcategory: 'tri-axle',
+    topic: 'Tri-axle / quad-axle truck and its sub-types',
+    content:
+      "A tri- or quad-axle truck adds a third or fourth axle to raise legal payload and satisfy bridge-weight laws, common in construction, mining, and heavy haul. The types: a tri-axle straight truck like a dump or mixer, gross up to fifty-four thousand in some states; a tri-axle tractor with three rear drives for overweight loads on permits; a lift-axle setup with an extra axle you raise when empty to save fuel and tires, lower when loaded; a quad-axle dump — one steer, three drive — over sixty thousand gross for gravel and asphalt; and a super dump, a tri-axle with a trailing axle you drop for extra capacity.",
+    keywords: 'tri axle, quad axle, extra axle, payload, bridge law, construction, mining, dump, mixer, 54000, lift axle, super dump, trailing axle',
+  },
+  {
+    seedKey: 'qa-triaxle-why',
+    category: 'qa',
+    subcategory: 'tri-axle',
+    topic: 'Why use a tri-axle tractor instead of a standard tandem?',
+    content:
+      "To carry more weight legally. Under the bridge formula a tri-axle can haul about twenty thousand pounds more than a tandem because the extra axle spreads the load over a longer distance — letting you move eighty to a hundred thousand pounds without an overweight permit.",
+    keywords: 'tri axle why, carry more legally, bridge formula, 20000 more than tandem, spread load, 80000 to 100000 no permit',
+  },
+  {
+    seedKey: 'qa-triaxle-maneuver',
+    category: 'qa',
+    subcategory: 'tri-axle',
+    topic: 'Are tri-axle trucks harder to maneuver?',
+    content:
+      "Yes. The longer wheelbase and extra axles cut your turning radius, so backing into tight docks is tougher and you have to make wide turns to keep from clipping curbs. Those extra axles also cause tire scrub — friction — on sharp turns.",
+    keywords: 'tri axle maneuver, longer wheelbase, reduced turning radius, tight dock backing, wide turns, curb, tire scrub',
+  },
+  {
+    seedKey: 'qa-triaxle-liftaxle',
+    category: 'qa',
+    subcategory: 'tri-axle',
+    topic: 'What is a lift axle and how does it work?',
+    content:
+      "A lift axle is an auxiliary axle you raise off the ground when the truck is empty — that cuts tire wear, helps fuel economy, and tightens your turns. When you load up, you drop it with a switch in the cab to put more tires on the ground, spread the weight, and stay legal under bridge laws.",
+    keywords: 'lift axle, auxiliary axle, raise when empty, tire wear, fuel economy, tighter turn, lower when loaded, cab switch, bridge law',
+  },
+  {
+    seedKey: 'qa-triaxle-permits',
+    category: 'qa',
+    subcategory: 'tri-axle',
+    topic: 'Do tri-axle trucks need special permits for every load?',
+    content:
+      "Not always. In a lot of states a tri-axle is legal without a permit up to a set gross, like fifty-four thousand in some eastern states. But once your combined weight tops the state's statutory limit, you need an overweight permit for that trip.",
+    keywords: 'tri axle permits, not always, legal up to set gross, 54000 eastern states, over statutory limit needs overweight permit per trip',
+  },
+  {
+    seedKey: 'dumptruck-manual',
+    category: 'trucks',
+    subcategory: 'dump-truck',
+    topic: 'Dump truck and its sub-types',
+    content:
+      "A dump truck is a heavy Class seven or eight straight truck with an open box that hydraulically lifts to dump gravel, sand, asphalt, or demolition debris. The types: a standard dump with a fixed box raised from the front; a transfer dump with a separate trailer that shoves material into the main box for big aggregate volumes; an end dump that tips backward and needs level ground; a side dump that tips sideways for narrow sites; and a belly or gravity dump with bottom gates that drop material onto a conveyor or into a trench, like a hopper bottom.",
+    keywords: 'dump truck, open box, hydraulic lift, gravel sand asphalt debris, standard, transfer, end dump, side dump, belly dump, gravity dump, hopper bottom',
+  },
+  {
+    seedKey: 'qa-dump-lights',
+    category: 'qa',
+    subcategory: 'dump-truck',
+    topic: 'Why do dump trucks have so many warning lights and beepers?',
+    content:
+      "Because the bed lifts high in the air and turns into a real overhead hazard around power lines and bridges. The beepers warn workers the bed is moving, and the lights tell you when it's fully raised or when the hydraulics are still under pressure.",
+    keywords: 'dump truck warning lights beepers, bed raises high, overhead hazard, power lines, bridges, warn workers, hydraulic pressure',
+  },
+  {
+    seedKey: 'qa-dump-cdl',
+    category: 'qa',
+    subcategory: 'dump-truck',
+    topic: 'Can I drive a dump truck without a CDL?',
+    content:
+      "Usually no. Most dump trucks are over twenty-six thousand pounds gross, so you need at least a Class B. And if it's pulling a trailer, like a pup, you need a Class A.",
+    keywords: 'dump truck CDL, usually no, over 26000, Class B, pulling pup trailer Class A',
+  },
+  {
+    seedKey: 'qa-dump-jackknife',
+    category: 'qa',
+    subcategory: 'dump-truck',
+    topic: 'Can a dump truck jackknife?',
+    content:
+      "Not the way a semi does — a dump truck is a straight truck. But an end dump can flip over if the load's too heavy and the ground is uneven. Never dump on soft or sloped ground: as the bed lifts, the whole truck can tip.",
+    keywords: 'dump truck jackknife, straight truck, end dump tip over, heavy load uneven ground, never dump on soft or sloped ground, flip',
+  },
+  {
+    seedKey: 'qa-dump-tarp',
+    category: 'qa',
+    subcategory: 'dump-truck',
+    topic: 'Why is tarping required on a dump truck?',
+    content:
+      "Most states require a tarp or hard cover so dust and debris don't fly out onto the highway. It's usually an automatic electric tarp. Leave a load uncovered and you're risking a five-hundred to a thousand-dollar fine.",
+    keywords: 'dump truck tarp, cover load, dust debris, automatic electric tarp, uncovered fine 500 to 1000',
+  },
+  {
+    seedKey: 'wrecker-manual',
+    category: 'trucks',
+    subcategory: 'tow-wrecker',
+    topic: 'Tow truck / wrecker (heavy-duty) and its sub-types',
+    content:
+      "A commercial wrecker recovers and hauls disabled trucks, trailers, and heavy equipment after breakdowns and accidents. The types: a light-duty wrecker for cars and small box trucks under ten thousand pounds; a medium-duty wrecker for straight trucks and small semis, ten to twenty-six thousand; a heavy-duty rotator with a rotating boom that can lift and flip an overturned semi; a wheel-lift wrecker that cradles the drive wheels off the ground; and a flatbed or rollback that tilts and winches a vehicle onto the deck.",
+    keywords: 'tow truck, wrecker, recovery, disabled truck, breakdown, accident, light duty, medium duty, heavy duty rotator, wheel lift, flatbed rollback',
+  },
+  {
+    seedKey: 'qa-wrecker-whopays',
+    category: 'qa',
+    subcategory: 'tow-wrecker',
+    topic: 'If my Class 8 tractor breaks down, who pays for the tow?',
+    content:
+      "Depends on why. A mechanical failure — engine, transmission, coolant — is on you, the carrier. If it's an accident that wasn't your fault, the at-fault driver's insurance may cover the tow. And some companies carry roadside-assistance packages that include towing in the maintenance plan.",
+    keywords: 'wrecker who pays, mechanical failure carrier pays, accident at-fault insurance, roadside assistance package, towing cost',
+  },
+  {
+    seedKey: 'qa-wrecker-loaded-trailer',
+    category: 'qa',
+    subcategory: 'tow-wrecker',
+    topic: 'Can a heavy-duty wrecker tow a fully loaded fifty-three-foot trailer?',
+    content:
+      "No. A loaded trailer is past what most wreckers can handle, which caps around forty to sixty thousand pounds. Typically the heavy wrecker recovers the tractor, and a separate recovery crew transloads the freight to a fresh trailer before the empty one gets towed.",
+    keywords: 'wrecker loaded trailer, no, exceeds capacity, 40000 to 60000, recover tractor, separate transload freight, tow empty trailer',
+  },
+  {
+    seedKey: 'qa-wrecker-rotator',
+    category: 'qa',
+    subcategory: 'tow-wrecker',
+    topic: 'What is a rotator wrecker and why is it used?',
+    content:
+      "A rotator has a boom that swings a full three hundred sixty degrees, so it can lift an overturned semi from any angle without repositioning the truck — huge on a crowded highway with no room to work. It runs about a thousand to two thousand dollars an hour to deploy.",
+    keywords: 'rotator wrecker, 360 degree boom, lift overturned semi any angle, no reposition, busy highway, 1000 to 2000 per hour',
+  },
+  {
+    seedKey: 'qa-wrecker-cdl',
+    category: 'qa',
+    subcategory: 'tow-wrecker',
+    topic: 'Is a CDL required to operate a heavy-duty wrecker?',
+    content:
+      "Yes. Most heavy wreckers are over twenty-six thousand pounds, so you need a Class B — and a Class A if it's towing a trailer or a full tractor-trailer combination.",
+    keywords: 'heavy wrecker CDL, over 26000, Class B, Class A if towing combination',
+  },
+  {
+    seedKey: 'wellcar-manual',
+    category: 'trucks',
+    subcategory: 'well-car',
+    topic: 'Intermodal well car (rail) and its sub-types',
+    content:
+      "A well car is a railroad car built to carry intermodal containers — twenty, forty, or fifty-three foot — on double-stack trains. It's not a truck, it's rail equipment, but it's a key link moving containers between ports and inland rail yards. The types: a single-stack well car carrying one layer; a double-stack well car carrying two layers, the long-haul standard; an articulated well car with several well sections sharing axles to hold two to five containers; and a bulkhead flatcar with fixed end walls for specialized containers.",
+    keywords: 'well car, rail, intermodal container, double stack, 20 40 53 foot, single stack, articulated, bulkhead flatcar, port, rail yard',
+  },
+  {
+    seedKey: 'qa-wellcar-highway',
+    category: 'qa',
+    subcategory: 'well-car',
+    topic: 'Can I drive a well car on the highway?',
+    content:
+      "No. Well cars are strictly rail equipment — they run on tracks pulled by locomotives and aren't road-legal.",
+    keywords: 'well car highway, no, rail only, tracks, locomotive, not road legal',
+  },
+  {
+    seedKey: 'qa-wellcar-doublestack-height',
+    category: 'qa',
+    subcategory: 'well-car',
+    topic: 'How does a double-stack container train stay within height limits?',
+    content:
+      "Rail clearances are higher than highways, often up to twenty feet, and the containers ride in lowered wells so the bottom box sits below the car's main deck. That drop lets two nine-foot-six containers stack and still stay under twenty feet.",
+    keywords: 'double stack height, rail clearance 20 feet, lowered well, bottom container below deck, two 9 foot 6 containers under 20 feet',
+  },
+  {
+    seedKey: 'qa-wellcar-pickup',
+    category: 'qa',
+    subcategory: 'well-car',
+    topic: 'How do I pick up an intermodal container from a rail yard?',
+    content:
+      "You drive your tractor in with a chassis, and the yard's overhead gantry crane lifts the container off the well car onto your chassis. You lock the twist-locks and drive out. The yard does the lifting — you just spot the chassis under the crane.",
+    keywords: 'rail yard container pickup, tractor with chassis, gantry crane, lift off well car onto chassis, twist locks, position chassis under crane',
+  },
+  {
+    seedKey: 'expediter-manual',
+    category: 'trucks',
+    subcategory: 'expediter',
+    topic: 'Straight truck with sleeper (expediter truck) and its sub-types',
+    content:
+      "An expediter is a Class five-to-seven straight truck — box or flatbed — fitted with a small sleeper behind the cab, for expedited team-driven freight that needs overnight delivery without a full tractor-trailer. The types: a Class five expediter at nineteen thousand five hundred gross, no CDL, small sleeper for overnight runs; a Class seven expediter at thirty-three thousand needing a Class B, bigger sleeper and heavier payload; a refrigerated expediter with a reefer box and sleeper for overnight pharma and produce; and a liftgate expediter with a sleeper and liftgate for residential and dockless drops.",
+    keywords: 'expediter, straight truck with sleeper, Class 5 to 7, box, flatbed, small sleeper, overnight, team, no CDL Class 5, Class B Class 7, reefer, liftgate',
+  },
+  {
+    seedKey: 'qa-expediter-why',
+    category: 'qa',
+    subcategory: 'expediter',
+    topic: 'Why use a straight truck with a sleeper instead of a tractor-trailer?',
+    content:
+      "For maneuverability and access. A straight truck fits tight urban areas, narrow alleys, and residential streets a fifty-three-foot trailer can't. The sleeper lets the driver rest legally without a hotel, so you can run expedited freight around the clock.",
+    keywords: 'expediter why, maneuverability access, tight urban, narrow alley, residential, sleeper rest without hotel, 24/7 expedited',
+  },
+  {
+    seedKey: 'qa-expediter-eld',
+    category: 'qa',
+    subcategory: 'expediter',
+    topic: 'Is a straight truck with a sleeper subject to ELD and HOS rules?',
+    content:
+      "Yes, if it's over ten thousand pounds gross and running interstate. The sleeper lets the driver use the split-sleeper exception to stretch the duty day, but every hour still has to be logged on an ELD.",
+    keywords: 'expediter ELD HOS, over 10000 interstate, split sleeper exception, stretch duty day, log all hours ELD',
+  },
+  {
+    seedKey: 'qa-expediter-team',
+    category: 'qa',
+    subcategory: 'expediter',
+    topic: 'Can a straight truck with a sleeper do team driving?',
+    content:
+      "Yes, if it has a dual sleeper berth with upper and lower bunks. One driver rests while the other drives, so the truck runs non-stop — common for expedited freight moving coast to coast.",
+    keywords: 'expediter team driving, dual sleeper berth, upper lower bunk, one rests one drives, non stop, coast to coast',
+  },
+  {
+    seedKey: 'qa-expediter-payload',
+    category: 'qa',
+    subcategory: 'expediter',
+    topic: 'What is the payload capacity of a Class 7 expediter truck?',
+    content:
+      "A Class seven at thirty-three thousand gross usually weighs fifteen to eighteen thousand empty, leaving roughly fifteen to eighteen thousand pounds of payload. That's a lot less than a fifty-three-foot trailer's forty-five thousand, but it's faster and far more agile for smaller, time-critical loads.",
+    keywords: 'expediter payload, Class 7 33000 gross, empty 15000 18000, payload 15000 18000, less than 53 foot 45000, faster agile time critical',
+  },
 ];
