@@ -3316,4 +3316,420 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "It's fine, just keep the volume low. Drivers use the CB to check parking and road conditions all the time, but blasting it at two in the morning is disrespectful to everyone trying to sleep. Use a headset or keep it turned down.",
     keywords: 'cb late night lot, keep volume low, check parking road conditions, dont blast 2am, headset, respectful',
   },
+
+  // ── Routes, Navigation & Compliance ───────────────────────────────────────
+  {
+    seedKey: 'oversize-routing-manual',
+    category: 'routes',
+    subcategory: 'oversize',
+    topic: 'Oversize and overweight routing',
+    content:
+      "Anything over legal size or weight needs a permit in every state you cross. Over width — wider than eight-six — needs permits everywhere, and past twelve feet you usually need pilot cars. Over height — taller than thirteen-six — means routing around low bridges, tunnels, and power lines. Overweight — heavier than eighty thousand pounds gross — needs state permits that spell out max weight per axle group and still has to satisfy the federal bridge formula. The permit comes with an exact approved route, and if you deviate the permit's void and you get fined. Many states restrict oversize to daylight only, roughly thirty minutes before sunrise to thirty after sunset, and some ban weekends and holidays. Superloads — the extreme stuff — need engineering review, police escorts, and sometimes road closures.",
+    keywords: 'oversize overweight routing, permit every state, over width height length, pilot car escort, bridge formula, approved route no deviation, daylight only, superload police escort',
+  },
+  {
+    seedKey: 'qa-oversize-wider-than-permit',
+    category: 'qa',
+    subcategory: 'oversize',
+    topic: 'Load is wider than my permit allows',
+    content:
+      "You can't route around it — the permit lists the exact width, and if you're two feet wider than what it says, you're unpermitted and illegal. You either request an amended permit or reconfigure the load to the permitted width. Running it unpermitted risks fines from five hundred to five thousand dollars per state, getting the load parked, even arrest.",
+    keywords: 'wider than permit, exact width, unpermitted illegal, amend permit, reconfigure load, fines per state, load parked',
+  },
+  {
+    seedKey: 'qa-oversize-daylight-sunset',
+    category: 'qa',
+    subcategory: 'oversize',
+    topic: 'Daylight-only permit and sunset is coming',
+    content:
+      "Stop and park before dark, even if you've still got hours on your clock. A daylight-travel-only permit is invalid the moment the sun's down, so continuing means fines. Plan the route so you reach safe parking at least thirty minutes before sunset.",
+    keywords: 'daylight only permit, sunset, stop and park, permit invalid after dark, thirty minutes before sunset, plan parking',
+  },
+  {
+    seedKey: 'qa-oversize-police-escort',
+    category: 'qa',
+    subcategory: 'oversize',
+    topic: 'Permit requires a police escort through a city',
+    content:
+      "Call that city's police department or the state highway patrol twenty-four to seventy-two hours ahead to schedule it. They'll send a cruiser or two to run the load through city limits, and the carrier pays — often two to five hundred dollars an hour. Don't enter the city without the escort; that's a criminal violation.",
+    keywords: 'police escort required, call police highway patrol, schedule 24 to 72 hours, carrier pays hourly, dont enter without escort criminal',
+  },
+  {
+    seedKey: 'qa-oversize-route-closed',
+    category: 'qa',
+    subcategory: 'oversize',
+    topic: 'Permit route has a closed bridge',
+    content:
+      "Call the state DOT that issued the permit and ask for a routing amendment with a new approved road. Don't detour on your own — any deviation voids the permit. They'll usually issue a revised permit within a day. If it's an emergency closure, you may need a police escort to use the alternate.",
+    keywords: 'permit route closed bridge, call dot routing amendment, dont detour voids permit, revised permit, emergency police escort',
+  },
+  {
+    seedKey: 'qa-oversize-multistate-weight',
+    category: 'qa',
+    subcategory: 'oversize',
+    topic: 'Multi-state permit with different weight limits',
+    content:
+      "The most restrictive state wins. If one state allows a hundred thousand pounds and the next only ninety thousand, you have to run at ninety thousand the whole way. Multi-state permits default to the lowest common limit, so check every state's cap before you apply.",
+    keywords: 'multistate permit weight, most restrictive state wins, lowest common limit, check each state cap',
+  },
+  {
+    seedKey: 'qa-oversize-pilot-vs-escort',
+    category: 'qa',
+    subcategory: 'oversize',
+    topic: 'Pilot car vs escort vehicle vs police escort',
+    content:
+      "People use pilot car and escort interchangeably, but there's a distinction. A pilot car runs ahead to warn oncoming traffic and check clearances. An escort vehicle is a state-certified pilot car with the required insurance, training, oversize-load banner, and amber lights. A police escort is actual law enforcement, needed for superloads or tough city stretches. Check the state — many require the escort to be certified there.",
+    keywords: 'pilot car vs escort, escort state certified insurance banner amber lights, police escort superload, run ahead warn traffic clearance',
+  },
+  {
+    seedKey: 'interstate-system-manual',
+    category: 'routes',
+    subcategory: 'interstate-system',
+    topic: 'Reading the interstate system',
+    content:
+      "The interstate numbers follow a logic you can read at a glance. Even numbers run east-west, odd numbers run north-south. The numbers climb as you go east and north, so I-5 hugs the West Coast and I-95 the East, I-10 runs along the southern border and I-90 the north. Three-digit interstates branch off a main one: an even first digit like the four in I-495 means a loop or beltway that circles a city and rejoins; an odd first digit like the one in I-195 means a spur that runs into a city and dead-ends there. Mile markers start at the state line and count up heading east or north, and most exit numbers match the mile marker.",
+    keywords: 'interstate numbering, even east west, odd north south, i-5 i-95 i-10 i-90, three digit loop spur, beltway, mile markers exit numbers',
+  },
+  {
+    seedKey: 'qa-interstate-i55-direction',
+    category: 'qa',
+    subcategory: 'interstate-system',
+    topic: 'Which way does I-55 run?',
+    content:
+      "I-55 is odd, so it runs north-south — from New Orleans on the Gulf up to the Chicago area. If you're headed to Chicago, you're going north.",
+    keywords: 'i-55 direction, odd north south, new orleans to chicago, heading north',
+  },
+  {
+    seedKey: 'qa-interstate-395-spur',
+    category: 'qa',
+    subcategory: 'interstate-system',
+    topic: 'What does the 3 in I-395 mean?',
+    content:
+      "The odd first digit means it's a spur — a route that branches off the main interstate, here I-95, and runs into a city rather than looping back. Spurs end at a destination; they don't rejoin the parent interstate.",
+    keywords: 'i-395 spur, odd first digit, branches off i-95, runs into city, ends at destination, doesnt rejoin',
+  },
+  {
+    seedKey: 'qa-interstate-i80-east-west',
+    category: 'qa',
+    subcategory: 'interstate-system',
+    topic: 'On I-80 in Nebraska, which way to California?',
+    content:
+      "I-80 is even, so it runs east-west. California is west of Nebraska, so head west. I-80 runs from San Francisco all the way to New Jersey.",
+    keywords: 'i-80 direction, even east west, california west of nebraska, head west, san francisco to new jersey',
+  },
+  {
+    seedKey: 'qa-interstate-business-route',
+    category: 'qa',
+    subcategory: 'interstate-system',
+    topic: 'Is "Business I-40" an interstate?',
+    content:
+      "No. A business route is a local road that ties the interstate into a city's downtown. It usually has lower speed limits and traffic lights. You can use it, but it's slower than staying on the main interstate.",
+    keywords: 'business route not interstate, local road into downtown, lower speed traffic lights, slower than main',
+  },
+  {
+    seedKey: 'qa-interstate-3digit-major',
+    category: 'qa',
+    subcategory: 'interstate-system',
+    topic: 'Why is I-476 a three-digit interstate?',
+    content:
+      "It's an odd-first-digit spur off I-76 — the Blue Route that bypasses Philadelphia. Some three-digit routes grow into major roads in their own right, like I-270 in Maryland, so the loop-versus-spur rule has its exceptions.",
+    keywords: 'i-476 three digit, spur off i-76, blue route bypass philadelphia, exceptions i-270 maryland',
+  },
+  {
+    seedKey: 'qa-interstate-split-suffix',
+    category: 'qa',
+    subcategory: 'interstate-system',
+    topic: 'Why do some interstates have E/W suffixes like I-35W?',
+    content:
+      "In some cities the interstate splits into two parallel routes, like I-35W and I-35E through Minneapolis and Dallas. The E and W tell you which side of the city you're on, and the two routes eventually come back together.",
+    keywords: 'i-35w i-35e suffix, splits two routes, minneapolis dallas, which side of city, reconverge',
+  },
+  {
+    seedKey: 'truckroute-manual',
+    category: 'routes',
+    subcategory: 'truck-routes',
+    topic: 'Truck routes and road restrictions',
+    content:
+      "Not every road is legal for a truck. Watch for low bridges under thirteen-six, weight-limited roads and bridges, length and width limits, and hazmat-prohibited routes like many tunnels and bridges. Parkways in states like New York, New Jersey, and Connecticut are flat-out banned for trucks — the Merritt, the Taconic, the Saw Mill — because they were built for cars and have low overpasses. The single biggest rule: use a truck-specific GPS that knows your height, weight, width, and hazmat status, not a car app. Car GPS routes you onto parkways and residential streets and straight into low bridges. And never trust the GPS over a posted sign — read the signs and verify clearances with your own eyes.",
+    keywords: 'truck routes restrictions, low bridge thirteen six, weight limited road, parkways banned merritt taconic saw mill, hazmat prohibited tunnel, truck gps not car gps, obey signs',
+  },
+  {
+    seedKey: 'qa-truckroute-no-trucks-sign',
+    category: 'qa',
+    subcategory: 'truck-routes',
+    topic: 'GPS routed me onto a "No Trucks" road',
+    content:
+      "Stop as soon as it's safe and don't go further — use the GPS to find another way. If there's a clearance sign lower than your trailer, turn around even if you have to back up. Hitting a bridge can cost over ten thousand dollars plus criminal charges, so it's never worth chancing.",
+    keywords: 'no trucks sign gps, dont proceed, find alternate, clearance lower turn around back up, bridge strike fine criminal',
+  },
+  {
+    seedKey: 'qa-truckroute-parkways',
+    category: 'qa',
+    subcategory: 'truck-routes',
+    topic: 'Why can\u2019t trucks use parkways?',
+    content:
+      "Parkways were built for pleasure driving — low bridges under thirteen-six, narrow lanes, tight curves — and many are run by parks departments that ban commercial trucks outright. Get caught and the fines run five hundred to two thousand dollars in a state like New York. Just stay off them.",
+    keywords: 'parkways no trucks, pleasure driving low bridges narrow, parks department ban commercial, fines new york, stay off',
+  },
+  {
+    seedKey: 'qa-truckroute-residential-gps',
+    category: 'qa',
+    subcategory: 'truck-routes',
+    topic: 'Google Maps is routing me down a residential street',
+    content:
+      "Probably not safe. Google Maps is built for cars and ignores your dimensions. Use a truck-specific GPS as your main navigation, and only lean on Google Maps for traffic — never follow its route blindly. If you see low overhangs on a residential street, turn around.",
+    keywords: 'google maps residential, built for cars ignores dimensions, use truck gps, google only for traffic, low overhang turn around',
+  },
+  {
+    seedKey: 'qa-truckroute-clearance-exact',
+    category: 'qa',
+    subcategory: 'truck-routes',
+    topic: 'Clearance sign matches my exact trailer height',
+    content:
+      "Don't try it. A posted clearance is to the lowest point, but road settling, fresh pavement, or packed snow can shave off inches. Always keep at least a one-inch cushion. If the sign matches your height exactly, treat it as too low and find another route.",
+    keywords: 'clearance exact height, dont attempt, road settling pavement snow reduce, one inch cushion, treat as too low reroute',
+  },
+  {
+    seedKey: 'qa-truckroute-bridge-strike',
+    category: 'qa',
+    subcategory: 'truck-routes',
+    topic: 'What is a low bridge strike and why is it so serious?',
+    content:
+      "It's when a trailer that's too tall slams into a bridge or overpass. It damages the structure, can cost fifty thousand to half a million to repair, and hits the driver with criminal charges, license suspension, and almost certain termination. It's one of the most serious preventable wrecks in trucking — always know your trailer height.",
+    keywords: 'low bridge strike, trailer too tall hits overpass, fifty thousand to half million repair, criminal charges license suspension termination, preventable',
+  },
+  {
+    seedKey: 'qa-truckroute-low-bridge-apps',
+    category: 'qa',
+    subcategory: 'truck-routes',
+    topic: 'Apps that warn about low bridges',
+    content:
+      "Yes — Trucker Path, Rand McNally, and Garmin's truck GPS carry low-bridge databases and give you audible warnings, and there are dedicated low-clearance apps too. But no app is a substitute for reading the physical sign and checking the clearance with your own eyes.",
+    keywords: 'low bridge apps, trucker path rand mcnally garmin, low clearance database audible warning, still read physical sign',
+  },
+  {
+    seedKey: 'weighstation-manual',
+    category: 'routes',
+    subcategory: 'weigh-stations',
+    topic: 'Weigh stations and bypass systems',
+    content:
+      "Weigh stations enforce weight limits and check trucks for safety. There are fixed stations, portable scales DOT can set up on any shoulder, and mobile units that pull you over anywhere. If a station's open you must pull in — unless you have a bypass. PrePass uses a windshield transponder that flashes green to bypass or red to pull in; Drivewyze does the same thing through a phone app with no transponder. Both check your carrier's safety scores, inspection history, and weight estimate. A clean record gets you more green lights; poor scores, new authority, or a hazmat load often means mandatory pull-in. Cross the scale at five to fifteen and don't brake on the pad — braking throws off the reading. If they pull you in and find a serious violation, they put the truck Out of Service until it's fixed.",
+    keywords: 'weigh station bypass, fixed portable mobile scale, prepass transponder green red, drivewyze app, safety scores inspection, pull in mandatory hazmat new, dont brake on scale, out of service',
+  },
+  {
+    seedKey: 'qa-weigh-green-light',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'PrePass flashed green — do I still stop?',
+    content:
+      "No, green means you're cleared to bypass, so stay on the highway. But if you know you're actually overweight, pull in anyway — the system only estimates your weight and it can be wrong. The green light doesn't make an overweight truck legal.",
+    keywords: 'prepass green light, cleared bypass dont stop, if overweight pull in anyway, system estimates weight',
+  },
+  {
+    seedKey: 'qa-weigh-red-light',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'PrePass flashed red',
+    content:
+      "Slow down, move right, and pull into the station. Red means they've flagged you for a weight check or a safety inspection. Follow the signs to the scale or the inspection bay.",
+    keywords: 'prepass red light, slow merge right enter station, flagged weight check inspection, follow signs',
+  },
+  {
+    seedKey: 'qa-weigh-no-bypass',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'No PrePass or Drivewyze — stop at every station?',
+    content:
+      "Yes. If the station's open, you pull in and weigh. Some states post All Trucks Must Enter or No Bypass on certain lanes. With no bypass system and an open scale, you're required to enter.",
+    keywords: 'no bypass system, stop every open station, all trucks must enter, required to weigh',
+  },
+  {
+    seedKey: 'qa-weigh-park-closed-station',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'Can I park overnight in a closed weigh station?',
+    content:
+      "Depends on the state — some allow it, some don't, so read the signs at the entrance. Drivers like closed scales because they're lit and safe, but if there's a No Parking sign, skip it. And if the station opens at six in the morning, you have to move right then.",
+    keywords: 'park closed weigh station, state varies read signs, lit and safe, no parking sign skip, move when opens six am',
+  },
+  {
+    seedKey: 'qa-weigh-oos-brake',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'Level 1 inspection found a brake violation',
+    content:
+      "They'll put the truck Out of Service and you can't move until it's fixed — that usually means calling a mobile mechanic or a tow to the station. Your carrier may also face a DOT fine. This is exactly why a solid pre-trip inspection matters; catch it in the yard, not at the scale.",
+    keywords: 'level 1 brake violation, out of service cant move, mobile mechanic tow, carrier dot fine, pretrip inspection critical',
+  },
+  {
+    seedKey: 'qa-weigh-hazmat-ag-station',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'Hauling hazmat — stop at agricultural inspection stations?',
+    content:
+      "Ag stations, like California's, check produce and plants. Hazmat trucks are often required to stop unless the cargo's sealed, like fuel, and some states exempt hazmat that isn't agricultural. Rules vary by state, so follow the posted signs.",
+    keywords: 'hazmat agricultural inspection, ag station checks produce, hazmat often stop unless sealed, state varies follow signs',
+  },
+  {
+    seedKey: 'qa-weigh-portable-scale',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'What is a portable scale — can they weigh me anywhere?',
+    content:
+      "Yes. DOT officers set up portable scales on shoulders, in rest areas, even at the top of a grade, and they can pull over any truck — even one that already cleared a fixed scale earlier. Portable scales are fully legal and enforceable, so stay legal on weight at all times.",
+    keywords: 'portable scale anywhere, dot sets up shoulder rest area grade, pull any truck, legal enforceable, stay legal weight always',
+  },
+  {
+    seedKey: 'qa-weigh-improve-bypass',
+    category: 'qa',
+    subcategory: 'weigh-stations',
+    topic: 'Poor safety scores mean I keep getting pulled in',
+    content:
+      "More green lights come from better safety scores, and that's on the carrier: fix maintenance violations — brakes, tires, lights — keep drivers clean on hours of service, and stack up clean inspections. As the SMS score drops, bypasses go up, but it usually takes six to twelve months of clean inspections to really move it.",
+    keywords: 'poor safety scores pulled in, improve sms, fix maintenance hos clean inspections, six to twelve months, more green lights carrier',
+  },
+  {
+    seedKey: 'construction-zones-manual',
+    category: 'routes',
+    subcategory: 'construction',
+    topic: 'Construction and work zones',
+    content:
+      "Work zones have reduced speed limits that are enforceable around the clock unless posted otherwise, and fines in them are often doubled. Slow to the posted limit whether or not you see workers. Follow any truck-specific lane signs — some zones route trucks to a particular lane for turning room or clearance. And flaggers have real authority: if a construction worker waves you through a red light or stop sign, you follow the flagger, but obey a working signal unless a flagger overrides it.",
+    keywords: 'construction work zone, reduced speed 24/7 enforceable, fines doubled, slow even no workers, truck lane signs, flagger authority waves through',
+  },
+  {
+    seedKey: 'qa-construction-no-workers',
+    category: 'qa',
+    subcategory: 'construction',
+    topic: 'Do I slow down in a work zone if no workers are present?',
+    content:
+      "Yes. Work-zone limits are enforceable around the clock unless the sign says otherwise, and fines there are usually doubled. Drop to the posted speed and watch for workers even when you can't see any.",
+    keywords: 'work zone no workers, enforceable 24/7, fines doubled, slow to posted, watch for workers',
+  },
+  {
+    seedKey: 'qa-construction-truck-lane',
+    category: 'qa',
+    subcategory: 'construction',
+    topic: 'Sign says "Trucks Use Left Lane" in a work zone',
+    content:
+      "Follow it. Some work zones mandate a specific lane for trucks to give room for your turning radius or height. Ignore the sign and you may find your lane blocked by barriers or equipment up ahead.",
+    keywords: 'trucks use left lane, follow posted, turning radius height, lane blocked barriers equipment',
+  },
+  {
+    seedKey: 'qa-construction-flagger-red',
+    category: 'qa',
+    subcategory: 'construction',
+    topic: 'A flagger waved me through a red light',
+    content:
+      "That's legal. Flaggers are authorized to direct traffic, so if one waves you through a red light or stop sign, you follow their signal. If the traffic light's working normally and no flagger is directing you, obey the light.",
+    keywords: 'flagger waved through red, legal authorized direct traffic, follow flagger signal, obey working light no flagger',
+  },
+  {
+    seedKey: 'toll-roads-manual',
+    category: 'routes',
+    subcategory: 'tolls',
+    topic: 'Toll roads and electronic tolling',
+    content:
+      "Truck tolls are almost always priced by axle count or weight class, so a five-axle rig pays more than a three-axle straight truck, and electronic systems detect the axles automatically. If you've got a transponder — EZ-Pass, SunPass and the like — use the electronic lane for the lowest rate and no stopping. Without one, use the cash booth or a pay-by-plate lane, though plate billing costs more and is slower. Some roads are all-electronic with no cash option at all, so you either need a transponder or you get billed by plate at a higher rate.",
+    keywords: 'toll roads, priced by axle count weight class, transponder ez-pass sunpass electronic lane, cash booth pay by plate, all electronic no cash, plate billing higher',
+  },
+  {
+    seedKey: 'qa-toll-electronic-lane',
+    category: 'qa',
+    subcategory: 'tolls',
+    topic: 'Do I stop at the booth or use the electronic lane?',
+    content:
+      "If you have a transponder, use the electronic lane marked EZ-Pass or E-Pass. No transponder means the cash booth or a pay-by-plate lane. Some toll roads are all-electronic with no cash at all — there you need a transponder or you get billed by plate at a higher rate.",
+    keywords: 'toll booth vs electronic lane, transponder ez-pass lane, cash or pay by plate, all electronic no cash, billed by plate higher',
+  },
+  {
+    seedKey: 'qa-toll-no-transponder',
+    category: 'qa',
+    subcategory: 'tolls',
+    topic: 'No transponder — can I drive through and pay later?',
+    content:
+      "On many roads, yes, through pay-by-plate or toll-by-mail — they photograph the plate and bill your carrier. But it's slower and the fees are higher. A transponder gets you lower rates and faster travel, so it's worth having; without one, use the cash lane where there is one.",
+    keywords: 'no transponder pay later, pay by plate toll by mail, photograph plate bill carrier, higher fees slower, transponder cheaper',
+  },
+  {
+    seedKey: 'qa-toll-axle-based',
+    category: 'qa',
+    subcategory: 'tolls',
+    topic: 'Is the toll based on axle count?',
+    content:
+      "Yes. Truck tolls are figured by number of axles or weight class, so a five-axle tractor-trailer pays more than a three-axle straight truck. Electronic tolling detects your axle count automatically as you pass.",
+    keywords: 'toll axle count, five axle pays more than three, weight class, electronic detects axles',
+  },
+  {
+    seedKey: 'detour-manual',
+    category: 'routes',
+    subcategory: 'detours',
+    topic: 'Emergency detours and road closures',
+    content:
+      "When your route gets blocked, the detour still has to be truck-legal. Check your truck GPS for a recommended detour; if the only options are residential streets or parkways, it may be better to wait for the highway to reopen, and your dispatcher often has real-time closure data. Never drive past a Road Closed sign even if there's no barrier — closed usually means a real hazard ahead like flooding or a bridge out. And heed every weather warning: if there's an evacuation order or floodwaters, detour, because even shallow water can carry a truck away.",
+    keywords: 'emergency detour road closure, truck legal detour, check truck gps, wait for highway call dispatcher, never pass road closed sign, weather flood evacuation, dont drive floodwater',
+  },
+  {
+    seedKey: 'qa-detour-local',
+    category: 'qa',
+    subcategory: 'detours',
+    topic: 'Highway blocked by an accident — take a local detour?',
+    content:
+      "Only if the detour is legal for trucks. Check your truck GPS for a recommended route; if it wants to send you through residential streets or parkways, you may be better off waiting for the highway to reopen. Call dispatch — they often have real-time closure data and can guide you.",
+    keywords: 'highway blocked accident, local detour only if truck legal, check truck gps, avoid residential parkway, call dispatch real time data',
+  },
+  {
+    seedKey: 'qa-detour-road-closed',
+    category: 'qa',
+    subcategory: 'detours',
+    topic: 'GPS says road closed but there\u2019s no barrier',
+    content:
+      "Don't proceed. If it's marked closed there's almost certainly a hazard ahead — flooding, a bridge out, something. Look for the physical sign, and if it says Road Closed, turn around even without a barrier. Driving a closed road is illegal and dangerous.",
+    keywords: 'road closed no barrier, dont proceed, hazard ahead flooding bridge out, physical sign turn around, illegal dangerous',
+  },
+  {
+    seedKey: 'qa-detour-wildfire-flood',
+    category: 'qa',
+    subcategory: 'detours',
+    topic: 'Wildfire or flood warning on my route',
+    content:
+      "Take every emergency warning seriously. If there's an evacuation order on your route, detour — contact dispatch and the state DOT for an alternate. Never drive into floodwaters; even shallow water can wash a truck off the road.",
+    keywords: 'wildfire flood warning, heed emergency, evacuation order detour, contact dispatch dot alternate, dont drive floodwater',
+  },
+  {
+    seedKey: 'restarea-rules-manual',
+    category: 'routes',
+    subcategory: 'rest-areas',
+    topic: 'Rest area and stop-over rules',
+    content:
+      "Most state rest areas allow ten to twelve hours of parking, and some post No Overnight Parking, so read the sign at the entrance or you risk a fine. Rest areas ban camping — no chairs, tables, or cooking outside the truck; stay in the cab or use a designated picnic area. Idling rules vary: APUs are usually exempt from idle bans because they cut emissions, but some areas limit them at night for noise, and if there's shore power, plug in instead.",
+    keywords: 'rest area rules, ten to twelve hours, no overnight sign fine, no camping chairs cooking, apu exempt idle ban, night noise limit, shore power',
+  },
+  {
+    seedKey: 'qa-restarea-over-10',
+    category: 'qa',
+    subcategory: 'rest-areas',
+    topic: 'Can I sleep at a rest area more than 10 hours?',
+    content:
+      "Most rest areas allow ten to twelve hours, but some post No Overnight Parking, so check the sign at the entrance. Go over the limit and you risk a fine or being asked to move on.",
+    keywords: 'rest area more than ten hours, ten to twelve allowed, no overnight sign, over limit fine asked to leave',
+  },
+  {
+    seedKey: 'qa-restarea-cook-outside',
+    category: 'qa',
+    subcategory: 'rest-areas',
+    topic: 'Can I set up a chair or cook outside at a rest area?',
+    content:
+      "Usually not. Rest areas treat chairs, tables, and cooking gear as camping, which isn't allowed — stay in the truck or use a designated picnic area. A camp stove is off-limits at most rest areas.",
+    keywords: 'chair cook outside rest area, camping not allowed, stay in truck or picnic area, camp stove off limits',
+  },
+  {
+    seedKey: 'qa-restarea-apu-idle',
+    category: 'qa',
+    subcategory: 'rest-areas',
+    topic: 'Rest area has "No Idling" signs — can I run my APU?',
+    content:
+      "Usually yes. APUs are typically exempt from idling bans because they cut emissions, but check the specific rest area — some limit them at night for noise. If there's an electric shore-power hookup, use that instead.",
+    keywords: 'no idling sign apu, apu exempt cuts emissions, check rest area night noise limit, shore power hookup',
+  },
 ];
