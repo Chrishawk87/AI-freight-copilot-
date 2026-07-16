@@ -9,7 +9,7 @@ import { NAV } from "@/lib/nav";
 
 // Primary phone tabs shown in the bar. Everything else lives under "More".
 const PRIMARY = ["/", "/loads", "/navigation", "/dispatcher", "/fuel"];
-const OVERFLOW = ["/profit", "/reloads", "/documents", "/integrations", "/profile"];
+const OVERFLOW = ["/profit", "/reloads", "/documents", "/memory", "/integrations", "/profile"];
 
 export default function BottomNav() {
   const pathname = usePathname();

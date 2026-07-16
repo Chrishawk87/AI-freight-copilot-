@@ -232,6 +232,53 @@ model UsageEvent {
   @@index([kind, createdAt])
 }
 
+// ── The Co-Pilot's persistent memory ────────────────────────────────────────
+// Two layers, on purpose.
+//
+// SURFACE (CarrierMemory): what THIS carrier has taught the brain — home base,
+// preferred lanes, real cost per mile, brokers they trust, "never route me
+// through Chicago". Per-tenant, driver-editable, read on every Co-Pilot call so
+// answers are personal. Grows over time as the driver adds facts.
+//
+// SUBSURFACE (KnowledgeEntry): the shared freight knowledge base every carrier
+// rides on — truck stops, load & trailer types, document types, what brokers
+// and shippers require, roads/routes/regs, and a bank of common driver
+// questions with canonical answers. Seeded once (scope="global"), read by
+// everyone, and answerable with NO live Claude call. Drivers can contribute
+// their own entries (scope=carrierId) that layer on top.
+
+model CarrierMemory {
+  id        String   @id @default(cuid())
+  carrierId String
+  category  String   @default("general") // preference | lane | cost | broker | equipment | contact | general
+  key       String // short label, e.g. "Home base"
+  value     String // the fact, e.g. "Dallas, TX — prefer loads within 500 mi"
+  source    String   @default("driver") // driver | copilot
+  pinned    Boolean  @default(false) // always inject into the brain, even when space is tight
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([carrierId, category])
+}
+
+model KnowledgeEntry {
+  id          String   @id @default(cuid())
+  scope       String   @default("global") // "global" (shared) | a carrierId (that carrier's own addition)
+  category    String // truck-stops | load-types | trailers | documents | brokers | shippers | routes | regulations | qa
+  subcategory String   @default("")
+  topic       String // title, or the question for a qa entry
+  content     String // the body / the answer
+  keywords    String   @default("") // comma-separated, for cheap offline matching
+  source      String   @default("seed") // seed | driver | copilot
+  seedKey     String? // stable id for seed rows so re-seeding is idempotent
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([seedKey])
+  @@index([scope, category])
+  @@index([category, subcategory])
+}
+
 model FuelStation {
   id         String  @id @default(cuid())
   name       String

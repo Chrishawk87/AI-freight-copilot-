@@ -3,6 +3,7 @@ import { IsOptional, IsString } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, AuthUser } from '../auth/current-user.decorator';
 import { UsageService } from '../usage/usage.service';
+import { KnowledgeService } from '../knowledge/knowledge.service';
 
 // The Co-Pilot's open-ended "brain". The rules engine in the app handles the
 // common freight asks (loads, reloads, fuel, bids, earnings). When it can't
@@ -69,7 +70,10 @@ When the driver asks for a breakdown, summary, or "how am I doing" on the dashbo
 @UseGuards(JwtAuthGuard)
 @Controller('copilot')
 export class CopilotController {
-  constructor(private readonly usage: UsageService) {}
+  constructor(
+    private readonly usage: UsageService,
+    private readonly knowledge: KnowledgeService,
+  ) {}
 
   // Live diagnostic: is the brain actually reachable right now? Truthfully pings
   // Claude with a 1-token request so the app can show "live" vs "basic mode" and
@@ -167,6 +171,21 @@ export class CopilotController {
     }
     if (dto.facts?.trim()) {
       system += `\n\nHere's what's real for this driver right now (use it when relevant, don't invent beyond it):\n${dto.facts.trim()}`;
+    }
+
+    // The persistent brain: what this carrier has taught the Co-Pilot over time
+    // (surface memory) plus the freight know-how most relevant to this question
+    // (subsurface knowledge base). Assembled server-side so it applies on every
+    // call regardless of what the client sent, and pulled from our own DB — no
+    // extra AI cost. Wrapped so a memory hiccup can never break the reply.
+    try {
+      const context = await this.knowledge.buildContext(
+        user.carrierId,
+        dto.message,
+      );
+      if (context) system += `\n\n${context}`;
+    } catch {
+      // ignore — the reply proceeds on persona + facts alone
     }
 
     try {

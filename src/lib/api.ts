@@ -169,6 +169,31 @@ export interface CopilotHealth {
   model: string;
 }
 
+export interface MemoryEntry {
+  id: string;
+  carrierId: string;
+  category: string;
+  key: string;
+  value: string;
+  source: string; // "driver" | "copilot"
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  scope: string; // "global" | carrierId
+  category: string;
+  subcategory: string;
+  topic: string;
+  content: string;
+  keywords: string;
+  source: string; // "seed" | "driver" | "copilot"
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type DocType = "BOL" | "POD" | "LUMPER" | "FUEL" | "OTHER" | "RATECON";
 
 export interface Accessorial {
@@ -304,6 +329,24 @@ export const api = {
 
   // ---- Co-Pilot brain ----
   copilotHealth: () => apiFetch<CopilotHealth>("/copilot/health"),
+
+  // ---- Co-Pilot memory (surface) + knowledge base (subsurface) ----
+  memory: () => apiFetch<MemoryEntry[]>("/memory"),
+  addMemory: (body: { category?: string; key: string; value: string; pinned?: boolean }) =>
+    apiFetch<MemoryEntry>("/memory", { method: "POST", body: JSON.stringify(body) }),
+  updateMemory: (id: string, body: Partial<{ category: string; key: string; value: string; pinned: boolean }>) =>
+    apiFetch<MemoryEntry>(`/memory/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteMemory: (id: string) => apiFetch(`/memory/${id}`, { method: "DELETE" }),
+  knowledge: (opts?: { category?: string; q?: string }) => {
+    const p = new URLSearchParams();
+    if (opts?.category && opts.category !== "all") p.set("category", opts.category);
+    if (opts?.q) p.set("q", opts.q);
+    const qs = p.toString();
+    return apiFetch<KnowledgeEntry[]>(`/memory/knowledge${qs ? `?${qs}` : ""}`);
+  },
+  addKnowledge: (body: { category: string; subcategory?: string; topic: string; content: string; keywords?: string }) =>
+    apiFetch<KnowledgeEntry>("/memory/knowledge", { method: "POST", body: JSON.stringify(body) }),
+  deleteKnowledge: (id: string) => apiFetch(`/memory/knowledge/${id}`, { method: "DELETE" }),
 
   // ---- Documents (BOL / POD scanning) ----
   documents: () => apiFetch<FreightDocument[]>("/documents"),

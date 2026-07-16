@@ -9,6 +9,7 @@ import {
   Building2,
   Puzzle,
   ScanLine,
+  Brain,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const NAV: NavItem[] = [
   { href: "/fuel", label: "Fuel Intelligence", short: "Fuel", icon: Fuel },
   { href: "/navigation", label: "Profit Navigation", short: "Map", icon: Map },
   { href: "/documents", label: "Documents (BOL/POD)", short: "Docs", icon: ScanLine },
+  { href: "/memory", label: "Co-Pilot Memory", short: "Memory", icon: Brain },
   { href: "/integrations", label: "Plugin Engine", short: "Plugins", icon: Puzzle },
   { href: "/profile", label: "Company Profile", short: "Profile", icon: Building2 },
 ];
