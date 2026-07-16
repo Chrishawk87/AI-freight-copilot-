@@ -2555,4 +2555,385 @@ export const KNOWLEDGE_SEED: SeedEntry[] = [
       "Call your insurance agent and ask for a binder — a temporary certificate proving coverage is in place while the formal COI is processed. A lot of agents can email a binder in one to two hours. Send it to the broker noting the formal COI is coming; many will accept it conditionally.",
     keywords: 'waiting on COI, load today, insurance binder, temporary certificate, coverage in place, agent email 1 to 2 hours, formal COI forthcoming, accept conditionally',
   },
+
+  // ── Appointments, dock operations & accessorials manual ──────────────
+
+  {
+    seedKey: 'appt-manual',
+    category: 'shippers',
+    subcategory: 'appointments',
+    topic: 'Appointments and check-in',
+    content:
+      "Your appointment is the time window the shipper or receiver expects you, and check-in is your first contact with the facility. Appointment types: a hard appointment is a strict time like oh-eight-hundred sharp, and late usually means a reschedule and a fine; a soft appointment is a window like eight to noon, arrive anytime inside it; a drop-and-hook appointment is for the drop, not a live unload; a pre-pull is for the hook of an already-loaded trailer; and a first-in-first-out yard queues you by arrival, not by appointment time. Check-in runs through a guard shack, a kiosk or tablet, a retailer app, a phone call, or an intercom. Have your BOL number, PO number, PRO number, trailer number, seal number, carrier and MC, your CDL, and any appointment confirmation number ready. Then the guard or system sends you to a specific door — back-in or pull-through — and you set the trailer flush to the leveler.",
+    keywords: 'appointment, check in, hard appointment, soft window, drop and hook, pre-pull, FIFO, guard shack, kiosk, app check in, BOL PO PRO number, trailer number, seal, dock door',
+  },
+  {
+    seedKey: 'qa-appt-early-checkin',
+    category: 'qa',
+    subcategory: 'appointments',
+    topic: 'I arrived fifteen minutes early but the guard won\'t check me in — why?',
+    content:
+      "Plenty of facilities enforce a no-early-check-in rule because they don't have the dock space or labor to work you early. They may park you in staging or send you off the property until your exact time. Being early just means you're ready on time — it doesn't buy you early access.",
+    keywords: 'early check in, guard refuses, no early policy, no dock space or labor, staging area, ready on time, no early access',
+  },
+  {
+    seedKey: 'qa-appt-late',
+    category: 'qa',
+    subcategory: 'appointments',
+    topic: 'I was five minutes late to a hard appointment and they want me to reschedule — is that legal?',
+    content:
+      "It's not a legal thing, it's facility policy. If you're late they can refuse service and charge a late or reschedule fee, often a hundred to five hundred dollars. That's why you call ahead — before your appointment time — if you're running behind and ask if they can still fit you. Some give a fifteen-minute grace; others don't.",
+    keywords: 'late hard appointment, reschedule, facility policy not legal, late fee 100 to 500, call ahead, grace period 15 minutes',
+  },
+  {
+    seedKey: 'qa-appt-drop-hook',
+    category: 'qa',
+    subcategory: 'appointments',
+    topic: 'What is a drop-and-hook appointment and why the separate check-in?',
+    content:
+      "You drop a loaded trailer in the receiver's yard and grab a pre-loaded one for the backhaul — no waiting on a live unload. Check-in is simpler: drop in the marked drop zone, note the spot, and hook the new trailer. You still check in with the guard to get the yard map and the pickup trailer number.",
+    keywords: 'drop and hook appointment, drop loaded trailer, pick up preloaded, no live unload, drop zone, note location, guard yard map, pickup trailer number',
+  },
+  {
+    seedKey: 'qa-appt-po-vs-pro',
+    category: 'qa',
+    subcategory: 'appointments',
+    topic: 'The guard wants a PO number but my BOL only has a PRO number — same thing?',
+    content:
+      "Not always. A PO, purchase order, is the shipper's or retailer's own inventory number. A PRO, progressive, is the carrier or broker's tracking number. If the BOL has no PO, call your dispatcher or broker to get it — without it the receiver may not check you in because they can't match the freight to their order.",
+    keywords: 'PO versus PRO number, purchase order retailer inventory, progressive carrier tracking, BOL missing PO, call dispatcher broker, match to order',
+  },
+  {
+    seedKey: 'qa-appt-rude-guard',
+    category: 'qa',
+    subcategory: 'appointments',
+    topic: 'The gate guard is rude or gives me wrong directions — what do I do?',
+    content:
+      "Stay calm, document everything, and ask for a supervisor if you need one. Bad directions can steer you into low clearance or a restricted area and wreck your trailer, so confirm the door number and route with a second source like the receiver's main office if you're unsure. Photograph any confusing signage or wrong instructions.",
+    keywords: 'rude guard, wrong directions, stay calm, document, ask supervisor, low clearance restricted area, confirm door and route, photograph signage',
+  },
+  {
+    seedKey: 'qa-appt-fifo',
+    category: 'qa',
+    subcategory: 'appointments',
+    topic: 'The facility runs a first-in-first-out yard — how does that hit my appointment?',
+    content:
+      "FIFO queues you by arrival time, not appointment time. A ten a.m. appointment won't help if trucks that showed up at eight are ahead of you. It's common at busy ports and DCs, and the only way to beat it is to get there as early as you can, even if you wait in staging.",
+    keywords: 'FIFO first in first out, queue by arrival not appointment, busy ports DC, arrive early, staging area, wait your turn',
+  },
+  {
+    seedKey: 'detention-manual',
+    category: 'shippers',
+    subcategory: 'detention',
+    topic: 'Detention (accessorial for exceeding free time)',
+    content:
+      "Detention is what the shipper or receiver pays you when they blow past the agreed free time to load or unload — it makes up for driving time you lost. The standard free time is about two hours to load and two to unload, though some give one or three; it's set in the rate con. Rates run roughly fifty to a hundred dollars an hour after free time. The clock starts at check-in — including time waiting on the guard — and stops when you have the signed BOL or POD and the trailer's done. Document your arrival with a guard time-stamp, kiosk receipt, or photo of the clock, your departure with a signed BOL completion time or gate-out stamp, the door number, and the reason for delay. Most brokers require pre-approval, so call around the ninety-minute mark. If a broker won't pay, your last resort is a claim against their BMC-84 bond — documentation is your only defense.",
+    keywords: 'detention, free time, 2 hours load 2 hours unload, rate con, 50 to 100 per hour, clock starts at check in, signed BOL POD, document arrival departure, pre-approval, BMC-84 bond',
+  },
+  {
+    seedKey: 'qa-detention-no-call',
+    category: 'qa',
+    subcategory: 'detention',
+    topic: 'I sat three hours but never called the broker — can I still charge detention?',
+    content:
+      "Probably not. Most rate cons flat-out say detention has to be pre-approved by the broker, so with no authorization they can deny it. The lesson: call the broker around the ninety-minute mark for a verbal or email okay, then note the approval number or the broker's name on the BOL.",
+    keywords: 'detention no call, pre-approved by broker, rate con language, claim denied, call at 90 minutes, verbal or email approval, note approval on BOL',
+  },
+  {
+    seedKey: 'qa-detention-pull-forward',
+    category: 'qa',
+    subcategory: 'detention',
+    topic: 'They had me pull forward ten feet for another truck — does that time count?',
+    content:
+      "Yes. Any time you're on their property doing load-related tasks, repositioning included, counts toward detention. The one exception is if you voluntarily leave to go eat during the wait — that doesn't count because you weren't tendered and ready. Stay on-site and available.",
+    keywords: 'pull forward, repositioning counts, on property load tasks, detention time, leaving to eat does not count, tendered ready, stay on site',
+  },
+  {
+    seedKey: 'qa-detention-prove-times',
+    category: 'qa',
+    subcategory: 'detention',
+    topic: "How do I prove arrival and departure if the guard won't stamp my paperwork?",
+    content:
+      "A few ways: photograph the guard shack clock or the kiosk time-stamp; snap your ELD showing arrival time and location; ask the guard or receiver to write the in and out times on the BOL and initial it; or use a geotagged phone photo. Apps like Trucker Tools or Transflo capture time-stamped check-in photos too.",
+    keywords: 'prove arrival departure, guard won\'t stamp, photo clock kiosk, ELD time and location, write times on BOL initial, geotag phone, Trucker Tools, Transflo',
+  },
+  {
+    seedKey: 'qa-detention-refuse-sign',
+    category: 'qa',
+    subcategory: 'detention',
+    topic: "Broker approved detention but the receiver won't sign my BOL until I leave — how do I get the departure time?",
+    content:
+      "Common trick — they stall the signature to shave detention. Have them sign the BOL at the moment unloading is complete, and separately get a gate-out stamp from the guard shack. The gate-out proves you left, but your detention claim rides on the unload completion time, not the gate-out time.",
+    keywords: 'receiver won\'t sign until leave, departure time, sign at unload completion, gate-out stamp guard shack, claim based on completion not gate out',
+  },
+  {
+    seedKey: 'qa-detention-free-time-start',
+    category: 'qa',
+    subcategory: 'detention',
+    topic: 'The shipper says free time starts when they start loading, but I waited an hour for a forklift — fair?',
+    content:
+      "No. Free time starts at check-in, not when they decide to work you. A broken forklift is their problem, not yours. Document your check-in time and run the detention clock from then. If they push back, note on the BOL: checked in at oh-eight-hundred, loading began at oh-nine-hundred due to equipment delay — that's your leverage.",
+    keywords: 'free time starts at check in not loading, waited for forklift, their problem, document check in, note equipment delay on BOL, detention clock, leverage',
+  },
+  {
+    seedKey: 'touch-manual',
+    category: 'shippers',
+    subcategory: 'driver-assist',
+    topic: 'Driver assist vs. no-touch freight',
+    content:
+      "This is about who actually handles the freight. No-touch or drop-and-load means the facility's crew or a lumper does all the work — you back in, open the doors, and wait; common on dry van, LTL, and drop-and-hook. Driver-assist means you help push pallets, strap, chock, sweep, or tarp; common on flatbed, step deck, and smaller warehouses. Driver-unload means the whole trailer is on you, common with liftgate box trucks doing residential or retail with no dock, and it usually pays a premium of a hundred to three hundred. A lumper service is third-party labor you pay out of pocket — often two to five hundred — and get reimbursed with the receipt, common at produce, dairy, meat, and grocery.",
+    keywords: 'driver assist, no touch, drop and load, driver unload, lumper, push pallets strap chock sweep tarp, dry van LTL flatbed, liftgate residential, premium 100 to 300, lumper 200 to 500 reimbursed',
+  },
+  {
+    seedKey: 'qa-touch-notouch-forced',
+    category: 'qa',
+    subcategory: 'driver-assist',
+    topic: 'Rate con says no-touch but the receiver hands me a pallet jack — what do I do?',
+    content:
+      "Don't touch the freight without authorization. Politely refuse: my rate con is no-touch, and I don't have the training or insurance to handle your freight safely. Then call dispatch and the broker right away. If you unload and break something, you're liable. If they insist, demand a revised rate con with a driver-unload premium, usually a hundred fifty to three hundred extra.",
+    keywords: 'no touch forced, pallet jack, refuse politely, no training or insurance, liable if damage, call dispatch broker, revised rate con, driver unload premium 150 to 300',
+  },
+  {
+    seedKey: 'qa-touch-help-load-sick',
+    category: 'qa',
+    subcategory: 'driver-assist',
+    topic: 'The shipper says help load because their forklift driver is out sick — can they force me?',
+    content:
+      "No, they can't force you. But if you refuse and they cancel, your dispatcher may side with them to keep the peace. Best move: I can assist, but I need it written on the BOL that I'm helping voluntarily, and the rate con updated to include driver-assist pay. Get it all in writing.",
+    keywords: 'help load forklift driver sick, cannot force, dispatcher may side with shipper, assist voluntarily on BOL, update rate con driver assist pay, in writing',
+  },
+  {
+    seedKey: 'qa-touch-flatbed-strap',
+    category: 'qa',
+    subcategory: 'driver-assist',
+    topic: "I'm a flatbed driver — is strapping and tarping considered driver assist?",
+    content:
+      "No. On a flatbed, strapping, chaining, and tarping are core driver duties, not assist — the load isn't done until you've secured it, which is exactly why flatbed rates run higher. Now, if a forklift operator just drops freight on the deck and expects you to position it, that's assist and may warrant a premium if it's not the normal practice.",
+    keywords: 'flatbed strapping tarping, core duty not assist, load incomplete until secured, higher flatbed rate, positioning dropped freight, premium if not standard',
+  },
+  {
+    seedKey: 'qa-touch-lumper-payment',
+    category: 'qa',
+    subcategory: 'driver-assist',
+    topic: 'The lumpers want cash but I only have a company check — can I pay by card?',
+    content:
+      "Depends on the lumper outfit. Many take company checks, cards, or app payments like MyLumper; some small crews are cash-only. The golden rule: get a detailed receipt with the lumper company name, your trailer number, and the amount. No receipt, no reimbursement.",
+    keywords: 'lumper cash, company check, credit card, MyLumper app, cash only, detailed receipt, company name trailer number amount, no receipt no reimbursement',
+  },
+  {
+    seedKey: 'qa-touch-sweep',
+    category: 'qa',
+    subcategory: 'driver-assist',
+    topic: 'No-touch load, but the receiver says sweep the trailer before they unload — is that no-touch?',
+    content:
+      "Sweeping's a gray area. Technically it's labor, but most drivers do it because it speeds the unload and builds goodwill. If it needs heavy sweeping from a previous load's debris, that's the carrier's responsibility anyway. If they insist, grab a broom and knock it out — usually not worth arguing over two minutes.",
+    keywords: 'sweep trailer, gray area, speeds unload builds goodwill, debris from previous load carrier responsibility, grab broom, not worth arguing',
+  },
+  {
+    seedKey: 'ppe-manual',
+    category: 'shippers',
+    subcategory: 'ppe',
+    topic: 'PPE and dock rules',
+    content:
+      "PPE and dock protocols keep you safe and the facility off the liability hook. Gear you may need: a hi-vis Class two or three safety vest, nearly always; steel- or composite-toe boots; safety glasses at plants, lumber yards, and chemical sites; a hard hat on construction, oilfields, and crane sites; hearing protection in steel mills and recycling plants; and cut-resistant gloves for steel, glass, and lumber. Dock rules commonly include no smoking, no cell phones on the dock, stay behind the yellow lines, chock the trailer wheels, lock-out tag-out where you kill the truck and secure the keys before a worker enters, and stay in the driver lounge at places like Walmart and Costco. Some sites are zero-tolerance on PPE, food-grade plants add hair nets and shoe covers, and high-security sites may make you clear personal items from the cab.",
+    keywords: 'PPE, dock rules, hi-vis Class 2 3 vest, steel toe boots, safety glasses, hard hat, hearing protection, cut gloves, no smoking, no phones, yellow lines, chock wheels, lockout tagout, driver lounge, hair net',
+  },
+  {
+    seedKey: 'qa-ppe-forgot-vest',
+    category: 'qa',
+    subcategory: 'ppe',
+    topic: "I forgot my hi-vis vest and the guard won't check me in — what do I do?",
+    content:
+      "A lot of facilities keep loaner vests at the guard shack for exactly this, so ask politely for a spare. If they don't have one, buy a vest at a nearby truck stop. And keep a spare in the cab — they're cheap and can save you a load.",
+    keywords: 'forgot vest, guard won\'t check in, loaner vest guard shack, buy at truck stop, keep spare in cab, cheap saves load',
+  },
+  {
+    seedKey: 'qa-ppe-steeltoe',
+    category: 'qa',
+    subcategory: 'ppe',
+    topic: "The facility requires steel-toe boots but I'm in sneakers — can I just stay in the lounge?",
+    content:
+      "Depends on the place. Some require PPE even for the lounge because you cross the dock floor to reach it, and getting caught without proper footwear can bar you from the whole facility. Carry a pair of steel-toe boots in the cab even if you don't wear them daily — they're essential for these situations.",
+    keywords: 'steel toe boots, sneakers, stay in lounge, PPE to cross dock floor, denied entry, carry boots in cab, essential',
+  },
+  {
+    seedKey: 'qa-ppe-stay-lounge',
+    category: 'qa',
+    subcategory: 'ppe',
+    topic: 'The receiver tells me to wait in the driver lounge while they unload — can I refuse and stay with my truck?',
+    content:
+      "No. If the facility has a stay-in-the-lounge rule, you comply — they've got insurance and security policies that keep drivers off the dock floor. Refuse and they can stop unloading and call security. Use the time to rest, log paperwork, or check in with dispatch.",
+    keywords: 'stay in lounge, cannot refuse, insurance security policy, drivers off dock floor, they stop unloading call security, rest log paperwork',
+  },
+  {
+    seedKey: 'qa-ppe-hardhat',
+    category: 'qa',
+    subcategory: 'ppe',
+    topic: 'The guard says I need a hard hat but I only have a ball cap — can I use that?',
+    content:
+      "No. A ball cap doesn't meet hard-hat requirements. Some sites lend hard hats at the guard shack; if not, you'll have to buy one at a hardware store before entering. This comes up a lot at construction, mining, and oilfield sites.",
+    keywords: 'hard hat, ball cap not allowed, loaner hard hat guard shack, buy at hardware store, construction mining oilfield',
+  },
+  {
+    seedKey: 'qa-ppe-class2',
+    category: 'qa',
+    subcategory: 'ppe',
+    topic: "The guard says my vest isn't Class 2 because it has no reflective strips — real rule?",
+    content:
+      "Yes. ANSI slash ISEA 107 sorts hi-vis vests into three classes. Class two is the minimum for most warehouse work; Class three is for high-speed roadways. A plain yellow shirt with no reflective striping doesn't qualify. Check that your vest's tag actually says Class two or Class three.",
+    keywords: 'vest not Class 2, reflective strips, ANSI ISEA 107, three classes, Class 2 warehouse minimum, Class 3 roadway, plain shirt fails, check tag label',
+  },
+  {
+    seedKey: 'seal-manual',
+    category: 'shippers',
+    subcategory: 'seals',
+    topic: 'Trailer seals',
+    content:
+      "A seal is a numbered, tamper-evident device put on the rear door latch after loading; its number goes on the BOL, and the receiver checks it's intact and matches before breaking it — proof the freight wasn't touched in transit. Types: a bolt seal, a metal bolt needing cutters to remove; a cable seal, a steel cable with a locking cap; a plastic strap seal, a heavy band that ratchets shut, easy to break but obvious when tampered; a padlock seal with a serial number; and an electronic e-seal with GPS that reports door openings for high-value or pharma. Procedures: the shipper applies it right after closing the doors; the number is written on the BOL, rate con, and your logs; the receiver verifies it intact and matching before breaking it; any broken or missing seal gets an exception note and a door inspection; and if it's damaged in transit you call the broker and photograph it before you arrive.",
+    keywords: 'trailer seal, tamper evident, door latch, seal number on BOL, bolt seal, cable seal, plastic strap, padlock, electronic e-seal GPS, shipper applies, receiver verifies before breaking, exception note',
+  },
+  {
+    seedKey: 'qa-seal-break-yourself',
+    category: 'qa',
+    subcategory: 'seals',
+    topic: 'The seal is intact and matches the BOL — do I break it?',
+    content:
+      "No. Never break a seal yourself unless you're told to in writing. The receiver's dock worker breaks it in front of you and verifies the number. Break it yourself and you lose the chain of custody, and they could claim the freight was tampered with. Wait for the receiver to cut it.",
+    keywords: 'do not break seal yourself, unless in writing, receiver breaks in your presence, verify number, chain of custody, tampering claim, wait for receiver',
+  },
+  {
+    seedKey: 'qa-seal-missing-pickup',
+    category: 'qa',
+    subcategory: 'seals',
+    topic: 'The shipper forgot to put a seal on the trailer — what do I do?',
+    content:
+      "Don't leave the yard without one. Call the shipper's dock supervisor and demand a seal. If they refuse, note on the BOL: loaded without seal per shipper's request, and photograph the sealless doors — that protects you if the receiver cries tampering. Many brokers reject a load with no seal.",
+    keywords: 'shipper forgot seal, don\'t leave without seal, demand from dock supervisor, note loaded without seal per shipper, photograph doors, protects against tampering, brokers reject',
+  },
+  {
+    seedKey: 'qa-seal-mismatch',
+    category: 'qa',
+    subcategory: 'seals',
+    topic: 'The receiver says the seal number on the BOL differs from the seal on the trailer — what does that mean?',
+    content:
+      "Either the shipper wrote the wrong number or the seal was swapped in transit. Stop the unload immediately and call dispatch and the broker — don't let the receiver break it. The broker verifies with the shipper which number is right. If it was tampered with, the receiver will likely reject the load.",
+    keywords: 'seal number mismatch, shipper wrong number or swapped, stop unload, call dispatch broker, don\'t break, broker verifies with shipper, tampering, reject load',
+  },
+  {
+    seedKey: 'qa-seal-broke-transit',
+    category: 'qa',
+    subcategory: 'seals',
+    topic: 'The seal broke in transit from road vibration — is that tampering?',
+    content:
+      "A seal breaking from normal wear is rare with quality seals and isn't tampering, but it's still serious. Photograph the broken seal, call the broker right away to report it, and have the broker notify the receiver. They may inspect the doors; if there's no damage the load can be accepted with an exception note: seal broken in transit, receiver inspected doors, no damage found.",
+    keywords: 'seal broke transit, road vibration, not tampering but serious, photograph, call broker report, broker notify receiver, inspect doors, exception note no damage',
+  },
+  {
+    seedKey: 'qa-seal-padlock',
+    category: 'qa',
+    subcategory: 'seals',
+    topic: "The receiver won't accept the load because the seal is missing, even though there's a padlock — what do I do?",
+    content:
+      "They're right — a padlock isn't an approved seal. The BOL needs a seal number, and a padlock counts as an open condition. Call the broker and have a new seal sent to the receiver; they may hold the load until the broker verifies contents with the shipper. It's a serious delay, so always leave the shipper with a standard seal.",
+    keywords: 'padlock not a seal, missing seal, open condition, BOL needs seal number, call broker new seal, hold load verify with shipper, delay, always leave with standard seal',
+  },
+  {
+    seedKey: 'facilityaccess-manual',
+    category: 'shippers',
+    subcategory: 'facility-access',
+    topic: 'Facility access & security clearance',
+    content:
+      "Some high-security sites — ports, military bases, chemical plants, nuclear and airport facilities — make you clear background checks or hold credentials before you enter, which adds real time. A TWIC card, the Transportation Worker Identification Credential, is a federal biometric ID for unescorted access to secure maritime facilities; it runs about a hundred twenty-five dollars and needs a federal background check. Military bases run an NCIC background check and issue a temporary pass. Some chemical plants require a hazmat-familiarization or safety-video clearance for every visitor even without a hazmat load. Budget extra time on first visits.",
+    keywords: 'facility access, security clearance, TWIC card, maritime port, 125 dollars federal background, military base NCIC, temporary pass, chemical plant hazmat familiarization, safety video, extra time',
+  },
+  {
+    seedKey: 'qa-facility-twic',
+    category: 'qa',
+    subcategory: 'facility-access',
+    topic: 'The guard says I need a TWIC card to enter this port — what is that?',
+    content:
+      "The Transportation Worker Identification Credential is a federal biometric ID required for unescorted access to secure maritime facilities — ports, ships, terminals. If you haul in or out of ports you need one. It costs about a hundred twenty-five dollars and takes a federal background check, and without it you can't enter the port.",
+    keywords: 'TWIC card, Transportation Worker Identification Credential, biometric, unescorted maritime access, ports ships terminals, 125 dollars, federal background check, cannot enter',
+  },
+  {
+    seedKey: 'qa-facility-military',
+    category: 'qa',
+    subcategory: 'facility-access',
+    topic: 'A military base wants my SSN and a background check — is that legal?',
+    content:
+      "Yes. Bases require every visitor to pass an NCIC background check. You give your full name, date of birth, CDL, and sometimes your social, their security office runs it and issues a temporary pass. Budget an extra thirty to sixty minutes for this on your first visit.",
+    keywords: 'military base SSN background check, legal, NCIC, name date of birth CDL social, security office temporary pass, extra 30 to 60 minutes first visit',
+  },
+  {
+    seedKey: 'qa-facility-hazmat-familiarization',
+    category: 'qa',
+    subcategory: 'facility-access',
+    topic: "The chemical plant wants a hazmat-familiarization certificate just to enter — I don't even have a hazmat load!",
+    content:
+      "Some chemical plants and refineries require basic hazmat awareness of every visitor no matter the cargo. It's a facility rule, not a legal one, so you either comply or get turned away. Many hand you a short safety video at the gate and issue a temporary clearance.",
+    keywords: 'hazmat familiarization certificate, chemical plant refinery, all visitors regardless of cargo, facility rule not legal, comply or denied, gate safety video, temporary clearance',
+  },
+  {
+    seedKey: 'yardpool-manual',
+    category: 'shippers',
+    subcategory: 'yard-rules',
+    topic: 'Yard & trailer pool rules',
+    content:
+      "Big distribution centers and rail yards run drop lots where trailers are staged, and they have strict rules for where you park, how you shuttle, and how you return equipment. Park in the wrong spot — a loading lane, fire lane, or restricted area — and you can be fined, so always get a yard map or drop instructions from the guard first and photograph your spot. To find a pickup among dozens of trailers you use the yard check sheet or layout diagram with a row and bay, and you always confirm the trailer number matches the rate con. No-idling rules usually target the tractor engine, not the reefer, but some yards restrict reefer noise by hour, so check the posted rules.",
+    keywords: 'yard rules, trailer pool, drop lot, staged trailers, park wrong spot fine, loading lane fire lane, yard map drop instructions, photograph spot, yard check sheet, row bay, confirm trailer number, no idling reefer',
+  },
+  {
+    seedKey: 'qa-yard-wrong-spot',
+    category: 'qa',
+    subcategory: 'yard-rules',
+    topic: 'I dropped my trailer and the yard manager is fining me two hundred for the wrong spot — can they?',
+    content:
+      "Yes. Yards have designated drop zones and staging lanes, and parking in a loading lane, fire lane, or restricted area is a finable offense. Always ask the guard for a yard map or drop-location instructions before you park, and photograph the exact spot and the landmarks around it.",
+    keywords: 'wrong spot fine 200, drop zone staging lane, loading fire restricted area, ask guard yard map, drop location instructions, photograph spot and landmarks',
+  },
+  {
+    seedKey: 'qa-yard-find-trailer',
+    category: 'qa',
+    subcategory: 'yard-rules',
+    topic: "I'm in a drop lot with fifty trailers — how do I find the one I'm picking up?",
+    content:
+      "The yard manager gives you a yard check sheet or layout diagram with a bay number or row letter, like Row C, Bay fourteen. If the lot's unstaffed you may have to walk it and match the trailer number by eye. Always verify the number on the rate con matches the trailer you hook — never guess.",
+    keywords: 'find trailer drop lot 50, yard check sheet layout diagram, bay number row letter, unstaffed walk and match, verify rate con trailer number, never guess',
+  },
+  {
+    seedKey: 'qa-yard-no-idling',
+    category: 'qa',
+    subcategory: 'yard-rules',
+    topic: 'The yard has a no-idling rule — can I leave my reefer running?',
+    content:
+      "No-idling usually means the tractor engine, not the reefer unit. But some yards limit reefer noise during certain hours, so check the posted rules. If you have to keep the reefer running, note that it's essential to hold the temperature on perishable cargo.",
+    keywords: 'no idling rule, tractor engine not reefer, reefer noise certain hours, check posted rules, essential to hold temperature perishable',
+  },
+  {
+    seedKey: 'foodgrade-manual',
+    category: 'shippers',
+    subcategory: 'food-grade',
+    topic: 'Cleanliness & pest control (food-grade facilities)',
+    content:
+      "Food-grade warehouses and processing plants require the trailer to be clean, dry, and free of pests or foreign matter before they'll load perishables. If an inspector flags a dirty floor they won't load until you clean it — facilities usually provide brooms, vacuums, or high-pressure hoses, and a washout bay for a fee. Carry a broom and a portable vacuum for quick cleanups. Some ag and produce shipments, especially crossing state or international borders, also need a pest or phytosanitary certificate proving the trailer's free of bugs and rodents; the shipper arranges that inspection before loading, and without it the load can be rejected at the border.",
+    keywords: 'food grade, cleanliness, pest control, clean dry trailer, inspector rejects dirty floor, broom vacuum high pressure hose, washout bay fee, pest phytosanitary certificate, produce border, rejected',
+  },
+  {
+    seedKey: 'qa-food-dirty-floor',
+    category: 'qa',
+    subcategory: 'food-grade',
+    topic: 'The food-grade inspector says my trailer floor is dirty and won\'t load — what do I do?',
+    content:
+      "Clean it right away. Facilities usually have brooms, industrial vacuums, or high-pressure hoses, and often a washout bay you can use for a fee. If you can't get it to their standard you may have to reject the load and wait for a different trailer. Keep a broom and portable vacuum in the cab for quick cleanups.",
+    keywords: 'dirty floor won\'t load, clean immediately, brooms vacuum high pressure hose, washout bay fee, reject load different trailer, keep broom vacuum in cab',
+  },
+  {
+    seedKey: 'qa-food-pest-cert',
+    category: 'qa',
+    subcategory: 'food-grade',
+    topic: 'What is a pest certificate and why does the receiver want one?',
+    content:
+      "Some ag and food shipments need a pest inspection or phytosanitary certificate proving the trailer's free of bugs, rodents, and pests — common for produce crossing state or international borders. The shipper arranges the inspection and provides the certificate before loading; without it the load can get rejected at the border.",
+    keywords: 'pest certificate, phytosanitary, free of bugs rodents pests, produce state international border, shipper arranges inspection, provide before loading, rejected at border',
+  },
 ];
