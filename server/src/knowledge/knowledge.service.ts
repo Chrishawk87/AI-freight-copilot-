@@ -166,15 +166,21 @@ export class KnowledgeService implements OnModuleInit {
 
   // Cheap, offline keyword match — no LLM needed. Scores each entry by how many
   // query words hit its keywords/topic/content, so the brain can pull the right
-  // reference even when Claude is unreachable.
-  async searchKnowledge(carrierId: string | null, query: string, limit = 5) {
+  // reference even when Claude is unreachable. Returns entries WITH their scores
+  // so callers can gate on match strength (e.g. the front-end brain deciding
+  // whether a freight question is confidently a knowledge lookup).
+  async searchKnowledgeScored(
+    carrierId: string | null,
+    query: string,
+    limit = 5,
+  ): Promise<{ e: any; score: number }[]> {
     const q = (query || '').toLowerCase();
     const words = Array.from(
       new Set(q.split(/[^a-z0-9]+/).filter((w) => w.length >= 3)),
     );
     if (!words.length) return [];
     const all = await this.listKnowledge(carrierId);
-    const scored = all
+    return all
       .map((e) => {
         const kw = (e.keywords || '').toLowerCase();
         const topic = (e.topic || '').toLowerCase();
@@ -189,9 +195,12 @@ export class KnowledgeService implements OnModuleInit {
       })
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
-      .map((s) => s.e);
-    return scored;
+      .slice(0, limit);
+  }
+
+  async searchKnowledge(carrierId: string | null, query: string, limit = 5) {
+    const scored = await this.searchKnowledgeScored(carrierId, query, limit);
+    return scored.map((s) => s.e);
   }
 
   // Assemble the plain-text block the Co-Pilot injects into its system prompt:

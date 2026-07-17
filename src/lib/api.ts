@@ -440,4 +440,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ message, facts, personality }),
     }),
+
+  // ---- Co-Pilot knowledge base (offline, free) ----
+  // Keyword lookup against the shared freight knowledge base + this carrier's
+  // own entries. No Claude call, no usage cost — powers real answers to freight
+  // questions even when the LLM brain isn't wired.
+  copilotKnowledge: (q: string, limit = 3) =>
+    apiFetch<{
+      hits: { topic: string; content: string; category: string; score: number }[];
+    }>(`/copilot/knowledge/search?q=${encodeURIComponent(q)}&limit=${limit}`),
 };

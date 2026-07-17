@@ -262,7 +262,8 @@ export async function runCoPilot(
   // ---- Everything else: score the utterance against known intents ----
   // This is tolerant of natural phrasing ("are there loads for tomorrow",
   // "what are the best rates for a flatbed", "which way am I heading").
-  const intent = classifyIntent(q);
+  const intentDetail = classifyIntentDetailed(q);
+  const intent = intentDetail?.id ?? null;
 
   // ---- Close / exit the full-screen map by voice ----
   if (/(close|exit|hide|shrink|minimize|get out of|leave)\s+(the\s+)?(map|full ?screen|navigation)/.test(q) ||
@@ -271,6 +272,19 @@ export async function runCoPilot(
       speak: say(P, { core: "Closing the map.", brief: "Map closed." }),
       uiEvent: "map:close",
     };
+  }
+
+  // ---- Knowledge base (offline freight know-how) ----
+  // The canned intents above/below handle app actions and the driver's own
+  // numbers. For everything else — regs, procedures, "what do I do when..." —
+  // consult the shared knowledge base. This is a free, no-LLM lookup, so it
+  // works even when the Claude brain isn't wired. We only let it win when the
+  // intent classifier ISN'T confident (no strong keyword): a solid KB match on
+  // a shaky intent means the driver asked a freight question that a generic
+  // "here's a load" reply would wrongly swallow.
+  if (!intentDetail?.strong) {
+    const kb = await lookupKnowledge(raw, P);
+    if (kb) return kb;
   }
 
   if (intent === "start_nav") {
@@ -646,15 +660,63 @@ const INTENTS: { id: IntentId; kws: string[]; strong?: string[] }[] = [
   },
 ];
 
+// Minimum keyword score before we trust a knowledge-base hit enough to answer
+// from it. Scoring is +3 keyword / +2 topic / +1 content per query word, so ~6
+// means a couple of solid term matches — enough to beat a coincidental single
+// content-word hit while still catching real freight questions.
+const KB_MIN_SCORE = 6;
+
+// Consult the shared freight knowledge base (offline, free, no Claude call).
+// Returns a spoken reply built from the best-matching entry when it's a strong
+// match, or null so the caller falls through to its other handlers.
+async function lookupKnowledge(
+  raw: string,
+  P: Personality,
+): Promise<CoPilotResult | null> {
+  try {
+    const { hits } = await api.copilotKnowledge(raw, 3);
+    const top = hits?.[0];
+    if (!top || top.score < KB_MIN_SCORE) return null;
+    const content = (top.content || "").trim();
+    if (!content) return null;
+    const brief =
+      content.length > 160 ? content.slice(0, 157).trimEnd() + "…" : content;
+    return {
+      speak: say(P, { core: content, brief }),
+    };
+  } catch {
+    // KB unreachable (offline / server hiccup) — let the caller carry on.
+    return null;
+  }
+}
+
 function classifyIntent(q: string): IntentId | null {
-  let best: { id: IntentId; score: number } | null = null;
+  return classifyIntentDetailed(q)?.id ?? null;
+}
+
+// Same scoring as classifyIntent, but also reports whether the winning intent
+// matched a STRONG keyword. A strong hit means the driver clearly wants an app
+// action or their own data (a load board, cheapest diesel, start GPS, "how much
+// did I make") — so we keep the canned reply. A win on only weak/generic words
+// (e.g. "what should I do") is shaky, and a solid knowledge-base match should
+// win instead so freight questions get real answers.
+function classifyIntentDetailed(
+  q: string,
+): { id: IntentId; score: number; strong: boolean } | null {
+  let best: { id: IntentId; score: number; strong: boolean } | null = null;
   for (const intent of INTENTS) {
     let score = 0;
+    let strong = false;
     for (const k of intent.kws) if (q.includes(k)) score += 1;
-    for (const k of intent.strong ?? []) if (q.includes(k)) score += 2;
-    if (score > 0 && (!best || score > best.score)) best = { id: intent.id, score };
+    for (const k of intent.strong ?? [])
+      if (q.includes(k)) {
+        score += 2;
+        strong = true;
+      }
+    if (score > 0 && (!best || score > best.score))
+      best = { id: intent.id, score, strong };
   }
-  return best ? best.id : null;
+  return best;
 }
 
 // ---------------- matchers ----------------

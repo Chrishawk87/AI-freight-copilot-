@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, AuthUser } from '../auth/current-user.decorator';
@@ -140,6 +140,38 @@ export class CopilotController {
         detail: 'Could not reach Anthropic from the server.',
         model,
       };
+    }
+  }
+
+  // Offline knowledge lookup — the shared freight knowledge base + this carrier's
+  // own additions, keyword-matched with NO live Claude call and no usage cost.
+  // The front-end brain consults this so drivers get real answers to freight
+  // questions (regs, procedures, truck stops, routes) even in free/basic mode.
+  @Get('knowledge/search')
+  async knowledgeSearch(
+    @CurrentUser() user: AuthUser,
+    @Query('q') q: string,
+    @Query('limit') limit?: string,
+  ): Promise<{
+    hits: { topic: string; content: string; category: string; score: number }[];
+  }> {
+    const n = Math.min(Math.max(parseInt(limit || '3', 10) || 3, 1), 10);
+    try {
+      const scored = await this.knowledge.searchKnowledgeScored(
+        user.carrierId,
+        q || '',
+        n,
+      );
+      return {
+        hits: scored.map((s) => ({
+          topic: s.e.topic,
+          content: s.e.content,
+          category: s.e.category,
+          score: s.score,
+        })),
+      };
+    } catch {
+      return { hits: [] };
     }
   }
 
