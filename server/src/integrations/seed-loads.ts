@@ -26,11 +26,47 @@ export const SIMULATED_LOADS: ProviderLoad[] = [
   { externalId: 'R-9004', equipment: 'Reefer', originCity: 'Chattanooga', originState: 'TN', destCity: 'Memphis', destState: 'TN', miles: 344, deadheadMiles: 118, rate: 820, weightLbs: 35000, broker: 'Coyote', brokerRating: 3.8, pickupDate: '2026-07-16', source: 'Truckstop', demandIndex: 62, reloadIndex: 58, isReloadPool: true },
 ];
 
+// National truck-stop set with real coordinates along major freight corridors.
+// distanceMi/onRoute are legacy fallbacks; live distance is computed client-side
+// from the driver's GPS via haversine. Prices reflect regional diesel spreads.
 export const SIMULATED_FUEL = [
-  { name: "Love's #412", city: 'Terrell', state: 'TX', price: 3.74, distanceMi: 6, onRoute: true, network: "Love's" },
-  { name: 'Pilot #221', city: 'Tyler', state: 'TX', price: 3.79, distanceMi: 41, onRoute: true, network: 'Pilot' },
-  { name: 'TA Shreveport', city: 'Shreveport', state: 'LA', price: 3.68, distanceMi: 189, onRoute: true, network: 'TA' },
-  { name: "Love's #77", city: 'Jackson', state: 'MS', price: 3.71, distanceMi: 412, onRoute: true, network: "Love's" },
-  { name: 'QuikTrip', city: 'Dallas', state: 'TX', price: 3.88, distanceMi: 3, onRoute: false, network: 'QT' },
-  { name: 'Pilot #109', city: 'Birmingham', state: 'AL', price: 3.82, distanceMi: 618, onRoute: true, network: 'Pilot' },
+  // ---- Texas / I-20 / I-35 / I-45 ----
+  { name: "Love's #412", city: 'Terrell', state: 'TX', price: 3.74, distanceMi: 6, onRoute: true, network: "Love's", latitude: 32.7357, longitude: -96.2753, exit: 'I-20 Exit 501', address: '100 I-20, Terrell, TX' },
+  { name: 'Pilot #221', city: 'Tyler', state: 'TX', price: 3.79, distanceMi: 41, onRoute: true, network: 'Pilot', latitude: 32.3513, longitude: -95.3011, exit: 'I-20 Exit 571', address: '15922 CR 165, Tyler, TX' },
+  { name: 'QuikTrip #833', city: 'Dallas', state: 'TX', price: 3.88, distanceMi: 3, onRoute: false, network: 'QT', latitude: 32.7767, longitude: -96.7970, exit: 'I-30 Exit 45', address: '2400 S Lamar St, Dallas, TX' },
+  { name: 'TA Fort Worth', city: 'Fort Worth', state: 'TX', price: 3.72, distanceMi: 35, onRoute: true, network: 'TA', latitude: 32.7555, longitude: -97.3308, exit: 'I-35W Exit 39', address: '3110 Alliance Gateway, Fort Worth, TX' },
+  { name: "Love's #560", city: 'Houston', state: 'TX', price: 3.66, distanceMi: 240, onRoute: false, network: "Love's", latitude: 29.7604, longitude: -95.3698, exit: 'I-10 Exit 775', address: '11565 East Fwy, Houston, TX' },
+  { name: 'Buc-ee\'s', city: 'San Antonio', state: 'TX', price: 3.69, distanceMi: 274, onRoute: false, network: "Buc-ee's", latitude: 29.4241, longitude: -98.4936, exit: 'I-35 Exit 160', address: '2760 I-35, San Antonio, TX' },
+  // ---- Gulf / Southeast / I-10 / I-20 ----
+  { name: 'TA Shreveport', city: 'Shreveport', state: 'LA', price: 3.68, distanceMi: 189, onRoute: true, network: 'TA', latitude: 32.5252, longitude: -93.7502, exit: 'I-20 Exit 3', address: '4949 Monkhouse Dr, Shreveport, LA' },
+  { name: "Love's #77", city: 'Jackson', state: 'MS', price: 3.71, distanceMi: 412, onRoute: true, network: "Love's", latitude: 32.2988, longitude: -90.1848, exit: 'I-20 Exit 47', address: '5405 I-20 Frontage, Jackson, MS' },
+  { name: 'Pilot #109', city: 'Birmingham', state: 'AL', price: 3.82, distanceMi: 618, onRoute: true, network: 'Pilot', latitude: 33.5186, longitude: -86.8104, exit: 'I-20 Exit 130', address: '2000 Bankhead Hwy, Birmingham, AL' },
+  { name: 'QuikTrip #1042', city: 'Atlanta', state: 'GA', price: 3.85, distanceMi: 781, onRoute: true, network: 'QT', latitude: 33.7490, longitude: -84.3880, exit: 'I-285 Exit 51', address: '3900 Fulton Industrial, Atlanta, GA' },
+  { name: "Love's #305", city: 'Orlando', state: 'FL', price: 3.79, distanceMi: 980, onRoute: false, network: "Love's", latitude: 28.5383, longitude: -81.3792, exit: 'I-4 Exit 111', address: '2500 S Orange Blossom, Orlando, FL' },
+  // ---- Midwest / I-40 / I-44 / I-70 / I-80 ----
+  { name: 'TA Oklahoma City', city: 'Oklahoma City', state: 'OK', price: 3.63, distanceMi: 206, onRoute: true, network: 'TA', latitude: 35.4676, longitude: -97.5164, exit: 'I-40 Exit 140', address: '801 S Council Rd, OKC, OK' },
+  { name: "Love's #201", city: 'Memphis', state: 'TN', price: 3.70, distanceMi: 452, onRoute: true, network: "Love's", latitude: 35.1495, longitude: -90.0490, exit: 'I-40 Exit 12', address: '3697 Lamar Ave, Memphis, TN' },
+  { name: 'Pilot #340', city: 'Nashville', state: 'TN', price: 3.77, distanceMi: 663, onRoute: true, network: 'Pilot', latitude: 36.1627, longitude: -86.7816, exit: 'I-24 Exit 52', address: '1409 Murfreesboro Pk, Nashville, TN' },
+  { name: 'TA Kansas City', city: 'Kansas City', state: 'MO', price: 3.71, distanceMi: 561, onRoute: true, network: 'TA', latitude: 39.0997, longitude: -94.5786, exit: 'I-70 Exit 18', address: '7401 NE Parvin Rd, KCMO, MO' },
+  { name: "Love's #488", city: 'St. Louis', state: 'MO', price: 3.74, distanceMi: 630, onRoute: false, network: "Love's", latitude: 38.6270, longitude: -90.1994, exit: 'I-55 Exit 196', address: '4600 S Broadway, St. Louis, MO' },
+  { name: 'Pilot #455', city: 'Indianapolis', state: 'IN', price: 3.81, distanceMi: 820, onRoute: false, network: 'Pilot', latitude: 39.7684, longitude: -86.1581, exit: 'I-70 Exit 79', address: '5931 Victory Dr, Indianapolis, IN' },
+  { name: 'TA Chicago', city: 'Chicago', state: 'IL', price: 3.98, distanceMi: 920, onRoute: false, network: 'TA', latitude: 41.8781, longitude: -87.6298, exit: 'I-80 Exit 145', address: '24625 Frontage Rd, Chicago, IL' },
+  { name: "Love's #612", city: 'Omaha', state: 'NE', price: 3.72, distanceMi: 640, onRoute: false, network: "Love's", latitude: 41.2565, longitude: -95.9345, exit: 'I-80 Exit 440', address: '9202 S 142nd, Omaha, NE' },
+  // ---- Mountain / Southwest / I-25 / I-70 / I-10 ----
+  { name: 'Pilot #520', city: 'Denver', state: 'CO', price: 3.89, distanceMi: 782, onRoute: true, network: 'Pilot', latitude: 39.7392, longitude: -104.9903, exit: 'I-70 Exit 278', address: '18150 E 32nd Pl, Aurora, CO' },
+  { name: 'TA Albuquerque', city: 'Albuquerque', state: 'NM', price: 3.84, distanceMi: 640, onRoute: true, network: 'TA', latitude: 35.0844, longitude: -106.6504, exit: 'I-40 Exit 149', address: '5730 Iliff Rd NW, Albuquerque, NM' },
+  { name: "Love's #700", city: 'Phoenix', state: 'AZ', price: 3.95, distanceMi: 1176, onRoute: true, network: "Love's", latitude: 33.4484, longitude: -112.0740, exit: 'I-10 Exit 137', address: '1160 S 51st Ave, Phoenix, AZ' },
+  { name: 'Pilot #611', city: 'El Paso', state: 'TX', price: 3.70, distanceMi: 620, onRoute: true, network: 'Pilot', latitude: 31.7619, longitude: -106.4850, exit: 'I-10 Exit 34', address: '1301 Horizon Blvd, El Paso, TX' },
+  // ---- West Coast / I-5 / I-15 ----
+  { name: 'TA Los Angeles', city: 'Los Angeles', state: 'CA', price: 4.79, distanceMi: 1435, onRoute: true, network: 'TA', latitude: 34.0522, longitude: -118.2437, exit: 'I-5 Exit 135', address: '2200 S Alameda, Los Angeles, CA' },
+  { name: "Love's #815", city: 'Bakersfield', state: 'CA', price: 4.72, distanceMi: 1350, onRoute: false, network: "Love's", latitude: 35.3733, longitude: -119.0187, exit: 'I-5 Exit 257', address: '3540 Buck Owens, Bakersfield, CA' },
+  { name: 'Pilot #720', city: 'Sacramento', state: 'CA', price: 4.85, distanceMi: 1620, onRoute: false, network: 'Pilot', latitude: 38.5816, longitude: -121.4944, exit: 'I-5 Exit 525', address: '4900 W Capitol, W Sacramento, CA' },
+  { name: 'TA Las Vegas', city: 'Las Vegas', state: 'NV', price: 4.28, distanceMi: 1225, onRoute: false, network: 'TA', latitude: 36.1699, longitude: -115.1398, exit: 'I-15 Exit 33', address: '8050 Dean Martin, Las Vegas, NV' },
+  { name: "Love's #920", city: 'Salt Lake City', state: 'UT', price: 3.99, distanceMi: 1180, onRoute: false, network: "Love's", latitude: 40.7608, longitude: -111.8910, exit: 'I-80 Exit 111', address: '2470 S 5600 W, SLC, UT' },
+  // ---- Northeast / I-95 / I-81 / I-78 ----
+  { name: 'Pilot #830', city: 'Atlanta', state: 'GA', price: 3.83, distanceMi: 790, onRoute: true, network: 'Pilot', latitude: 33.6407, longitude: -84.4277, exit: 'I-85 Exit 61', address: '4805 Old Nat\'l Hwy, College Park, GA' },
+  { name: 'TA Charlotte', city: 'Charlotte', state: 'NC', price: 3.80, distanceMi: 1020, onRoute: false, network: 'TA', latitude: 35.2271, longitude: -80.8431, exit: 'I-85 Exit 41', address: '3200 Cummings, Charlotte, NC' },
+  { name: "Love's #1105", city: 'Richmond', state: 'VA', price: 3.87, distanceMi: 1350, onRoute: false, network: "Love's", latitude: 37.5407, longitude: -77.4360, exit: 'I-95 Exit 74', address: '2100 Commerce Rd, Richmond, VA' },
+  { name: 'Pilot #915', city: 'Harrisburg', state: 'PA', price: 4.05, distanceMi: 1580, onRoute: false, network: 'Pilot', latitude: 40.2732, longitude: -76.8867, exit: 'I-81 Exit 77', address: '7848 Linglestown, Harrisburg, PA' },
+  { name: 'TA Newark', city: 'Newark', state: 'NJ', price: 4.18, distanceMi: 1720, onRoute: false, network: 'TA', latitude: 40.7357, longitude: -74.1724, exit: 'I-95 Exit 14', address: '900 Frontage Rd, Newark, NJ' },
 ];

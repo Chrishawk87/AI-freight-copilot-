@@ -288,4 +288,8 @@ model FuelStation {
   distanceMi Int
   onRoute    Boolean
   network    String
+  latitude   Float?
+  longitude  Float?
+  exit       String?
+  address    String?
 }

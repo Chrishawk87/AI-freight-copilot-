@@ -13,10 +13,13 @@ import {
   MapPin,
   Trash2,
   Loader2,
+  Gift,
+  Copy,
+  Check,
 } from "lucide-react";
 import { PageHeader, Stat, money, Loading, ErrorState } from "@/components/ui";
 import LoadCard from "@/components/LoadCard";
-import { api, type Booking } from "@/lib/api";
+import { api, type Booking, type CarrierDetail } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useAuth } from "@/lib/auth";
 
@@ -26,6 +29,7 @@ export default function Home() {
   const dash = useApi(() => api.dashboard(), []);
   const carrier = useApi(() => api.carrier(), []);
   const booked = useApi(() => api.bookings(), []);
+  const fuel = useApi(() => api.fuel(), []);
 
   if (dash.loading || carrier.loading) return <Loading />;
   if (dash.error) return <ErrorState message={dash.error} />;
@@ -36,6 +40,16 @@ export default function Home() {
   const rpm = w.miles ? (w.revenue / w.miles).toFixed(2) : "0.00";
   const margin = w.revenue ? ((w.netProfit / w.revenue) * 100).toFixed(0) : "0";
   const companyName = c?.companyName ?? user?.carrier?.companyName ?? "Your Carrier";
+
+  // --- Fuel savings (real formula from live diesel + the carrier's own MPG) ---
+  const mpg = c?.mpg && c.mpg > 0 ? c.mpg : 6.5;
+  const nationalAvg = fuel.data?.nationalAvg ?? 0;
+  const bestPrice = fuel.data?.stations?.length
+    ? Math.min(...fuel.data.stations.map((s) => s.price))
+    : nationalAvg;
+  const perGal = Math.max(0, nationalAvg - bestPrice);
+  const weekGallons = w.miles / mpg;
+  const fuelSavings = perGal * weekGallons;
 
   return (
     <div>
@@ -53,6 +67,17 @@ export default function Home() {
         }
       />
 
+      {/* Total savings hero + last-7-days spend */}
+      <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_1.4fr]">
+        <SavingsHero
+          savings={fuelSavings}
+          perGal={perGal}
+          gallons={weekGallons}
+          onFind={() => router.push("/fuel")}
+        />
+        <SpendChart bookings={booked.data ?? []} mpg={mpg} price={nationalAvg} />
+      </div>
+
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="This Week Revenue" value={money(w.revenue)} sub={`${w.loadsCompleted} loads booked`} />
         <Stat label="Net Profit" value={money(w.netProfit)} sub={`${margin}% margin`} accent="#16C784" />
@@ -63,6 +88,10 @@ export default function Home() {
           sub={w.miles ? `${((w.deadheadMiles / w.miles) * 100).toFixed(0)}% of miles` : "0% of miles"}
           accent="#F59E0B"
         />
+      </div>
+
+      <div className="mb-6">
+        <ReferralCard carrier={c} />
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -172,6 +201,151 @@ function BookedRow({
         )}
       </div>
       {error && <div className="mt-2 text-xs text-danger">{error}</div>}
+    </div>
+  );
+}
+
+function SavingsHero({
+  savings,
+  perGal,
+  gallons,
+  onFind,
+}: {
+  savings: number;
+  perGal: number;
+  gallons: number;
+  onFind: () => void;
+}) {
+  return (
+    <div className="card relative overflow-hidden p-5">
+      <div
+        className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full opacity-20"
+        style={{ background: "radial-gradient(circle, #16C784, transparent 70%)" }}
+      />
+      <div className="text-xs font-medium uppercase tracking-wide text-white/40">
+        Total fuel savings · this week
+      </div>
+      <div className="mt-1 text-4xl font-extrabold text-success lg:text-5xl">
+        {money(savings)}
+      </div>
+      <div className="mt-1 text-xs text-white/50">
+        ${perGal.toFixed(2)}/gal below national avg · est. {Math.round(gallons)} gal
+      </div>
+      <button
+        onClick={onFind}
+        className="mt-4 flex items-center gap-1.5 rounded-xl bg-success/15 px-3 py-2 text-sm font-semibold text-success transition hover:bg-success/25"
+      >
+        <Fuel className="h-4 w-4" /> Find cheaper diesel
+      </button>
+    </div>
+  );
+}
+
+function SpendChart({
+  bookings,
+  mpg,
+  price,
+}: {
+  bookings: Booking[];
+  mpg: number;
+  price: number;
+}) {
+  // Build the last 7 calendar days and bucket estimated fuel spend by pickup day.
+  const days: { label: string; spend: number }[] = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    let spend = 0;
+    for (const b of bookings) {
+      if ((b.load.pickupDate || "").slice(0, 10) === key) {
+        const miles = b.load.miles + b.load.deadheadMiles;
+        spend += (miles / mpg) * price;
+      }
+    }
+    days.push({ label: d.toLocaleDateString("en-US", { weekday: "short" }), spend });
+  }
+  const max = Math.max(1, ...days.map((d) => d.spend));
+  const total = days.reduce((s, d) => s + d.spend, 0);
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium uppercase tracking-wide text-white/40">
+          Last 7 days · est. fuel spend
+        </div>
+        <div className="text-sm font-bold">{money(total)}</div>
+      </div>
+      <div className="mt-4 flex h-28 items-end justify-between gap-2">
+        {days.map((d, i) => (
+          <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
+            <div className="flex h-24 w-full items-end">
+              <div
+                className="w-full rounded-t-md bg-electric/70 transition-all"
+                style={{ height: `${(d.spend / max) * 100}%`, minHeight: d.spend > 0 ? 4 : 0 }}
+                title={money(d.spend)}
+              />
+            </div>
+            <span className="text-[10px] text-white/40">{d.label}</span>
+          </div>
+        ))}
+      </div>
+      {total === 0 && (
+        <div className="mt-2 text-center text-[11px] text-white/30">
+          No booked loads in the last 7 days yet.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReferralCard({ carrier }: { carrier: CarrierDetail | null }) {
+  const [copied, setCopied] = useState(false);
+  const base =
+    (carrier?.companyName || "DRIVER").replace(/[^a-z0-9]/gi, "").slice(0, 6).toUpperCase() ||
+    "DRIVER";
+  const suffix = carrier?.dotNumber ? carrier.dotNumber.slice(-4) : "FUEL";
+  const code = `${base}-${suffix}`;
+
+  async function share() {
+    const msg = `Join me on AI Freight Co-Pilot — use my code ${code}.`;
+    try {
+      if (typeof navigator !== "undefined" && (navigator as any).share) {
+        await (navigator as any).share({ title: "AI Freight Co-Pilot", text: msg });
+        return;
+      }
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* user dismissed the share sheet */
+    }
+  }
+
+  return (
+    <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-electric/15">
+          <Gift className="h-5 w-5 text-electric" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold">Refer a driver, both save</div>
+          <div className="text-xs text-white/50">Share your code — earns fuel credit when they join.</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="rounded-lg border border-dashed border-white/20 px-3 py-1.5 font-mono text-sm font-bold tracking-wider">
+          {code}
+        </span>
+        <button
+          onClick={share}
+          className="flex items-center gap-1.5 rounded-xl bg-electric px-3 py-2 text-sm font-semibold text-white"
+        >
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? "Copied" : "Share"}
+        </button>
+      </div>
     </div>
   );
 }

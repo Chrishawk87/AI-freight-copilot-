@@ -120,7 +120,15 @@ export class IntegrationsService implements OnModuleInit {
 
   private async seedFuelIfEmpty() {
     const existing = await this.prisma.fuelStation.count();
-    if (existing > 0) return;
+    // Reseed when empty, or when the stored set is stale — e.g. legacy rows that
+    // predate geocoding (no latitude) or a smaller-than-current station list.
+    const missingCoords = await this.prisma.fuelStation.count({
+      where: { latitude: null },
+    });
+    if (existing > 0 && missingCoords === 0 && existing >= SIMULATED_FUEL.length) {
+      return;
+    }
+    await this.prisma.fuelStation.deleteMany({});
     await this.prisma.fuelStation.createMany({ data: SIMULATED_FUEL });
   }
 }

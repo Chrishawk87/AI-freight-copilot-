@@ -125,6 +125,13 @@ export interface DashboardResponse {
 
 export interface FuelResponse {
   nationalAvg: number;
+  regionPrice: number | null;
+  region: string;
+  regionLabel: string;
+  priceAsOf: string;
+  priceLive: boolean;
+  priceEnriched: boolean;
+  source: "live" | "fallback";
   stations: {
     id: string;
     name: string;
@@ -134,6 +141,11 @@ export interface FuelResponse {
     distanceMi: number;
     onRoute: boolean;
     network: string;
+    latitude: number | null;
+    longitude: number | null;
+    exit: string | null;
+    address: string | null;
+    priceEnriched?: boolean;
   }[];
 }
 
@@ -386,7 +398,12 @@ export const api = {
     }),
 
   // ---- Fuel ----
-  fuel: () => apiFetch<FuelResponse>("/fuel"),
+  // Pass live GPS to get real stations near you + official regional diesel price.
+  // Omit coords to get the seeded national fallback set.
+  fuel: (lat?: number, lon?: number) =>
+    apiFetch<FuelResponse>(
+      lat != null && lon != null ? `/fuel?lat=${lat}&lon=${lon}` : "/fuel"
+    ),
 
   // ---- Usage metering ----
   usage: () => apiFetch<UsageSummary>("/usage"),
