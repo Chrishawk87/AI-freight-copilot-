@@ -13,7 +13,6 @@ import {
   LocateFixed,
   Navigation,
   RotateCcw,
-  Search,
   Truck,
   X,
   type LucideIcon,
@@ -22,6 +21,7 @@ import { api, type NavStep, type RouteResult } from "@/lib/api";
 import { useGeolocation } from "@/lib/geolocation";
 import type { LatLon } from "@/lib/geolocation";
 import { geocode } from "@/components/LiveMap";
+import { AddressAutocomplete } from "@/features/truckmap/AddressAutocomplete";
 import { CesiumMap } from "@/features/truckmap/CesiumMap";
 import { FuelPanel } from "@/features/truckmap/FuelPanel";
 import { LayerControl } from "@/features/truckmap/LayerControl";
@@ -115,6 +115,10 @@ export default function MapPage() {
   const [startQuery, setStartQuery] = useState("");
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
+  // Exact coords cached when the driver picks a dropdown suggestion (so we
+  // route to the precise pin instead of re-guessing the free-text address).
+  const [startPick, setStartPick] = useState<LatLon | null>(null);
+  const [destPick, setDestPick] = useState<LatLon | null>(null);
 
   const posRef = useRef<LatLon | null>(null);
   posRef.current = pos;
@@ -186,31 +190,46 @@ export default function MapPage() {
     [vp.activeProfile],
   );
 
+  // Resolve the typed start into coords: blank / "my location" → live GPS
+  // (null); a picked suggestion → its coords; otherwise geocode, and if that
+  // fails, fall back to live GPS rather than blocking the trip.
+  const resolveStart = useCallback(async (): Promise<LatLon | null> => {
+    const sq = startQuery.trim();
+    if (!sq || sq.toLowerCase() === "my location") return null;
+    if (startPick) return startPick;
+    try {
+      return await geocode(sq);
+    } catch {
+      return null;
+    }
+  }, [startQuery, startPick]);
+
   const search = useCallback(async () => {
     const q = query.trim();
     if (!q) return;
     setSearching(true);
     setRouteError(null);
     try {
-      const dest = await geocode(q);
-      // Resolve the start: blank / "my location" → live GPS; otherwise geocode.
-      const sq = startQuery.trim();
-      let from: LatLon | null = null;
-      if (sq && sq.toLowerCase() !== "my location") {
-        try {
-          from = await geocode(sq);
-        } catch {
-          setRouteError(`Couldn't find start "${sq}".`);
-          return;
-        }
-      }
+      const dest = destPick ?? (await geocode(q));
+      const from = await resolveStart();
       await runRoute(dest, q, from);
     } catch {
-      setRouteError(`Couldn't find "${q}".`);
+      setRouteError(`Couldn't find "${q}". Pick a suggestion from the list.`);
     } finally {
       setSearching(false);
     }
-  }, [query, startQuery, runRoute]);
+  }, [query, destPick, resolveStart, runRoute]);
+
+  // Picking a destination suggestion routes immediately (Google-Maps style).
+  const onDestSelect = useCallback(
+    async (coords: LatLon, label: string) => {
+      setQuery(label);
+      setDestPick(coords);
+      const from = await resolveStart();
+      void runRoute(coords, label, from);
+    },
+    [resolveStart, runRoute],
+  );
 
   const navigateToPoi = useCallback(
     (poi: TruckMapPoi) => {
@@ -221,8 +240,10 @@ export default function MapPage() {
         "Destination";
       setSelectedId(null);
       setQuery(label);
+      setDestPick({ lat: poi.lat, lon: poi.lon });
       // POI navigation always starts from live GPS.
       setStartQuery("");
+      setStartPick(null);
       void runRoute({ lat: poi.lat, lon: poi.lon }, label, null);
     },
     [runRoute],
@@ -236,6 +257,8 @@ export default function MapPage() {
     setRouteError(null);
     setQuery("");
     setStartQuery("");
+    setStartPick(null);
+    setDestPick(null);
   }, []);
 
   // Recompute the route if the active truck changes mid-trip (so legality
@@ -354,50 +377,48 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* Start + Destination trip inputs */}
+      {/* Start + Destination trip inputs (with live address suggestions) */}
       {tab === "map" && (
       <>
       <div className="flex flex-col gap-2">
         {/* Start */}
-        <div className="relative">
-          <LocateFixed className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-400/70" />
-          <input
-            value={startQuery}
-            onChange={(e) => setStartQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && search()}
-            placeholder="My location"
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-9 text-sm text-white outline-none placeholder:text-white/40 focus:border-electric"
-          />
-          {startQuery && (
-            <button
-              onClick={() => setStartQuery("")}
-              aria-label="Use my location"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-white/40 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+        <AddressAutocomplete
+          icon="start"
+          value={startQuery}
+          placeholder="My location"
+          onChange={(t) => {
+            setStartQuery(t);
+            setStartPick(null);
+          }}
+          onSelect={(coords, label) => {
+            setStartQuery(label);
+            setStartPick(coords);
+          }}
+          onUseMyLocation={() => {
+            setStartQuery("");
+            setStartPick(null);
+          }}
+          onClear={() => {
+            setStartQuery("");
+            setStartPick(null);
+          }}
+          onEnter={search}
+        />
         {/* Destination + Go */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-            <input
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <AddressAutocomplete
+              icon="dest"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && search()}
               placeholder="Destination…"
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-9 text-sm text-white outline-none focus:border-electric"
+              onChange={(t) => {
+                setQuery(t);
+                setDestPick(null);
+              }}
+              onSelect={onDestSelect}
+              onClear={clearRoute}
+              onEnter={search}
             />
-            {query && (
-              <button
-                onClick={clearRoute}
-                aria-label="Clear"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-white/40 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
           </div>
           <button
             onClick={search}

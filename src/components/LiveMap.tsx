@@ -73,14 +73,44 @@ function loadScript(src: string): Promise<void> {
 }
 
 // ---------- geocoding + routing (free) ----------
+
+// A single address suggestion for the autocomplete dropdown.
+export type AddressSuggestion = {
+  label: string; // full display name
+  lat: number;
+  lon: number;
+};
+
+// Free-text address search → ranked US suggestions (OpenStreetMap Nominatim).
+// Used both for the autocomplete dropdown and as the resolver when the driver
+// hits "Go" without picking a suggestion.
+export async function searchAddresses(
+  q: string,
+  limit = 6,
+): Promise<AddressSuggestion[]> {
+  const query = q.trim();
+  if (query.length < 3) return [];
+  const url =
+    `https://nominatim.openstreetmap.org/search?format=jsonv2` +
+    `&addressdetails=0&limit=${limit}&countrycodes=us` +
+    `&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) return [];
+  const data: any[] = await res.json();
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((d) => ({
+      label: d.display_name as string,
+      lat: parseFloat(d.lat),
+      lon: parseFloat(d.lon),
+    }))
+    .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lon));
+}
+
 export async function geocode(q: string): Promise<LatLon> {
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
-    { headers: { Accept: "application/json" } },
-  );
-  const data = await res.json();
-  if (!data?.length) throw new Error("No geocode for " + q);
-  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  const hits = await searchAddresses(q, 1);
+  if (!hits.length) throw new Error("No geocode for " + q);
+  return { lat: hits[0].lat, lon: hits[0].lon };
 }
 
 async function resolvePoint(p: LatLon | string): Promise<LatLon> {
