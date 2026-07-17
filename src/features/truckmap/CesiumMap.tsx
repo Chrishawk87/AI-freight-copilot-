@@ -112,6 +112,7 @@ export function CesiumMap({
 
   // ---- driver marker + chase camera ----
   useEffect(() => {
+    if (status !== "ready") return;
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (!Cesium || !viewer || !driver) return;
@@ -157,10 +158,11 @@ export function CesiumMap({
         });
       }
     }
-  }, [driver, follow]);
+  }, [driver, follow, status]);
 
   // ---- route polyline + destination pin ----
   useEffect(() => {
+    if (status !== "ready") return;
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (!Cesium || !viewer) return;
@@ -221,10 +223,11 @@ export function CesiumMap({
     } else if (destEntityRef.current) {
       destEntityRef.current.show = false;
     }
-  }, [route, destination]);
+  }, [route, destination, status]);
 
   // ---- POI markers (rebuilt only when the set or visibility changes) ----
   useEffect(() => {
+    if (status !== "ready") return;
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (!Cesium || !viewer) return;
@@ -284,7 +287,7 @@ export function CesiumMap({
       ent.poiId = p.id;
       poiEntitiesRef.current.set(p.id, ent);
     }
-  }, [pois, visible]);
+  }, [pois, visible, status]);
 
   // ---- selection highlight ----
   useEffect(() => {
