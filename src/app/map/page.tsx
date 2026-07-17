@@ -2,13 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowUp,
+  ArrowUpLeft,
+  ArrowUpRight,
+  CornerUpLeft,
+  CornerUpRight,
   Crosshair,
+  Flag,
   Fuel,
   LocateFixed,
   Navigation,
+  RotateCcw,
   Search,
   Truck,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { api, type NavStep, type RouteResult } from "@/lib/api";
 import { useGeolocation } from "@/lib/geolocation";
@@ -54,8 +62,38 @@ function fmtEta(hours: number): string {
   return m ? `${h} hr ${m} min` : `${h} hr`;
 }
 
+// Distance to the next maneuver, spoken the way a driver expects it.
+function fmtManeuverDist(mi: number | null): string {
+  if (mi == null) return "";
+  if (mi < 0.02) return "Now";
+  if (mi < 0.95) {
+    const ft = Math.round((mi * 5280) / 50) * 50;
+    return `${ft} ft`;
+  }
+  return `${mi.toFixed(mi < 10 ? 1 : 0)} mi`;
+}
+
+// Pick a maneuver arrow from the OSRM/ORS step modifier + type.
+function maneuverIcon(step: NavStep | null): LucideIcon {
+  if (!step) return Navigation;
+  if (step.type === "arrive") return Flag;
+  const m = (step.modifier ?? "").toLowerCase();
+  if (m.includes("uturn")) return RotateCcw;
+  if (m.includes("sharp left") || m === "left") return CornerUpLeft;
+  if (m.includes("slight left")) return ArrowUpLeft;
+  if (m.includes("sharp right") || m === "right") return CornerUpRight;
+  if (m.includes("slight right")) return ArrowUpRight;
+  return ArrowUp;
+}
+
+// Arrival clock time from hours-remaining (e.g. "3:45 PM").
+function fmtArrival(hours: number): string {
+  const eta = new Date(Date.now() + hours * 3600_000);
+  return eta.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 export default function MapPage() {
-  const { pos, status: geoStatus, request } = useGeolocation();
+  const { pos, heading, status: geoStatus, request } = useGeolocation();
   const vp = useVehicleProfiles();
 
   const [pois, setPois] = useState<TruckMapPoi[]>([]);
@@ -67,9 +105,14 @@ export default function MapPage() {
   // Routing state
   const [destination, setDestination] = useState<LatLon | null>(null);
   const [destLabel, setDestLabel] = useState<string>("");
+  // Origin: null means "start from live GPS"; a LatLon means a fixed start the
+  // driver typed in (we then draw a green start pin).
+  const [origin, setOrigin] = useState<LatLon | null>(null);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [routing, setRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  // startQuery blank = "My location" (live GPS). destQuery = destination text.
+  const [startQuery, setStartQuery] = useState("");
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
 
@@ -112,10 +155,11 @@ export default function MapPage() {
   );
 
   // ---- routing ----
+  // `from` override: when omitted we start from live GPS (posRef).
   const runRoute = useCallback(
-    async (dest: LatLon, label: string) => {
-      const from = posRef.current;
-      if (!from) {
+    async (dest: LatLon, label: string, from?: LatLon | null) => {
+      const start = from ?? posRef.current;
+      if (!start) {
         setRouteError("Waiting for GPS — tap the GPS button first.");
         return;
       }
@@ -123,9 +167,10 @@ export default function MapPage() {
       setRouteError(null);
       setDestination(dest);
       setDestLabel(label);
+      setOrigin(from ?? null);
       try {
         const res = await api.route({
-          from: { lat: from.lat, lon: from.lon },
+          from: { lat: start.lat, lon: start.lon },
           to: { lat: dest.lat, lon: dest.lon },
           vehicle: vp.activeProfile,
         });
@@ -148,13 +193,24 @@ export default function MapPage() {
     setRouteError(null);
     try {
       const dest = await geocode(q);
-      await runRoute(dest, q);
+      // Resolve the start: blank / "my location" → live GPS; otherwise geocode.
+      const sq = startQuery.trim();
+      let from: LatLon | null = null;
+      if (sq && sq.toLowerCase() !== "my location") {
+        try {
+          from = await geocode(sq);
+        } catch {
+          setRouteError(`Couldn't find start "${sq}".`);
+          return;
+        }
+      }
+      await runRoute(dest, q, from);
     } catch {
       setRouteError(`Couldn't find "${q}".`);
     } finally {
       setSearching(false);
     }
-  }, [query, runRoute]);
+  }, [query, startQuery, runRoute]);
 
   const navigateToPoi = useCallback(
     (poi: TruckMapPoi) => {
@@ -165,7 +221,9 @@ export default function MapPage() {
         "Destination";
       setSelectedId(null);
       setQuery(label);
-      void runRoute({ lat: poi.lat, lon: poi.lon }, label);
+      // POI navigation always starts from live GPS.
+      setStartQuery("");
+      void runRoute({ lat: poi.lat, lon: poi.lon }, label, null);
     },
     [runRoute],
   );
@@ -174,32 +232,65 @@ export default function MapPage() {
     setRoute(null);
     setDestination(null);
     setDestLabel("");
+    setOrigin(null);
     setRouteError(null);
     setQuery("");
+    setStartQuery("");
   }, []);
 
   // Recompute the route if the active truck changes mid-trip (so legality
   // follows the rig the driver just picked).
   const activeTruckId = vp.active?.id;
   useEffect(() => {
-    if (destination && activeTruckId) void runRoute(destination, destLabel);
+    if (destination && activeTruckId) void runRoute(destination, destLabel, origin);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTruckId]);
 
-  // ---- next-step banner: the route step nearest to the driver ----
-  const nextStep: NavStep | null = useMemo(() => {
-    if (!route?.steps?.length || !pos) return route?.steps?.[0] ?? null;
-    let best = route.steps[0];
-    let bestD = Infinity;
-    for (const s of route.steps) {
-      const d = haversineMi(pos, { lat: s.lat, lon: s.lon });
-      if (d < bestD) {
-        bestD = d;
-        best = s;
-      }
+  // ---- sequenced turn-by-turn ----
+  // Track the driver's progress through the maneuver list. The index only ever
+  // moves forward, advancing once we're within ~0.05 mi of the current
+  // maneuver point — so the banner always shows the NEXT upcoming turn.
+  const [stepIdx, setStepIdx] = useState(0);
+
+  useEffect(() => {
+    setStepIdx(0);
+  }, [route]);
+
+  useEffect(() => {
+    if (!route?.steps?.length || !pos) return;
+    const steps = route.steps;
+    let i = stepIdx;
+    while (i < steps.length - 1) {
+      const d = haversineMi(pos, { lat: steps[i].lat, lon: steps[i].lon });
+      if (d < 0.05) i += 1;
+      else break;
     }
-    return best;
-  }, [route, pos]);
+    if (i !== stepIdx) setStepIdx(i);
+  }, [pos, route, stepIdx]);
+
+  const stepCount = route?.steps?.length ?? 0;
+  const currentStep: NavStep | null =
+    route?.steps?.[Math.min(stepIdx, Math.max(0, stepCount - 1))] ?? null;
+  const previewStep: NavStep | null = route?.steps?.[stepIdx + 1] ?? null;
+
+  // Distance from the driver to the upcoming maneuver.
+  const distToManeuverMi = useMemo(() => {
+    if (!currentStep || !pos) return null;
+    return haversineMi(pos, { lat: currentStep.lat, lon: currentStep.lon });
+  }, [currentStep, pos]);
+
+  // Live remaining distance + ETA (shrinks as the driver progresses).
+  const remaining = useMemo(() => {
+    if (!route?.steps?.length) return null;
+    const steps = route.steps;
+    let miles = distToManeuverMi ?? 0;
+    for (let i = stepIdx; i < steps.length; i++) miles += steps[i].distanceMi;
+    miles = Math.min(miles, route.miles);
+    const frac = route.miles > 0 ? miles / route.miles : 0;
+    return { miles, hours: route.hours * frac };
+  }, [route, stepIdx, distToManeuverMi]);
+
+  const nextStep = currentStep;
 
   const routeCoords = route?.coords ?? null;
 
@@ -263,37 +354,60 @@ export default function MapPage() {
         </button>
       </div>
 
-      {/* Destination search */}
+      {/* Start + Destination trip inputs */}
       {tab === "map" && (
       <>
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+      <div className="flex flex-col gap-2">
+        {/* Start */}
+        <div className="relative">
+          <LocateFixed className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-400/70" />
           <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={startQuery}
+            onChange={(e) => setStartQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && search()}
-            placeholder="Search a destination…"
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-9 text-sm text-white outline-none focus:border-electric"
+            placeholder="My location"
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-9 text-sm text-white outline-none placeholder:text-white/40 focus:border-electric"
           />
-          {query && (
+          {startQuery && (
             <button
-              onClick={clearRoute}
-              aria-label="Clear"
+              onClick={() => setStartQuery("")}
+              aria-label="Use my location"
               className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-white/40 hover:text-white"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        <button
-          onClick={search}
-          disabled={searching || routing || !query.trim()}
-          className="chip flex items-center gap-1.5 bg-electric text-[#0B1220] disabled:opacity-50"
-        >
-          <Navigation className="h-3.5 w-3.5" />
-          {searching || routing ? "Routing…" : "Go"}
-        </button>
+        {/* Destination + Go */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && search()}
+              placeholder="Destination…"
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-9 text-sm text-white outline-none focus:border-electric"
+            />
+            {query && (
+              <button
+                onClick={clearRoute}
+                aria-label="Clear"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-white/40 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={search}
+            disabled={searching || routing || !query.trim()}
+            className="chip flex items-center gap-1.5 bg-electric text-[#0B1220] disabled:opacity-50"
+          >
+            <Navigation className="h-3.5 w-3.5" />
+            {searching || routing ? "Routing…" : "Go"}
+          </button>
+        </div>
       </div>
 
       {/* Layer control */}
@@ -307,6 +421,7 @@ export default function MapPage() {
       <div className="relative min-h-0 flex-1">
         <CesiumMap
           driver={pos}
+          heading={heading}
           pois={pois}
           visible={visible}
           selectedId={selectedId}
@@ -314,35 +429,57 @@ export default function MapPage() {
           follow={follow}
           route={routeCoords}
           destination={destination}
+          origin={origin}
         />
 
-        {/* Turn banner (top) */}
-        {route && nextStep && (
-          <div className="absolute inset-x-3 top-3 z-10 mx-auto max-w-md rounded-2xl border border-slate-800 bg-slate-900/95 px-4 py-3 shadow-xl backdrop-blur">
-            <div className="flex items-center gap-3">
-              <Navigation className="h-5 w-5 flex-none text-electric" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">
-                  {nextStep.text}
-                </p>
-                {nextStep.road && (
-                  <p className="truncate text-xs text-slate-400">
-                    {nextStep.road}
+        {/* Turn banner (top): distance to maneuver + instruction + preview */}
+        {route && nextStep && (() => {
+          const Icon = maneuverIcon(nextStep);
+          const dist = fmtManeuverDist(distToManeuverMi);
+          return (
+            <div className="absolute inset-x-3 top-3 z-10 mx-auto max-w-md rounded-2xl border border-slate-800 bg-slate-900/95 px-4 py-3 shadow-xl backdrop-blur">
+              <div className="flex items-center gap-3">
+                <div className="flex flex-none flex-col items-center">
+                  <Icon className="h-7 w-7 text-electric" />
+                  {dist && (
+                    <span className="mt-0.5 text-[11px] font-semibold text-white/70">
+                      {dist}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">
+                    {nextStep.text}
                   </p>
-                )}
+                  {nextStep.road && (
+                    <p className="truncate text-xs text-slate-400">
+                      {nextStep.road}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={clearRoute}
+                  aria-label="End route"
+                  className="rounded-full p-1 text-slate-400 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                onClick={clearRoute}
-                aria-label="End route"
-                className="rounded-full p-1 text-slate-400 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {previewStep && (() => {
+                const P = maneuverIcon(previewStep);
+                return (
+                  <div className="mt-2 flex items-center gap-2 border-t border-white/5 pt-2 text-xs text-slate-400">
+                    <span className="text-slate-500">Then</span>
+                    <P className="h-3.5 w-3.5 text-slate-300" />
+                    <span className="truncate">{previewStep.text}</span>
+                  </div>
+                );
+              })()}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
-        {/* ETA / miles chip (bottom) */}
+        {/* ETA / miles chip (bottom) — live remaining time & arrival clock */}
         {route && !selected && (
           <div className="absolute inset-x-3 bottom-3 z-10 mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/95 px-4 py-3 shadow-xl backdrop-blur">
             <div className="min-w-0">
@@ -350,7 +487,9 @@ export default function MapPage() {
                 {destLabel || "Destination"}
               </p>
               <p className="text-xs text-slate-400">
-                {fmtEta(route.hours)} · {route.miles.toFixed(0)} mi
+                {fmtEta((remaining ?? route).hours)} ·{" "}
+                {(remaining?.miles ?? route.miles).toFixed(0)} mi · arrive{" "}
+                {fmtArrival((remaining ?? route).hours)}
               </p>
             </div>
             <span

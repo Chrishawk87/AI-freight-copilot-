@@ -19,6 +19,8 @@ import {
 
 type CesiumMapProps = {
   driver: LatLon | null;
+  // Driver heading in degrees clockwise from north (orients the 3D truck).
+  heading?: number | null;
   pois: TruckMapPoi[];
   visible: Record<TruckPoiCategory, boolean>;
   selectedId?: string | null;
@@ -28,13 +30,17 @@ type CesiumMapProps = {
   route?: [number, number][] | null;
   // Destination pin (end of the active route).
   destination?: LatLon | null;
+  // Origin/start pin (beginning of the active route).
+  origin?: LatLon | null;
 };
 
 const DRIVER_ID = "__driver__";
 const DEST_ID = "__dest__";
+const ORIGIN_ID = "__origin__";
 
 export function CesiumMap({
   driver,
+  heading,
   pois,
   visible,
   selectedId,
@@ -42,12 +48,21 @@ export function CesiumMap({
   follow = true,
   route,
   destination,
+  origin,
 }: CesiumMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cesiumRef = useRef<any>(null);
   const viewerRef = useRef<any>(null);
-  const driverEntityRef = useRef<any>(null);
+  const truckRef = useRef<any>(null);
+  const truckPosRef = useRef<any>(null); // CallbackProperty-backed position
+  const truckHprRef = useRef<any>(null); // CallbackProperty-backed orientation
+  const truckStateRef = useRef<{
+    lon: number;
+    lat: number;
+    heading: number;
+  } | null>(null);
   const destEntityRef = useRef<any>(null);
+  const originEntityRef = useRef<any>(null);
   const routeEntityRef = useRef<any>(null);
   const routeCoordsRef = useRef<[number, number][]>([]);
   const lastRouteSigRef = useRef<string>("");
@@ -110,55 +125,119 @@ export function CesiumMap({
     };
   }, []);
 
-  // ---- driver marker + chase camera ----
+  // ---- 3D truck (cab + trailer) + chase camera ----
   useEffect(() => {
     if (status !== "ready") return;
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (!Cesium || !viewer || !driver) return;
 
-    const pos = Cesium.Cartesian3.fromDegrees(driver.lon, driver.lat);
-    if (!driverEntityRef.current) {
-      driverEntityRef.current = viewer.entities.add({
+    const hdgDeg = heading ?? truckStateRef.current?.heading ?? 0;
+
+    // First build: create a single entity whose model is a small group of
+    // boxes (cab + trailer + wheels), positioned/oriented by CallbackPropertys
+    // so we can mutate the underlying state every frame without re-adding
+    // entities (no flicker, smooth motion).
+    if (!truckRef.current) {
+      truckStateRef.current = { lon: driver.lon, lat: driver.lat, heading: hdgDeg };
+
+      truckPosRef.current = new Cesium.CallbackProperty(() => {
+        const s = truckStateRef.current!;
+        return Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 0);
+      }, false);
+
+      truckHprRef.current = new Cesium.CallbackProperty(() => {
+        const s = truckStateRef.current!;
+        // Cesium heading is clockwise from north for the model's -Y axis; our
+        // boxes point +X "forward", so offset by -90° to align.
+        const hpr = new Cesium.HeadingPitchRoll(
+          Cesium.Math.toRadians(s.heading - 90),
+          0,
+          0,
+        );
+        const origin = Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 0);
+        return Cesium.Transforms.headingPitchRollQuaternion(origin, hpr);
+      }, false);
+
+      const truck = viewer.entities.add({
         id: DRIVER_ID,
-        position: pos,
-        point: {
-          pixelSize: 16,
-          color: Cesium.Color.fromCssColorString("#246BFD"),
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 3,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        position: truckPosRef.current,
+        orientation: truckHprRef.current,
+      });
+
+      // Trailer (long box behind the cab).
+      truck.addProperty?.("kind");
+      viewer.entities.add({
+        position: truckPosRef.current,
+        orientation: truckHprRef.current,
+        box: {
+          dimensions: new Cesium.Cartesian3(11, 2.6, 3.4),
+          material: Cesium.Color.fromCssColorString("#E5E9F0"),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString("#0B1220"),
         },
       });
+      // Cab (shorter, taller box at the front / +X).
+      viewer.entities.add({
+        position: new Cesium.CallbackProperty(() => {
+          const s = truckStateRef.current!;
+          // Offset forward along heading so the cab sits ahead of the trailer.
+          const fwd = Cesium.Math.toRadians(s.heading);
+          const dLat = (Math.cos(fwd) * 8) / 111_320;
+          const dLon =
+            (Math.sin(fwd) * 8) /
+            (111_320 * Math.cos(Cesium.Math.toRadians(s.lat)));
+          return Cesium.Cartesian3.fromDegrees(s.lon + dLon, s.lat + dLat, 0);
+        }, false),
+        orientation: truckHprRef.current,
+        box: {
+          dimensions: new Cesium.Cartesian3(4, 2.6, 3.6),
+          material: Cesium.Color.fromCssColorString("#246BFD"),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString("#0B1220"),
+        },
+      });
+      truckRef.current = truck;
     } else {
-      driverEntityRef.current.position = pos;
+      // Smoothly ease the truck state toward the new fix so motion doesn't jump.
+      const s = truckStateRef.current!;
+      s.lon = driver.lon;
+      s.lat = driver.lat;
+      // Interpolate heading along the shortest arc.
+      let dh = ((hdgDeg - s.heading + 540) % 360) - 180;
+      s.heading = (s.heading + dh + 360) % 360;
     }
 
     if (follow) {
       const last = lastCenterRef.current;
       const moved =
         !last ||
-        Math.abs(last.lat - driver.lat) > 0.0008 ||
-        Math.abs(last.lon - driver.lon) > 0.0008;
+        Math.abs(last.lat - driver.lat) > 0.0005 ||
+        Math.abs(last.lon - driver.lon) > 0.0005;
       if (moved) {
         lastCenterRef.current = { ...driver };
-        // Tilted chase view: camera sits south of and above the driver so the
-        // truck reads as "ahead" on the road.
+        // Chase camera: sit behind the truck (opposite its heading) and above,
+        // looking forward down the road — Google-Maps-style navigation view.
+        const back = Cesium.Math.toRadians(hdgDeg + 180);
+        const dist = 0.006; // ~650m behind
+        const dLat = Math.cos(back) * dist;
+        const dLon =
+          (Math.sin(back) * dist) / Math.cos(Cesium.Math.toRadians(driver.lat));
         viewer.camera.setView({
           destination: Cesium.Cartesian3.fromDegrees(
-            driver.lon,
-            driver.lat - 0.03,
-            4000,
+            driver.lon + dLon,
+            driver.lat + dLat,
+            700,
           ),
           orientation: {
-            heading: 0,
-            pitch: Cesium.Math.toRadians(-45),
+            heading: Cesium.Math.toRadians(hdgDeg),
+            pitch: Cesium.Math.toRadians(-30),
             roll: 0,
           },
         });
       }
     }
-  }, [driver, follow, status]);
+  }, [driver, heading, follow, status]);
 
   // ---- route polyline + destination pin ----
   useEffect(() => {
@@ -223,7 +302,30 @@ export function CesiumMap({
     } else if (destEntityRef.current) {
       destEntityRef.current.show = false;
     }
-  }, [route, destination, status]);
+
+    // Origin / start pin (green).
+    if (origin) {
+      const pos = Cesium.Cartesian3.fromDegrees(origin.lon, origin.lat);
+      if (!originEntityRef.current) {
+        originEntityRef.current = viewer.entities.add({
+          id: ORIGIN_ID,
+          position: pos,
+          point: {
+            pixelSize: 14,
+            color: Cesium.Color.fromCssColorString("#22C55E"),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 3,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+        });
+      } else {
+        originEntityRef.current.position = pos;
+        originEntityRef.current.show = true;
+      }
+    } else if (originEntityRef.current) {
+      originEntityRef.current.show = false;
+    }
+  }, [route, destination, origin, status]);
 
   // ---- POI markers (rebuilt only when the set or visibility changes) ----
   useEffect(() => {

@@ -14,6 +14,7 @@ const PLACE_TO_POI: Record<PlaceCategory, PoiCategory> = {
   services: 'services',
   weigh_station: 'weigh_station',
   truck_parking: 'parking',
+  repair: 'repair',
 };
 
 type UpsertRow = {

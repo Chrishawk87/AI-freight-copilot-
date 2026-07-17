@@ -89,7 +89,7 @@ export class PoiService {
 
     let rows = await this.query(lat, lon, radiusMi, cats, limit);
 
-    if (rows.length < 3 && !this.ingest.wasRecentlyIngested(lat, lon)) {
+    if (rows.length < 8 && !this.ingest.wasRecentlyIngested(lat, lon)) {
       // First real visit to an area — fill it so the driver sees a live map,
       // then re-read from the DB.
       await this.ingest.ingestArea(lat, lon, radiusMi * 1609.34);

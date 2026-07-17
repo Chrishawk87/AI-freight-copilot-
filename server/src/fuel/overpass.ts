@@ -119,7 +119,8 @@ export type PlaceCategory =
   | 'rest_area'
   | 'services'
   | 'weigh_station'
-  | 'truck_parking';
+  | 'truck_parking'
+  | 'repair';
 
 export type OverpassPlace = {
   osmId: string;
@@ -138,6 +139,7 @@ const CATEGORY_LABEL: Record<PlaceCategory, string> = {
   services: 'Service area',
   weigh_station: 'Weigh station',
   truck_parking: 'Truck parking',
+  repair: 'Truck repair',
 };
 
 export function placeCategoryLabel(c: PlaceCategory): string {
@@ -150,6 +152,15 @@ function categorize(t: Record<string, string>): PlaceCategory | null {
   if (t.highway === 'services') return 'services';
   if (t.amenity === 'weighbridge' || t.highway === 'weigh_station')
     return 'weigh_station';
+  // Truck-oriented repair / service: dedicated truck shops, tyre shops that
+  // handle HGVs, and vehicle inspection stations.
+  if (
+    t.shop === 'truck_repair' ||
+    (t.shop === 'car_repair' && (t.hgv === 'yes' || t.service === 'truck')) ||
+    t.shop === 'tyres' ||
+    t.amenity === 'vehicle_inspection'
+  )
+    return 'repair';
   if (t.amenity === 'parking') return 'truck_parking';
   return null;
 }
@@ -157,11 +168,11 @@ function categorize(t: Record<string, string>): PlaceCategory | null {
 export async function findPlacesNear(
   lat: number,
   lon: number,
-  radiusMeters = 40000,
+  radiusMeters = 48000,
 ): Promise<OverpassPlace[]> {
   const R = radiusMeters;
   const A = `(around:${R},${lat},${lon})`;
-  const q = `[out:json][timeout:25];
+  const q = `[out:json][timeout:30];
 (
   node["amenity"="fuel"]${A};
   node["highway"="rest_area"]${A};
@@ -172,9 +183,18 @@ export async function findPlacesNear(
   node["highway"="weigh_station"]${A};
   node["amenity"="parking"]["hgv"="yes"]${A};
   way["amenity"="parking"]["hgv"="yes"]${A};
+  node["amenity"="parking"]["hgv"="designated"]${A};
+  way["amenity"="parking"]["hgv"="designated"]${A};
   node["amenity"="parking"]["access"="hgv"]${A};
+  way["amenity"="parking"]["access"="hgv"]${A};
+  node["shop"="truck_repair"]${A};
+  way["shop"="truck_repair"]${A};
+  node["shop"="tyres"]${A};
+  node["shop"="car_repair"]["service"="truck"]${A};
+  node["shop"="car_repair"]["hgv"="yes"]${A};
+  node["amenity"="vehicle_inspection"]${A};
 );
-out center 200;`;
+out center 350;`;
 
   const res = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
