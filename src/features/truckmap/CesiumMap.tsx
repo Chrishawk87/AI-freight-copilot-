@@ -24,9 +24,14 @@ type CesiumMapProps = {
   selectedId?: string | null;
   onSelectPoi?: (id: string | null) => void;
   follow?: boolean;
+  // Active route polyline as [lon, lat] pairs (empty/undefined = no route).
+  route?: [number, number][] | null;
+  // Destination pin (end of the active route).
+  destination?: LatLon | null;
 };
 
 const DRIVER_ID = "__driver__";
+const DEST_ID = "__dest__";
 
 export function CesiumMap({
   driver,
@@ -35,11 +40,17 @@ export function CesiumMap({
   selectedId,
   onSelectPoi,
   follow = true,
+  route,
+  destination,
 }: CesiumMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cesiumRef = useRef<any>(null);
   const viewerRef = useRef<any>(null);
   const driverEntityRef = useRef<any>(null);
+  const destEntityRef = useRef<any>(null);
+  const routeEntityRef = useRef<any>(null);
+  const routeCoordsRef = useRef<[number, number][]>([]);
+  const lastRouteSigRef = useRef<string>("");
   const poiEntitiesRef = useRef<Map<string, any>>(new Map());
   const lastPoiSigRef = useRef<string>("");
   const lastCenterRef = useRef<LatLon | null>(null);
@@ -147,6 +158,70 @@ export function CesiumMap({
       }
     }
   }, [driver, follow]);
+
+  // ---- route polyline + destination pin ----
+  useEffect(() => {
+    const Cesium = cesiumRef.current;
+    const viewer = viewerRef.current;
+    if (!Cesium || !viewer) return;
+
+    const coords = route ?? [];
+    const sig = `${coords.length}:${coords[0]?.join(",") ?? ""}>${
+      coords[coords.length - 1]?.join(",") ?? ""
+    }`;
+    if (sig === lastRouteSigRef.current) return;
+    lastRouteSigRef.current = sig;
+    routeCoordsRef.current = coords;
+
+    // Route line — a single entity we keep and mutate so it never flickers.
+    if (coords.length >= 2) {
+      const positions = Cesium.Cartesian3.fromDegreesArray(
+        coords.flatMap(([lon, lat]) => [lon, lat]),
+      );
+      if (!routeEntityRef.current) {
+        routeEntityRef.current = viewer.entities.add({
+          polyline: {
+            positions,
+            width: 7,
+            clampToGround: true,
+            material: new Cesium.PolylineOutlineMaterialProperty({
+              color: Cesium.Color.fromCssColorString("#246BFD"),
+              outlineColor: Cesium.Color.fromCssColorString("#0B1220"),
+              outlineWidth: 2,
+            }),
+          },
+        });
+      } else {
+        routeEntityRef.current.polyline.positions = positions;
+        routeEntityRef.current.show = true;
+      }
+    } else if (routeEntityRef.current) {
+      routeEntityRef.current.show = false;
+    }
+
+    // Destination pin.
+    if (destination) {
+      const pos = Cesium.Cartesian3.fromDegrees(destination.lon, destination.lat);
+      if (!destEntityRef.current) {
+        destEntityRef.current = viewer.entities.add({
+          id: DEST_ID,
+          position: pos,
+          point: {
+            pixelSize: 14,
+            color: Cesium.Color.fromCssColorString("#EF4444"),
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 3,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+        });
+      } else {
+        destEntityRef.current.position = pos;
+        destEntityRef.current.show = true;
+      }
+    } else if (destEntityRef.current) {
+      destEntityRef.current.show = false;
+    }
+  }, [route, destination]);
 
   // ---- POI markers (rebuilt only when the set or visibility changes) ----
   useEffect(() => {

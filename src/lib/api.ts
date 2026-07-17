@@ -207,6 +207,68 @@ export interface TruckMapPoiResponse {
   count: number;
 }
 
+// ---- Truck routing (ORS driving-hgv w/ OSRM fallback) ----
+export interface NavStep {
+  text: string;
+  road: string;
+  distanceMi: number;
+  lat: number;
+  lon: number;
+  type: string;
+  modifier?: string;
+}
+export interface RouteResult {
+  coords: [number, number][]; // [lon, lat] polyline
+  miles: number;
+  hours: number;
+  steps: NavStep[];
+  engine: "ors-hgv" | "osrm";
+  truckLegal: boolean;
+}
+export interface VehicleProfile {
+  heightIn?: number;
+  widthIn?: number;
+  lengthIn?: number;
+  weightLbs?: number;
+  axles?: number;
+  hazmatClass?: string | null;
+}
+export interface RouteRequest {
+  from: { lat: number; lon: number };
+  to: { lat: number; lon: number };
+  vehicle?: VehicleProfile;
+}
+
+// ---- Vehicle (truck) profiles, per carrier ----
+export interface Truck {
+  id: string;
+  carrierId: string;
+  label: string;
+  heightIn: number;
+  widthIn: number;
+  lengthIn: number;
+  weightLbs: number;
+  axles: number;
+  hazmatClass: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface TruckInput {
+  label?: string;
+  heightIn?: number;
+  widthIn?: number;
+  lengthIn?: number;
+  weightLbs?: number;
+  axles?: number;
+  hazmatClass?: string | null;
+  isDefault?: boolean;
+}
+export interface TrucksResponse {
+  trucks: Truck[];
+  count: number;
+}
+
 export interface DispatcherResponse {
   text: string;
   loads: ScoredLoad[];
@@ -483,6 +545,44 @@ export const api = {
     if (opts?.limit != null) q.set("limit", String(opts.limit));
     return apiFetch<TruckMapPoiResponse>(`/truckmap/poi?${q.toString()}`);
   },
+
+  // ---- Truck routing ----
+  // Truck-legal route when a vehicle profile is passed (ORS driving-hgv);
+  // otherwise a car route from the keyless OSRM fallback.
+  route: (body: RouteRequest) =>
+    apiFetch<RouteResult>("/truckmap/route", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  // POIs within a corridor around a route polyline ([lon, lat] pairs).
+  routePois: (
+    coords: [number, number][],
+    opts?: {
+      categories?: TruckPoiCategory[];
+      bufferMi?: number;
+      hgvOnly?: boolean;
+      limit?: number;
+    },
+  ) =>
+    apiFetch<TruckMapPoiResponse>("/truckmap/route/pois", {
+      method: "POST",
+      body: JSON.stringify({ coords, ...opts }),
+    }),
+
+  // ---- Vehicle (truck) profiles ----
+  trucks: () => apiFetch<TrucksResponse>("/truckmap/vehicles"),
+  addTruck: (body: TruckInput) =>
+    apiFetch<Truck>("/truckmap/vehicles", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateTruck: (id: string, body: TruckInput) =>
+    apiFetch<Truck>(`/truckmap/vehicles/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  removeTruck: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/truckmap/vehicles/${id}`, { method: "DELETE" }),
 
   // ---- Usage metering ----
   usage: () => apiFetch<UsageSummary>("/usage"),

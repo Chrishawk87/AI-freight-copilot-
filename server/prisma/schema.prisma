@@ -367,3 +367,26 @@ model FuelPrice {
 
   @@index([poiId, fuelType, reportedAt])
 }
+
+// ── Vehicle profile (Phase 2) ───────────────────────────────────────────────
+// Truck dimensions drive truck-LEGAL routing (§2.5). A route that's illegal for
+// an 80,000 lb rig is a bug, not a rounding error — these values are passed to
+// the OpenRouteService `driving-hgv` profile as height/width/length/weight/
+// axleload/hazmat restrictions. Scoped per carrier for multi-tenant isolation.
+
+model Truck {
+  id          String   @id @default(cuid())
+  carrierId   String
+  label       String // "Blue Pete 379", "Unit 12"…
+  heightIn    Int      @default(162) // 13'6" default legal max
+  widthIn     Int      @default(102) // 8'6"
+  lengthIn    Int      @default(636) // 53' trailer + tractor
+  weightLbs   Int      @default(80000)
+  axles       Int      @default(5)
+  hazmatClass String? // null = non-hazmat
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([carrierId])
+}
