@@ -27,7 +27,7 @@ export const NAV: NavItem[] = [
   { href: "/dispatcher", label: "AI Dispatcher", short: "AI", icon: Bot },
   { href: "/reloads", label: "Deadhead Prevention", short: "Reloads", icon: Repeat },
   { href: "/fuel", label: "Fuel Intelligence", short: "Fuel", icon: Fuel },
-  { href: "/navigation", label: "Profit Navigation", short: "Map", icon: Map },
+  { href: "/map", label: "Truck Map", short: "Map", icon: Map },
   { href: "/documents", label: "Documents (BOL/POD)", short: "Docs", icon: ScanLine },
   { href: "/memory", label: "Co-Pilot Memory", short: "Memory", icon: Brain },
   { href: "/integrations", label: "Plugin Engine", short: "Plugins", icon: Puzzle },

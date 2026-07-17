@@ -15,6 +15,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { UsageModule } from './usage/usage.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { MailModule } from './mail/mail.module';
+import { TruckMapModule } from './truckmap/truckmap.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -35,6 +36,7 @@ import { HealthController } from './health.controller';
     UsageModule,
     KnowledgeModule,
     MailModule,
+    TruckMapModule,
   ],
   controllers: [HealthController],
 })

@@ -293,3 +293,77 @@ model FuelStation {
   exit       String?
   address    String?
 }
+
+// ── Truck Map & Fuel Intelligence module (Phase 1) ──────────────────────────
+// Unified point-of-interest store for the Cesium map: fuel, truck parking, rest
+// areas, weigh stations, repair, service areas. Ingested from OpenStreetMap
+// (Overpass) into our own DB so the API never hits Overpass on the hot path.
+//
+// SCALE NOTE: for production nearest-neighbor / along-route queries at fleet
+// scale, a follow-up SQL migration adds PostGIS (geometry(Point,4326) + GiST
+// index) so we can use the `<->` KNN operator and `ST_DWithin`. Phase 1 queries
+// by lat/lon bounding box + haversine sort, which runs on plain Postgres with
+// the (state, category) and lat/lon indexes below.
+
+enum PoiCategory {
+  fuel
+  parking
+  rest_area
+  weigh_station
+  repair
+  services
+}
+
+model Poi {
+  id            String       @id @default(cuid())
+  source        String // "osm" | "commercial" | "user"
+  sourceId      String // e.g. osm node/way id — unique per source
+  category      PoiCategory
+  name          String
+  brand         String? // normalized network (Love's, Pilot, TA…)
+  lat           Float
+  lon           Float
+  address       String?
+  city          String?
+  state         String?
+  hoursRaw      String? // OSM opening_hours (may be null)
+  hgv           Boolean      @default(false) // truck-accessible
+  diesel        Boolean      @default(false)
+  defAvailable  Boolean?
+  parkingSpaces Int?
+  active        Boolean      @default(true) // false = not seen in last sweep (soft-remove)
+  lastSeenAt    DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  amenities PoiAmenity[]
+  prices    FuelPrice[]
+
+  @@unique([source, sourceId])
+  @@index([category, state])
+  @@index([category, active])
+  @@index([lat, lon])
+}
+
+model PoiAmenity {
+  id    String @id @default(cuid())
+  poiId String
+  poi   Poi    @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  key   String // showers | scales | def | restaurant | wifi | hgv_lanes …
+  value String @default("") // free-form (e.g. count of showers)
+
+  @@index([poiId])
+}
+
+model FuelPrice {
+  id         String   @id @default(cuid())
+  poiId      String
+  poi        Poi      @relation(fields: [poiId], references: [id], onDelete: Cascade)
+  fuelType   String   @default("diesel") // diesel | def
+  price      Float // retail $/gal
+  source     String // "eia_region" | "scrape" | "user" | "commercial"
+  confidence Float    @default(0.5) // 0..1, decays with age
+  reportedAt DateTime @default(now())
+
+  @@index([poiId, fuelType, reportedAt])
+}

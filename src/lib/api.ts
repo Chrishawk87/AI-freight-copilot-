@@ -175,6 +175,38 @@ export interface PlacesResponse {
   places: PlacePoi[];
 }
 
+// ---- Truck Map module (unified POI store served from /truckmap/poi) ----
+export type TruckPoiCategory =
+  | "fuel"
+  | "parking"
+  | "rest_area"
+  | "weigh_station"
+  | "repair"
+  | "services";
+
+export interface TruckMapPoi {
+  id: string;
+  source: string;
+  category: TruckPoiCategory;
+  name: string;
+  brand: string | null;
+  lat: number;
+  lon: number;
+  city: string | null;
+  state: string | null;
+  address: string | null;
+  hours: string | null;
+  hgv: boolean;
+  diesel: boolean;
+  parkingSpaces: number | null;
+  price: number | null;
+  distanceMi: number;
+}
+export interface TruckMapPoiResponse {
+  pois: TruckMapPoi[];
+  count: number;
+}
+
 export interface DispatcherResponse {
   text: string;
   loads: ScoredLoad[];
@@ -437,6 +469,20 @@ export const api = {
     apiFetch<PlacesResponse>(
       `/places?lat=${lat}&lon=${lon}${radiusMi != null ? `&radiusMi=${radiusMi}` : ""}`
     ),
+
+  // ---- Truck Map POIs (unified store: fuel, parking, rest, weigh, repair) ----
+  // Served from our own DB near the driver; topped up from OSM on first visit.
+  truckMapPois: (
+    lat: number,
+    lon: number,
+    opts?: { radiusMi?: number; categories?: TruckPoiCategory[]; limit?: number },
+  ) => {
+    const q = new URLSearchParams({ lat: String(lat), lon: String(lon) });
+    if (opts?.radiusMi != null) q.set("radiusMi", String(opts.radiusMi));
+    if (opts?.categories?.length) q.set("categories", opts.categories.join(","));
+    if (opts?.limit != null) q.set("limit", String(opts.limit));
+    return apiFetch<TruckMapPoiResponse>(`/truckmap/poi?${q.toString()}`);
+  },
 
   // ---- Usage metering ----
   usage: () => apiFetch<UsageSummary>("/usage"),
