@@ -149,6 +149,29 @@ export interface FuelResponse {
   }[];
 }
 
+export type PlaceCategory =
+  | "fuel"
+  | "rest_area"
+  | "services"
+  | "weigh_station"
+  | "truck_parking";
+
+export interface PlacePoi {
+  osmId: string;
+  name: string;
+  category: PlaceCategory;
+  label: string;
+  lat: number;
+  lon: number;
+  city: string | null;
+  state: string | null;
+  hgv: boolean;
+  distanceMi: number;
+}
+export interface PlacesResponse {
+  places: PlacePoi[];
+}
+
 export interface DispatcherResponse {
   text: string;
   loads: ScoredLoad[];
@@ -403,6 +426,13 @@ export const api = {
   fuel: (lat?: number, lon?: number) =>
     apiFetch<FuelResponse>(
       lat != null && lon != null ? `/fuel?lat=${lat}&lon=${lon}` : "/fuel"
+    ),
+
+  // ---- Driver POIs (rest areas, truck parking, weigh stations, fuel) ----
+  // Live from OpenStreetMap near the driver's GPS.
+  places: (lat: number, lon: number, radiusMi?: number) =>
+    apiFetch<PlacesResponse>(
+      `/places?lat=${lat}&lon=${lon}${radiusMi != null ? `&radiusMi=${radiusMi}` : ""}`
     ),
 
   // ---- Usage metering ----

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { PageHeader, money, scoreColor, Loading, ErrorState } from "@/components/ui";
 import { DIESEL_PRICE } from "@/lib/scoring";
-import { api } from "@/lib/api";
+import { api, type PlacePoi, type PlaceCategory } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { readEnabled, readKeys, resolveMapEngine, type EnabledMap, type KeyMap } from "@/lib/plugins";
 import clsx from "clsx";
@@ -151,29 +151,123 @@ function useDriverLocation() {
 
 type Stats = { miles: number; hours: number } | null;
 
+// A single turn-by-turn instruction along the route.
+export type NavStep = {
+  text: string; // human maneuver, e.g. "Turn right onto Main St"
+  road: string;
+  distanceMi: number; // length of this step
+  lat: number;
+  lon: number; // where the maneuver happens
+  type: string;
+  modifier?: string;
+};
+
+// Turn OSRM's maneuver object into plain driver-speak.
+function describeManeuver(step: any): string {
+  const m = step?.maneuver ?? {};
+  const type: string = m.type ?? "";
+  const mod: string = m.modifier ?? "";
+  const road: string = step?.name?.trim() || "the road";
+  const onRoad = step?.name?.trim() ? ` onto ${road}` : "";
+  const contRoad = step?.name?.trim() ? ` on ${road}` : "";
+  const dir = mod ? mod.replace("slight ", "slight ").replace("sharp ", "sharp ") : "";
+  switch (type) {
+    case "depart":
+      return `Head out${contRoad}`;
+    case "turn":
+      return `Turn ${dir || "ahead"}${onRoad}`;
+    case "new name":
+    case "continue":
+      return `Continue${contRoad}`;
+    case "merge":
+      return `Merge${onRoad}`;
+    case "on ramp":
+      return `Take the ramp${onRoad}`;
+    case "off ramp":
+      return `Take the exit${onRoad}`;
+    case "fork":
+      return `Keep ${dir || "straight"}${onRoad}`;
+    case "end of road":
+      return `Turn ${dir || "ahead"}${onRoad}`;
+    case "roundabout":
+    case "rotary":
+      return `At the roundabout, exit${onRoad}`;
+    case "arrive":
+      return "Arrive at your destination";
+    default:
+      return dir ? `Bear ${dir}${onRoad}` : `Continue${contRoad}`;
+  }
+}
+
 // ---------- Free engine: Leaflet + OpenStreetMap + OSRM ----------
 async function osrmRoute(o: { lat: number; lon: number }, d: { lat: number; lon: number }) {
-  const url = `https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson`;
+  const url = `https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson&steps=true`;
   const res = await fetch(url);
   const data = await res.json();
   const r = data?.routes?.[0];
   if (!r) throw new Error("No route");
+  const steps: NavStep[] = [];
+  for (const leg of r.legs ?? []) {
+    for (const s of leg.steps ?? []) {
+      const loc = s?.maneuver?.location as [number, number] | undefined;
+      if (!loc) continue;
+      steps.push({
+        text: describeManeuver(s),
+        road: s?.name?.trim() || "",
+        distanceMi: (s.distance ?? 0) / 1609.34,
+        lat: loc[1],
+        lon: loc[0],
+        type: s?.maneuver?.type ?? "",
+        modifier: s?.maneuver?.modifier,
+      });
+    }
+  }
   return {
     line: (r.geometry.coordinates as [number, number][]).map(([lon, lat]) => [lat, lon]) as [number, number][],
     miles: r.distance / 1609.34,
     hours: r.duration / 3600,
+    steps,
   };
 }
+
+// Straight-line miles between two points (for step progress + POI distance).
+function milesBetween(a: LatLon, b: LatLon): number {
+  const R = 3958.7613;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+
+// Category → pin color for driver POIs on the map.
+const POI_COLORS: Record<string, string> = {
+  fuel: "#16C784",
+  rest_area: "#38BDF8",
+  services: "#A78BFA",
+  weigh_station: "#F59E0B",
+  truck_parking: "#F472B6",
+};
 
 type MapProps = {
   driver: LatLon | null; // live phone position (for the "you are here" dot)
   origin: LatLon | string | null; // where a route starts (GPS fix, or a fallback city)
   dest: string | null; // destination place name
   showRoute: boolean; // false = plain map; true = draw origin→dest
+  pois?: PlacePoi[]; // rest areas, parking, weigh stations, fuel
   onStats?: (s: Stats) => void;
+  onSteps?: (s: NavStep[]) => void; // turn-by-turn instructions
 };
 
-function OsmMap({ driver, origin, dest, showRoute, onStats }: MapProps) {
+// Stable signature so POI changes only rebuild the map when they actually change.
+function poiSig(pois?: PlacePoi[]): string {
+  if (!pois?.length) return "0";
+  return `${pois.length}:${pois[0].osmId}`;
+}
+
+function OsmMap({ driver, origin, dest, showRoute, pois, onStats, onSteps }: MapProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
@@ -208,6 +302,24 @@ function OsmMap({ driver, origin, dest, showRoute, onStats }: MapProps) {
             .bindTooltip("You", { permanent: false });
         }
 
+        // Driver POIs — rest areas, truck parking, weigh stations, fuel.
+        if (pois?.length) {
+          for (const p of pois) {
+            const color = POI_COLORS[p.category] ?? "#94A3B8";
+            L.circleMarker([p.lat, p.lon], {
+              radius: 5,
+              color,
+              fillColor: color,
+              fillOpacity: 0.9,
+              weight: 1.5,
+            })
+              .addTo(map)
+              .bindTooltip(`${p.label}: ${p.name} · ${p.distanceMi} mi`, {
+                permanent: false,
+              });
+          }
+        }
+
         if (!showRoute || !dest) {
           // ---- Plain map: just center on the driver (or the country) ----
           if (driver) map.setView([driver.lat, driver.lon], 12);
@@ -228,11 +340,12 @@ function OsmMap({ driver, origin, dest, showRoute, onStats }: MapProps) {
 
         let bounds = L.latLngBounds([[o.lat, o.lon], [d.lat, d.lon]]);
         try {
-          const { line, miles, hours } = await osrmRoute(o, d);
+          const { line, miles, hours, steps } = await osrmRoute(o, d);
           if (!cancelled && line.length) {
             const poly = L.polyline(line, { color: "#246BFD", weight: 4, opacity: 0.9 }).addTo(map);
             bounds = poly.getBounds();
             onStats?.({ miles, hours });
+            onSteps?.(steps);
           }
         } catch {
           /* markers still show a real map */
@@ -252,7 +365,7 @@ function OsmMap({ driver, origin, dest, showRoute, onStats }: MapProps) {
       if (map) map.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pointSig(driver), pointSig(origin), dest, showRoute, onStats]);
+  }, [pointSig(driver), pointSig(origin), dest, showRoute, poiSig(pois), onStats, onSteps]);
 
   return (
     <>
@@ -278,9 +391,11 @@ function TrimbleMap({
   origin,
   dest,
   showRoute,
+  pois,
   apiKey,
   hazmat,
   onStats,
+  onSteps,
 }: MapProps & { apiKey: string; hazmat: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -367,9 +482,40 @@ function TrimbleMap({
 
   // If the SDK/key fails, never leave the client on a blank screen.
   if (failed)
-    return <OsmMap driver={driver} origin={origin} dest={dest} showRoute={showRoute} onStats={onStats} />;
+    return (
+      <OsmMap
+        driver={driver}
+        origin={origin}
+        dest={dest}
+        showRoute={showRoute}
+        pois={pois}
+        onStats={onStats}
+        onSteps={onSteps}
+      />
+    );
   return <div ref={ref} className="h-full w-full" style={{ background: "#0f1526" }} />;
 }
+
+// Speak a turn instruction with the browser's built-in voice (free, no key).
+function speakTurn(text: string) {
+  try {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* ignore */
+  }
+}
+
+const POI_TOGGLES: { key: PlaceCategory; label: string; icon: any }[] = [
+  { key: "fuel", label: "Fuel", icon: Fuel },
+  { key: "rest_area", label: "Rest areas", icon: ParkingSquare },
+  { key: "truck_parking", label: "Truck parking", icon: ParkingSquare },
+  { key: "weigh_station", label: "Weigh stations", icon: Scale },
+  { key: "services", label: "Service areas", icon: MapPin },
+];
 
 export default function NavigationPage() {
   const loadsQ = useApi(() => api.loads(), []);
@@ -392,8 +538,77 @@ export default function NavigationPage() {
   const [customDest, setCustomDest] = useState<string | null>(null); // typed address, à la Google Maps
   const [addressInput, setAddressInput] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
+  const [steps, setSteps] = useState<NavStep[]>([]); // turn-by-turn instructions
+  const [voiceOn, setVoiceOn] = useState(true); // spoken turn prompts
+  const [places, setPlaces] = useState<PlacePoi[]>([]); // nearby driver POIs
+  const [poiOn, setPoiOn] = useState<Record<PlaceCategory, boolean>>({
+    fuel: true,
+    rest_area: true,
+    truck_parking: true,
+    weigh_station: true,
+    services: false,
+  });
+  const spokenRef = useRef<number>(-1);
   const { pos: driverPos, status: geoStatus, request: requestGeo } = useDriverLocation();
   const searchParams = useSearchParams();
+
+  // Nearby POIs — fetched once per ~0.1° GPS cell so watchPosition jitter
+  // doesn't spam the backend. We pull all categories and filter client-side.
+  const gridLat = driverPos ? Math.round(driverPos.lat * 10) / 10 : null;
+  const gridLon = driverPos ? Math.round(driverPos.lon * 10) / 10 : null;
+  useEffect(() => {
+    if (gridLat == null || gridLon == null) {
+      setPlaces([]);
+      return;
+    }
+    let cancelled = false;
+    api
+      .places(gridLat, gridLon, 30)
+      .then((r) => !cancelled && setPlaces(r.places))
+      .catch(() => !cancelled && setPlaces([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [gridLat, gridLon]);
+
+  const visiblePois = useMemo(
+    () => places.filter((p) => poiOn[p.category]),
+    [places, poiOn]
+  );
+
+  // The maneuver the driver is approaching: the nearest step point to the
+  // live GPS. Approximate but functional without server-side route matching.
+  const nextStep = useMemo(() => {
+    if (!driverPos || !steps.length) return null;
+    let best = 0;
+    let bestDist = Infinity;
+    steps.forEach((s, i) => {
+      const d = milesBetween(driverPos, { lat: s.lat, lon: s.lon });
+      if (d < bestDist) {
+        bestDist = d;
+        best = i;
+      }
+    });
+    return { idx: best, dist: bestDist, step: steps[best] };
+  }, [driverPos, steps]);
+
+  // Speak the upcoming turn once when the driver gets within ~0.3 mi of it.
+  useEffect(() => {
+    if (!voiceOn || !nextStep) return;
+    if (nextStep.dist < 0.3 && spokenRef.current !== nextStep.idx) {
+      spokenRef.current = nextStep.idx;
+      speakTurn(nextStep.step.text);
+    }
+  }, [voiceOn, nextStep]);
+
+  // Drop stale turn-by-turn the moment routing stops.
+  const routeActive = started && (!!customDest || accepted);
+  useEffect(() => {
+    if (!routeActive) {
+      setSteps([]);
+      spokenRef.current = -1;
+    }
+  }, [routeActive]);
 
   // Route to a typed address (or a spoken one handed over by the Co-Pilot).
   const routeToAddress = useCallback((addr: string) => {
@@ -483,7 +698,7 @@ export default function NavigationPage() {
 
   // Draw a route once the driver pressed Start — either on an accepted load, or
   // straight to a typed/spoken address (which needs no load acceptance).
-  const showRoute = started && (!!customDest || accepted);
+  const showRoute = routeActive;
 
   const activeId = engines.find((e) => e.id === engine && e.ready)?.id ?? "osm";
   const activeEngine = engines.find((e) => e.id === activeId)!;
@@ -578,24 +793,53 @@ export default function NavigationPage() {
             </button>
             {activeId === "trimble" ? (
               <TrimbleMap
-                key={`trimble-${showRoute}-${pointSig(routeOrigin)}->${dest}`}
+                key={`trimble-${showRoute}-${pointSig(routeOrigin)}->${dest}-${poiSig(visiblePois)}`}
                 driver={driverPos}
                 origin={routeOrigin}
                 dest={dest}
                 showRoute={showRoute}
+                pois={visiblePois}
                 apiKey={keys.trimble ?? ""}
                 hazmat={!!on.hazmat}
                 onStats={setStats}
+                onSteps={setSteps}
               />
             ) : (
               <OsmMap
-                key={`osm-${showRoute}-${pointSig(routeOrigin)}->${dest}`}
+                key={`osm-${showRoute}-${pointSig(routeOrigin)}->${dest}-${poiSig(visiblePois)}`}
                 driver={driverPos}
                 origin={routeOrigin}
                 dest={dest}
                 showRoute={showRoute}
+                pois={visiblePois}
                 onStats={setStats}
+                onSteps={setSteps}
               />
+            )}
+
+            {/* Next-maneuver banner — turn-by-turn on the free engine */}
+            {showRoute && nextStep && (
+              <div className="absolute left-1/2 top-4 z-[550] flex max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-xl bg-navy-900/90 px-3.5 py-2 text-white shadow-glow backdrop-blur">
+                <Navigation className="h-5 w-5 shrink-0 text-electric" />
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{nextStep.step.text}</div>
+                  <div className="text-[11px] text-white/50">
+                    {nextStep.dist < 0.1
+                      ? "now"
+                      : `in ${nextStep.dist.toFixed(nextStep.dist < 1 ? 1 : 0)} mi`}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setVoiceOn((v) => !v)}
+                  title={voiceOn ? "Mute voice" : "Unmute voice"}
+                  className={clsx(
+                    "ml-1 shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium",
+                    voiceOn ? "bg-electric/20 text-electric" : "bg-white/10 text-white/50"
+                  )}
+                >
+                  {voiceOn ? "Voice on" : "Muted"}
+                </button>
+              </div>
             )}
 
             {/* Origin / destination chips only make sense once a route is drawn */}
@@ -718,6 +962,100 @@ export default function NavigationPage() {
         </div>
 
         <div className="space-y-4">
+          {/* Turn-by-turn directions (free OSM engine) */}
+          {showRoute && steps.length > 0 && (
+            <div className="card p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm font-semibold text-white/70">Turn-by-turn</span>
+                <button
+                  onClick={() => setVoiceOn((v) => !v)}
+                  className={clsx(
+                    "chip px-2 py-1 text-[11px]",
+                    voiceOn ? "bg-electric/15 text-electric" : "bg-white/5 text-white/50"
+                  )}
+                >
+                  {voiceOn ? "Voice on" : "Muted"}
+                </button>
+              </div>
+              <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
+                {steps.map((s, i) => {
+                  const current = nextStep?.idx === i;
+                  return (
+                    <div
+                      key={i}
+                      className={clsx(
+                        "flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm",
+                        current ? "bg-electric/15 text-white" : "text-white/60"
+                      )}
+                    >
+                      <Navigation
+                        className={clsx("mt-0.5 h-3.5 w-3.5 shrink-0", current ? "text-electric" : "text-white/30")}
+                      />
+                      <div className="min-w-0">
+                        <div className="truncate">{s.text}</div>
+                        {s.distanceMi >= 0.1 && (
+                          <div className="text-[11px] text-white/35">
+                            {s.distanceMi.toFixed(s.distanceMi < 1 ? 1 : 0)} mi
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11px] text-white/35">
+                Car-legal turn-by-turn on the free map. For truck-legal turns (low
+                bridges, weight/hazmat), connect Trimble in the Plugin Engine.
+              </p>
+            </div>
+          )}
+
+          {/* Nearby stops — live from OpenStreetMap */}
+          <div className="card p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-semibold text-white/70">Show nearby</span>
+              <span className="text-[11px] text-white/35">
+                {geoStatus === "ok" ? `${visiblePois.length} shown` : "GPS off"}
+              </span>
+            </div>
+            <div className="space-y-1">
+              {POI_TOGGLES.map((t) => {
+                const Icon = t.icon;
+                const isOn = poiOn[t.key];
+                const count = places.filter((p) => p.category === t.key).length;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setPoiOn((s) => ({ ...s, [t.key]: !s[t.key] }))}
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-sm hover:bg-white/5"
+                  >
+                    <span className="flex items-center gap-2 text-white/70">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ background: POI_COLORS[t.key] }}
+                      />
+                      <Icon className="h-4 w-4" /> {t.label}
+                      {count > 0 && <span className="text-[11px] text-white/35">({count})</span>}
+                    </span>
+                    <span className={clsx("relative h-5 w-9 rounded-full transition", isOn ? "bg-electric" : "bg-white/10")}>
+                      <span
+                        className={clsx(
+                          "absolute top-0.5 h-4 w-4 rounded-full bg-white transition",
+                          isOn ? "left-4" : "left-0.5"
+                        )}
+                      />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {geoStatus !== "ok" && (
+              <button onClick={requestGeo} className="mt-2 text-xs text-electric">
+                Enable GPS to see stops near you →
+              </button>
+            )}
+          </div>
+
           <div className="card p-4">
             <div className="mb-3 text-sm font-semibold text-white/70">Route settings</div>
             <div className="space-y-1">

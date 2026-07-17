@@ -108,6 +108,118 @@ out body 120;`;
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Generic driver POIs near a point: rest areas, truck parking, weigh stations,
+// fuel. Same free Overpass API, one call, categorized for colored map pins.
+// ---------------------------------------------------------------------------
+export type PlaceCategory =
+  | 'fuel'
+  | 'rest_area'
+  | 'services'
+  | 'weigh_station'
+  | 'truck_parking';
+
+export type OverpassPlace = {
+  osmId: string;
+  name: string;
+  category: PlaceCategory;
+  lat: number;
+  lon: number;
+  city: string | null;
+  state: string | null;
+  hgv: boolean; // truck-accessible where OSM tells us
+};
+
+const CATEGORY_LABEL: Record<PlaceCategory, string> = {
+  fuel: 'Fuel',
+  rest_area: 'Rest area',
+  services: 'Service area',
+  weigh_station: 'Weigh station',
+  truck_parking: 'Truck parking',
+};
+
+export function placeCategoryLabel(c: PlaceCategory): string {
+  return CATEGORY_LABEL[c];
+}
+
+function categorize(t: Record<string, string>): PlaceCategory | null {
+  if (t.amenity === 'fuel') return 'fuel';
+  if (t.highway === 'rest_area') return 'rest_area';
+  if (t.highway === 'services') return 'services';
+  if (t.amenity === 'weighbridge' || t.highway === 'weigh_station')
+    return 'weigh_station';
+  if (t.amenity === 'parking') return 'truck_parking';
+  return null;
+}
+
+export async function findPlacesNear(
+  lat: number,
+  lon: number,
+  radiusMeters = 40000,
+): Promise<OverpassPlace[]> {
+  const R = radiusMeters;
+  const A = `(around:${R},${lat},${lon})`;
+  const q = `[out:json][timeout:25];
+(
+  node["amenity"="fuel"]${A};
+  node["highway"="rest_area"]${A};
+  way["highway"="rest_area"]${A};
+  node["highway"="services"]${A};
+  way["highway"="services"]${A};
+  node["amenity"="weighbridge"]${A};
+  node["highway"="weigh_station"]${A};
+  node["amenity"="parking"]["hgv"="yes"]${A};
+  way["amenity"="parking"]["hgv"="yes"]${A};
+  node["amenity"="parking"]["access"="hgv"]${A};
+);
+out center 200;`;
+
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'AI-Freight-CoPilot/1.0 (driver POIs)',
+    },
+    body: 'data=' + encodeURIComponent(q),
+  });
+  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
+  const json: any = await res.json();
+  const elements: any[] = json?.elements ?? [];
+
+  const out: OverpassPlace[] = [];
+  const seen = new Set<string>();
+  for (const el of elements) {
+    const t = (el.tags ?? {}) as Record<string, string>;
+    const category = categorize(t);
+    if (!category) continue;
+    // Nodes carry lat/lon directly; ways carry a computed center.
+    const plat = el.lat ?? el.center?.lat;
+    const plon = el.lon ?? el.center?.lon;
+    if (typeof plat !== 'number' || typeof plon !== 'number') continue;
+    const key = `${el.type}-${el.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const name = t.name || t.brand || t.operator || CATEGORY_LABEL[category];
+    const hgv =
+      t.hgv === 'yes' ||
+      t.access === 'hgv' ||
+      t['fuel:HGV_diesel'] === 'yes' ||
+      category === 'weigh_station' ||
+      category === 'truck_parking';
+    out.push({
+      osmId: `osm-${el.type}-${el.id}`,
+      name,
+      category,
+      lat: plat,
+      lon: plon,
+      city: t['addr:city'] ?? null,
+      state: t['addr:state'] ?? null,
+      hgv,
+    });
+  }
+  return out;
+}
+
 // Full state name → USPS abbreviation (Nominatim returns full names).
 const STATE_ABBR: Record<string, string> = {
   Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA',
