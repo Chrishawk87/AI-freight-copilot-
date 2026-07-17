@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Crosshair,
+  Fuel,
   LocateFixed,
   Navigation,
   Search,
@@ -14,6 +15,7 @@ import { useGeolocation } from "@/lib/geolocation";
 import type { LatLon } from "@/lib/geolocation";
 import { geocode } from "@/components/LiveMap";
 import { CesiumMap } from "@/features/truckmap/CesiumMap";
+import { FuelPanel } from "@/features/truckmap/FuelPanel";
 import { LayerControl } from "@/features/truckmap/LayerControl";
 import { PoiDetailCard } from "@/features/truckmap/PoiDetailCard";
 import { VehicleProfileMenu } from "@/features/truckmap/VehicleProfileMenu";
@@ -60,6 +62,7 @@ export default function MapPage() {
   const [visible, setVisible] = useState<Record<TruckPoiCategory, boolean>>(ALL_ON);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [follow, setFollow] = useState(true);
+  const [tab, setTab] = useState<"map" | "fuel">("map");
 
   // Routing state
   const [destination, setDestination] = useState<LatLon | null>(null);
@@ -240,7 +243,29 @@ export default function MapPage() {
         </div>
       </div>
 
+      {/* Map / Fuel tab switcher */}
+      <div className="flex self-start rounded-xl bg-white/5 p-0.5">
+        <button
+          onClick={() => setTab("map")}
+          className={`chip flex items-center gap-1.5 ${
+            tab === "map" ? "bg-electric text-[#0B1220]" : "text-white/60"
+          }`}
+        >
+          <Navigation className="h-3.5 w-3.5" /> Map
+        </button>
+        <button
+          onClick={() => setTab("fuel")}
+          className={`chip flex items-center gap-1.5 ${
+            tab === "fuel" ? "bg-electric text-[#0B1220]" : "text-white/60"
+          }`}
+        >
+          <Fuel className="h-3.5 w-3.5" /> Fuel
+        </button>
+      </div>
+
       {/* Destination search */}
+      {tab === "map" && (
+      <>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
@@ -275,6 +300,8 @@ export default function MapPage() {
       <div className="overflow-x-auto pb-1">
         <LayerControl visible={visible} counts={counts} onToggle={toggle} />
       </div>
+      </>
+      )}
 
       {/* Map fills the rest */}
       <div className="relative min-h-0 flex-1">
@@ -353,6 +380,20 @@ export default function MapPage() {
               poi={selected}
               onClose={() => setSelectedId(null)}
               onNavigate={navigateToPoi}
+            />
+          </div>
+        )}
+
+        {/* Fuel Intelligence panel overlays the (still-mounted) map */}
+        {tab === "fuel" && (
+          <div className="absolute inset-0 z-30 rounded-2xl border border-slate-800 bg-[#0B1220]/95 p-3 backdrop-blur">
+            <FuelPanel
+              driver={pos}
+              routeCoords={routeCoords}
+              onNavigate={(poi) => {
+                setTab("map");
+                navigateToPoi(poi);
+              }}
             />
           </div>
         )}

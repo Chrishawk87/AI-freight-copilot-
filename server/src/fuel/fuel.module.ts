@@ -6,5 +6,6 @@ import { FuelScrapeService } from './fuel-scrape';
 @Module({
   controllers: [FuelController],
   providers: [FuelPricesService, FuelScrapeService],
+  exports: [FuelPricesService],
 })
 export class FuelModule {}

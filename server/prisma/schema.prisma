@@ -390,3 +390,20 @@ model Truck {
 
   @@index([carrierId])
 }
+
+// ── Crowd-sourced diesel prices (Phase 3) ───────────────────────────────────
+// Driver-submitted station prices — the same mechanism Trucker Path/GasBuddy
+// use to get station-level accuracy without a paid feed. The confidence model
+// (§8.1) weights these highest when fresh and decays them toward the EIA
+// regional baseline with age, so stale reports don't mislead the optimizer.
+model PriceReport {
+  id         String   @id @default(cuid())
+  poiId      String
+  carrierId  String
+  fuelType   String   @default("diesel") // diesel | def
+  price      Float // reported $/gal
+  reportedAt DateTime @default(now())
+
+  @@index([poiId, reportedAt])
+  @@index([carrierId, reportedAt])
+}

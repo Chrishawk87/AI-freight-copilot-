@@ -269,6 +269,47 @@ export interface TrucksResponse {
   count: number;
 }
 
+// ---- Fuel Intelligence (crowd-weighted diesel prices + route fuel plan) ----
+export type FuelPriceSource = "user" | "commercial" | "scrape" | "eia_region";
+
+// A TruckMapPoi enriched with a confidence-blended effective diesel price.
+export interface PricedStation extends TruckMapPoi {
+  priceEff: number; // confidence-blended effective $/gal
+  priceSource: FuelPriceSource; // dominant contributing source
+  priceConfidence: number; // 0..1 aggregate confidence
+  priceIsLive: boolean; // a real signal exists (not just EIA baseline)
+  savingsPerGal: number; // national avg - priceEff (>=0)
+  routeMi?: number; // distance along the route (along-route ranking)
+  detourMi?: number; // rough off-route detour
+}
+export interface FuelStationsResponse {
+  stations: PricedStation[];
+  count: number;
+}
+
+export interface FuelPlanStop {
+  poiId: string;
+  name: string;
+  brand: string | null;
+  lat: number;
+  lon: number;
+  routeMi: number;
+  priceEff: number;
+  gallons: number;
+  cost: number;
+  savings: number;
+  reason: string;
+}
+export interface FuelPlan {
+  feasible: boolean;
+  stops: FuelPlanStop[];
+  totalGallons: number;
+  totalCost: number;
+  totalSavings: number;
+  nationalAvg: number;
+  note: string;
+}
+
 export interface DispatcherResponse {
   text: string;
   loads: ScoredLoad[];
@@ -567,6 +608,50 @@ export const api = {
     apiFetch<TruckMapPoiResponse>("/truckmap/route/pois", {
       method: "POST",
       body: JSON.stringify({ coords, ...opts }),
+    }),
+
+  // ---- Fuel Intelligence ----
+  // Cheapest truck-legal diesel near a point (confidence-blended prices).
+  fuelNearby: (
+    lat: number,
+    lon: number,
+    opts?: { radiusMi?: number; hgvOnly?: boolean; limit?: number },
+  ) => {
+    const q = new URLSearchParams({ lat: String(lat), lon: String(lon) });
+    if (opts?.radiusMi != null) q.set("radiusMi", String(opts.radiusMi));
+    if (opts?.hgvOnly) q.set("hgvOnly", "true");
+    if (opts?.limit != null) q.set("limit", String(opts.limit));
+    return apiFetch<FuelStationsResponse>(`/truckmap/fuel?${q.toString()}`);
+  },
+  // Cheapest diesel in a corridor around a route polyline ([lon, lat] pairs).
+  fuelAlongRoute: (
+    coords: [number, number][],
+    opts?: { bufferMi?: number; hgvOnly?: boolean; limit?: number },
+  ) =>
+    apiFetch<FuelStationsResponse>("/truckmap/fuel/along-route", {
+      method: "POST",
+      body: JSON.stringify({ coords, ...opts }),
+    }),
+  // Route fuel-fill plan: where to buy and how much to minimize spend.
+  fuelPlan: (
+    coords: [number, number][],
+    opts?: {
+      tankGallons?: number;
+      currentGallons?: number;
+      mpg?: number;
+      reserveGallons?: number;
+      hgvOnly?: boolean;
+    },
+  ) =>
+    apiFetch<FuelPlan>("/truckmap/fuel/plan", {
+      method: "POST",
+      body: JSON.stringify({ coords, ...opts }),
+    }),
+  // Submit a crowd-sourced diesel price for a station.
+  reportFuelPrice: (poiId: string, price: number, fuelType = "diesel") =>
+    apiFetch<{ station: PricedStation | null }>("/truckmap/fuel/report", {
+      method: "POST",
+      body: JSON.stringify({ poiId, price, fuelType }),
     }),
 
   // ---- Vehicle (truck) profiles ----
