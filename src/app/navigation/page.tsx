@@ -107,10 +107,19 @@ function pointSig(p: LatLon | string | null): string {
 
 type GeoStatus = "idle" | "locating" | "ok" | "denied" | "unavailable";
 
-// Live phone GPS. Watches position so the "you are here" dot tracks the driver.
+// Live phone GPS. Watches position so the "you are here" dot tracks the driver,
+// and captures compass heading so the nav camera can point down the road.
 function useDriverLocation() {
   const [pos, setPos] = useState<LatLon | null>(null);
+  const [heading, setHeading] = useState<number | null>(null);
   const [status, setStatus] = useState<GeoStatus>("idle");
+
+  const applyFix = (p: GeolocationPosition) => {
+    setPos({ lat: p.coords.latitude, lon: p.coords.longitude });
+    const h = p.coords.heading;
+    if (typeof h === "number" && !Number.isNaN(h)) setHeading(h);
+    setStatus("ok");
+  };
 
   const request = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -119,10 +128,7 @@ function useDriverLocation() {
     }
     setStatus("locating");
     navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setPos({ lat: p.coords.latitude, lon: p.coords.longitude });
-        setStatus("ok");
-      },
+      applyFix,
       (err) => setStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable"),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
@@ -136,17 +142,14 @@ function useDriverLocation() {
     }
     setStatus("locating");
     const id = navigator.geolocation.watchPosition(
-      (p) => {
-        setPos({ lat: p.coords.latitude, lon: p.coords.longitude });
-        setStatus("ok");
-      },
+      applyFix,
       (err) => setStatus(err.code === err.PERMISSION_DENIED ? "denied" : "unavailable"),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
     return () => navigator.geolocation.clearWatch(id);
   }, []);
 
-  return { pos, status, request };
+  return { pos, heading, status, request };
 }
 
 type Stats = { miles: number; hours: number } | null;
@@ -257,9 +260,16 @@ type MapProps = {
   dest: string | null; // destination place name
   showRoute: boolean; // false = plain map; true = draw origin→dest
   pois?: PlacePoi[]; // rest areas, parking, weigh stations, fuel
+  heading?: number | null; // GPS compass heading (deg) for the nav camera
+  follow?: boolean; // chase the driver with a tilted nav camera
   onStats?: (s: Stats) => void;
   onSteps?: (s: NavStep[]) => void; // turn-by-turn instructions
 };
+
+// Empty GeoJSON FeatureCollection — initial data for map sources.
+function emptyFC() {
+  return { type: "FeatureCollection" as const, features: [] as any[] };
+}
 
 // Stable signature so POI changes only rebuild the map when they actually change.
 function poiSig(pois?: PlacePoi[]): string {
@@ -267,94 +277,89 @@ function poiSig(pois?: PlacePoi[]): string {
   return `${pois.length}:${pois[0].osmId}`;
 }
 
-function OsmMap({ driver, origin, dest, showRoute, pois, onStats, onSteps }: MapProps) {
+function OsmMap({ driver, origin, dest, showRoute, pois, heading, follow, onStats, onSteps }: MapProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const driverMarkerRef = useRef<any>(null);
+  const originMarkerRef = useRef<any>(null);
+  const destMarkerRef = useRef<any>(null);
+  const centeredRef = useRef(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [ready, setReady] = useState(false);
 
+  // ---- Build the map once. All later changes are applied imperatively so the
+  // map never tears down mid-drive (that's what made the old one feel clunky). ----
   useEffect(() => {
     let cancelled = false;
-    let map: any;
     setStatus("loading");
 
     (async () => {
       try {
-        loadCss("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css");
-        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js");
-        const L = (window as any).L;
-        if (cancelled || !ref.current) return;
+        loadCss("https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css");
+        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js");
+        const maplibregl = (window as any).maplibregl;
+        if (cancelled || !ref.current || !maplibregl) throw new Error("maplibre unavailable");
 
-        map = L.map(ref.current, { zoomControl: true, attributionControl: true });
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: "&copy; OpenStreetMap contributors",
-        }).addTo(map);
+        const c = driver ?? US_CENTER;
+        const map = new maplibregl.Map({
+          container: ref.current,
+          style: "https://tiles.openfreemap.org/styles/liberty", // free vector tiles, no key
+          center: [c.lon, c.lat],
+          zoom: driver ? 12 : 3.6,
+          attributionControl: true,
+        });
+        mapRef.current = map;
 
-        // Always show the driver where we know it.
-        if (driver) {
-          L.circleMarker([driver.lat, driver.lon], {
-            radius: 7,
-            color: "#246BFD",
-            fillColor: "#246BFD",
-            fillOpacity: 1,
-            weight: 3,
-          })
-            .addTo(map)
-            .bindTooltip("You", { permanent: false });
-        }
-
-        // Driver POIs — rest areas, truck parking, weigh stations, fuel.
-        if (pois?.length) {
-          for (const p of pois) {
-            const color = POI_COLORS[p.category] ?? "#94A3B8";
-            L.circleMarker([p.lat, p.lon], {
-              radius: 5,
-              color,
-              fillColor: color,
-              fillOpacity: 0.9,
-              weight: 1.5,
-            })
-              .addTo(map)
-              .bindTooltip(`${p.label}: ${p.name} · ${p.distanceMi} mi`, {
-                permanent: false,
-              });
-          }
-        }
-
-        if (!showRoute || !dest) {
-          // ---- Plain map: just center on the driver (or the country) ----
-          if (driver) map.setView([driver.lat, driver.lon], 12);
-          else map.setView([US_CENTER.lat, US_CENTER.lon], 4);
+        map.on("load", () => {
           if (cancelled) return;
-          setTimeout(() => map && map.invalidateSize(), 200);
+          // Route: a dark casing under a bright blue line — the Google look.
+          map.addSource("route", { type: "geojson", data: emptyFC() });
+          map.addLayer({
+            id: "route-casing",
+            type: "line",
+            source: "route",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: { "line-color": "#0B2A6B", "line-width": 9, "line-opacity": 0.95 },
+          });
+          map.addLayer({
+            id: "route-line",
+            type: "line",
+            source: "route",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: { "line-color": "#2E7DFF", "line-width": 5.5 },
+          });
+          // POIs: colored dots the driver can tap.
+          map.addSource("pois", { type: "geojson", data: emptyFC() });
+          map.addLayer({
+            id: "poi-dots",
+            type: "circle",
+            source: "pois",
+            paint: {
+              "circle-radius": 6,
+              "circle-color": ["get", "color"],
+              "circle-stroke-width": 2,
+              "circle-stroke-color": "#ffffff",
+              "circle-opacity": 0.95,
+            },
+          });
+          map.on("click", "poi-dots", (e: any) => {
+            const f = e.features?.[0];
+            if (!f) return;
+            new maplibregl.Popup({ closeButton: false, offset: 12 })
+              .setLngLat(f.geometry.coordinates)
+              .setHTML(
+                `<div style="font:600 12px system-ui;color:#0f1526">${f.properties.label}</div>` +
+                  `<div style="font:12px system-ui;color:#475569">${f.properties.name} · ${f.properties.distanceMi} mi</div>`,
+              )
+              .addTo(map);
+          });
+          map.on("mouseenter", "poi-dots", () => (map.getCanvas().style.cursor = "pointer"));
+          map.on("mouseleave", "poi-dots", () => (map.getCanvas().style.cursor = ""));
           setStatus("ready");
-          return;
-        }
-
-        // ---- Route mode: origin (GPS) → destination ----
-        const startPoint = origin ?? driver ?? US_CENTER;
-        const [o, d] = await Promise.all([resolvePoint(startPoint), geocode(dest)]);
-        if (cancelled) return;
-
-        L.circleMarker([o.lat, o.lon], { radius: 8, color: "#16C784", fillColor: "#16C784", fillOpacity: 1, weight: 2 }).addTo(map);
-        L.circleMarker([d.lat, d.lon], { radius: 8, color: "#EF4444", fillColor: "#EF4444", fillOpacity: 1, weight: 2 }).addTo(map);
-
-        let bounds = L.latLngBounds([[o.lat, o.lon], [d.lat, d.lon]]);
-        try {
-          const { line, miles, hours, steps } = await osrmRoute(o, d);
-          if (!cancelled && line.length) {
-            const poly = L.polyline(line, { color: "#246BFD", weight: 4, opacity: 0.9 }).addTo(map);
-            bounds = poly.getBounds();
-            onStats?.({ miles, hours });
-            onSteps?.(steps);
-          }
-        } catch {
-          /* markers still show a real map */
-        }
-
-        if (cancelled) return;
-        map.fitBounds(bounds.pad(0.15));
-        setTimeout(() => map && map.invalidateSize(), 200);
-        setStatus("ready");
+          setReady(true);
+          setTimeout(() => map.resize(), 150);
+        });
+        map.on("error", () => {});
       } catch {
         if (!cancelled) setStatus("error");
       }
@@ -362,14 +367,148 @@ function OsmMap({ driver, origin, dest, showRoute, pois, onStats, onSteps }: Map
 
     return () => {
       cancelled = true;
-      if (map) map.remove();
+      try {
+        mapRef.current?.remove();
+      } catch {
+        /* ignore */
+      }
+      mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pointSig(driver), pointSig(origin), dest, showRoute, poiSig(pois), onStats, onSteps]);
+  }, []);
+
+  // ---- Driver dot + chase camera ----
+  useEffect(() => {
+    const map = mapRef.current;
+    const maplibregl = (window as any).maplibregl;
+    if (!ready || !map || !maplibregl || !driver) return;
+
+    if (!driverMarkerRef.current) {
+      const el = document.createElement("div");
+      el.className = "aifc-driver-dot";
+      driverMarkerRef.current = new maplibregl.Marker({ element: el })
+        .setLngLat([driver.lon, driver.lat])
+        .addTo(map);
+    } else {
+      driverMarkerRef.current.setLngLat([driver.lon, driver.lat]);
+    }
+
+    if (follow) {
+      // Tilted, forward-pointing nav camera that tracks the driver.
+      map.easeTo({
+        center: [driver.lon, driver.lat],
+        zoom: 15.5,
+        pitch: 55,
+        bearing: typeof heading === "number" ? heading : map.getBearing(),
+        duration: 900,
+      });
+    } else if (!centeredRef.current) {
+      // First fix on the plain map: glide to the driver once.
+      map.easeTo({ center: [driver.lon, driver.lat], zoom: 12, duration: 800 });
+      centeredRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, driver?.lat, driver?.lon, heading, follow]);
+
+  // ---- POI layer data ----
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const src = map.getSource("pois");
+    if (!src) return;
+    src.setData({
+      type: "FeatureCollection",
+      features: (pois ?? []).map((p) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [p.lon, p.lat] },
+        properties: {
+          color: POI_COLORS[p.category] ?? "#94A3B8",
+          label: p.label,
+          name: p.name,
+          distanceMi: p.distanceMi,
+        },
+      })),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, poiSig(pois)]);
+
+  // ---- Route line + origin/dest markers ----
+  useEffect(() => {
+    const map = mapRef.current;
+    const maplibregl = (window as any).maplibregl;
+    if (!ready || !map || !maplibregl) return;
+    let cancelled = false;
+
+    const clearMarkers = () => {
+      try {
+        originMarkerRef.current?.remove();
+        destMarkerRef.current?.remove();
+      } catch {
+        /* ignore */
+      }
+      originMarkerRef.current = null;
+      destMarkerRef.current = null;
+    };
+
+    if (!showRoute || !dest) {
+      map.getSource("route")?.setData(emptyFC());
+      clearMarkers();
+      onSteps?.([]);
+      if (!follow) map.easeTo({ pitch: 0, bearing: 0, duration: 500 });
+      return;
+    }
+
+    (async () => {
+      try {
+        const startPoint = origin ?? driver ?? US_CENTER;
+        const [o, d] = await Promise.all([resolvePoint(startPoint), geocode(dest)]);
+        if (cancelled) return;
+        clearMarkers();
+        originMarkerRef.current = new maplibregl.Marker({ color: "#16C784" })
+          .setLngLat([o.lon, o.lat])
+          .addTo(map);
+        destMarkerRef.current = new maplibregl.Marker({ color: "#EF4444" })
+          .setLngLat([d.lon, d.lat])
+          .addTo(map);
+
+        try {
+          const { line, miles, hours, steps } = await osrmRoute(o, d);
+          if (cancelled) return;
+          const coords = line.map(([lat, lon]) => [lon, lat]);
+          map.getSource("route")?.setData({
+            type: "Feature",
+            geometry: { type: "LineString", coordinates: coords },
+            properties: {},
+          });
+          onStats?.({ miles, hours });
+          onSteps?.(steps);
+          if (!follow && coords.length) {
+            const b = coords.reduce(
+              (bb: any, cc: any) => bb.extend(cc),
+              new maplibregl.LngLatBounds(coords[0], coords[0]),
+            );
+            map.fitBounds(b, { padding: 60, duration: 700 });
+          }
+        } catch {
+          if (cancelled) return;
+          const b = new maplibregl.LngLatBounds([o.lon, o.lat], [o.lon, o.lat]).extend([d.lon, d.lat]);
+          map.fitBounds(b, { padding: 60 });
+        }
+      } catch {
+        /* leave the map as-is on geocode failure */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, showRoute, pointSig(origin), dest]);
 
   return (
     <>
       <div ref={ref} className="h-full w-full" style={{ background: "#0f1526" }} />
+      <style>{`.aifc-driver-dot{width:16px;height:16px;border-radius:9999px;background:#246BFD;border:3px solid #fff;box-shadow:0 0 0 6px rgba(36,107,253,.25)}`}</style>
       {status !== "ready" && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-navy-900/40 text-xs text-white/60">
           {status === "loading" ? (
@@ -392,6 +531,8 @@ function TrimbleMap({
   dest,
   showRoute,
   pois,
+  heading,
+  follow,
   apiKey,
   hazmat,
   onStats,
@@ -489,6 +630,8 @@ function TrimbleMap({
         dest={dest}
         showRoute={showRoute}
         pois={pois}
+        heading={heading}
+        follow={follow}
         onStats={onStats}
         onSteps={onSteps}
       />
@@ -507,6 +650,19 @@ function speakTurn(text: string) {
   } catch {
     /* ignore */
   }
+}
+
+// Clock time the driver arrives if they leave now.
+function formatEta(hours: number): string {
+  const d = new Date(Date.now() + hours * 3600 * 1000);
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+// Human drive time, e.g. "6h 20m" or "40m".
+function formatDur(hours: number): string {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 const POI_TOGGLES: { key: PlaceCategory; label: string; icon: any }[] = [
@@ -549,7 +705,7 @@ export default function NavigationPage() {
     services: false,
   });
   const spokenRef = useRef<number>(-1);
-  const { pos: driverPos, status: geoStatus, request: requestGeo } = useDriverLocation();
+  const { pos: driverPos, heading: driverHeading, status: geoStatus, request: requestGeo } = useDriverLocation();
   const searchParams = useSearchParams();
 
   // Nearby POIs — fetched once per ~0.1° GPS cell so watchPosition jitter
@@ -799,19 +955,24 @@ export default function NavigationPage() {
                 dest={dest}
                 showRoute={showRoute}
                 pois={visiblePois}
+                heading={driverHeading}
+                follow={routeActive}
                 apiKey={keys.trimble ?? ""}
                 hazmat={!!on.hazmat}
                 onStats={setStats}
                 onSteps={setSteps}
               />
             ) : (
+              // Persistent map — no volatile key, so it never tears down mid-drive.
               <OsmMap
-                key={`osm-${showRoute}-${pointSig(routeOrigin)}->${dest}-${poiSig(visiblePois)}`}
+                key="osm-live"
                 driver={driverPos}
                 origin={routeOrigin}
                 dest={dest}
                 showRoute={showRoute}
                 pois={visiblePois}
+                heading={driverHeading}
+                follow={routeActive}
                 onStats={setStats}
                 onSteps={setSteps}
               />
@@ -842,21 +1003,14 @@ export default function NavigationPage() {
               </div>
             )}
 
-            {/* Origin / destination chips only make sense once a route is drawn */}
+            {/* Destination chip (top-left) while navigating; live-location chip otherwise */}
             {showRoute ? (
-              <>
-                <div className="pointer-events-none absolute left-4 top-4 z-[500] flex items-center gap-1.5 rounded-lg bg-navy-900/85 px-2.5 py-1.5 text-xs">
-                  <MapPin className="h-3.5 w-3.5 text-success" />
-                  {usingLiveGps ? "My location" : originCity}
-                </div>
-                <div className="pointer-events-none absolute right-16 top-4 z-[500] flex items-center gap-1.5 rounded-lg bg-navy-900/85 px-2.5 py-1.5 text-xs">
-                  <Flag className="h-3.5 w-3.5 text-danger" /> {dest}
-                </div>
-                <div className="absolute bottom-4 left-1/2 z-[500] flex -translate-x-1/2 items-center gap-2 rounded-full bg-electric px-4 py-1.5 text-xs font-semibold text-white shadow-glow">
-                  <Navigation className="h-3.5 w-3.5" /> Navigating ·{" "}
-                  {stats ? `${Math.round(stats.miles).toLocaleString()} mi` : `${load.miles.toLocaleString()} mi`}
-                </div>
-              </>
+              <div className="pointer-events-none absolute left-4 top-4 z-[500] flex max-w-[55%] items-center gap-1.5 rounded-lg bg-navy-900/85 px-2.5 py-1.5 text-xs">
+                <Flag className="h-3.5 w-3.5 shrink-0 text-danger" />
+                <span className="truncate">
+                  {usingLiveGps ? "My location" : originCity} → {dest}
+                </span>
+              </div>
             ) : (
               <div className="pointer-events-none absolute left-4 top-4 z-[500] flex items-center gap-1.5 rounded-lg bg-navy-900/85 px-2.5 py-1.5 text-xs">
                 <LocateFixed
@@ -869,6 +1023,37 @@ export default function NavigationPage() {
                   : geoStatus === "denied"
                   ? "Location off"
                   : "Location unavailable"}
+              </div>
+            )}
+
+            {/* Google-style bottom arrival bar */}
+            {showRoute && (
+              <div className="absolute inset-x-3 bottom-3 z-[520] flex items-center justify-between gap-3 rounded-2xl bg-navy-900/92 px-4 py-3 text-white shadow-glow backdrop-blur">
+                <div>
+                  <div className="text-lg font-bold leading-none">
+                    {stats ? formatEta(stats.hours) : "—"}
+                  </div>
+                  <div className="mt-1 text-[11px] uppercase tracking-wide text-white/40">Arrival</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-semibold">
+                    {stats
+                      ? `${formatDur(stats.hours)} · ${Math.round(stats.miles).toLocaleString()} mi`
+                      : `${load.miles.toLocaleString()} mi`}
+                  </div>
+                  <div className="text-[11px] text-white/40">
+                    {activeEngine.id === "osm" ? "Live route" : activeEngine.label}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setStarted(false);
+                    setStats(null);
+                  }}
+                  className="shrink-0 rounded-xl bg-danger/90 px-3 py-2 text-xs font-semibold text-white transition hover:bg-danger"
+                >
+                  Exit
+                </button>
               </div>
             )}
           </div>
