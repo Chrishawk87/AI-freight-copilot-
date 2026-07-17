@@ -24,6 +24,21 @@ type Listeners = {
 const ELEVEN_PLUGIN_ID = "elevenlabs";
 // Rachel — a warm, natural female voice from ElevenLabs' free default set.
 const ELEVEN_DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";
+// Turbo is the low-latency model — a good balance of human warmth and speed,
+// which matters for a co-pilot answering someone doing 70 down the interstate.
+const ELEVEN_MODEL = "eleven_turbo_v2_5";
+
+// ---- Barge-in (interrupt the co-pilot by talking) ----
+// True conversation means the driver can cut the co-pilot off mid-sentence.
+// While it's speaking we open a SEPARATE, echo-cancelled mic stream and watch
+// its audio energy. Because echo cancellation subtracts the co-pilot's own
+// voice (played through the same device), a sustained energy spike means the
+// DRIVER started talking — so we stop the reply and hand the mic back for their
+// next command. Tunables (may need a nudge per device / cab noise):
+//   RMS threshold — how loud counts as "the driver is talking".
+//   sustained frames — how long it must stay loud, to reject taps/road noise.
+const BARGE_RMS_THRESHOLD = 0.085;
+const BARGE_SUSTAINED_FRAMES = 8; // ~130ms of continuous speech-level energy
 
 function readElevenConfig(): { key: string; voiceId: string } | null {
   if (typeof window === "undefined") return null;
@@ -40,19 +55,29 @@ function readElevenConfig(): { key: string; voiceId: string } | null {
 // can fall back to the browser voice cleanly).
 async function elevenSynthesize(text: string, cfg: { key: string; voiceId: string }): Promise<string | null> {
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}`, {
-      method: "POST",
-      headers: {
-        "xi-api-key": cfg.key,
-        "Content-Type": "application/json",
-        Accept: "audio/mpeg",
+    // The /stream endpoint returns the first audio bytes sooner than the plain
+    // endpoint, and optimize_streaming_latency trims model buffering. Combined
+    // with speaking a sentence at a time (see the sequence player below), the
+    // co-pilot starts talking almost immediately instead of after the whole
+    // reply is rendered.
+    const res = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}/stream?optimize_streaming_latency=3&output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": cfg.key,
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: ELEVEN_MODEL,
+          // Lower stability = livelier, more natural inflection (less flat);
+          // style adds a touch of expressiveness. Speaker boost keeps it clear.
+          voice_settings: { stability: 0.35, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true },
+        }),
       },
-      body: JSON.stringify({
-        text,
-        model_id: "eleven_turbo_v2_5",
-        voice_settings: { stability: 0.4, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
-      }),
-    });
+    );
     if (!res.ok) return null;
     const blob = await res.blob();
     return URL.createObjectURL(blob);
@@ -254,6 +279,14 @@ export function useVoice() {
   // True while the Co-Pilot is speaking. We stop recognition during playback
   // so it never hears (and transcribes) its own voice, then resume after.
   const speakingGuardRef = useRef(false);
+  // Barge-in: the echo-cancelled listening stream + audio graph active only
+  // while the co-pilot is talking, so the driver can cut in.
+  const monitorRef = useRef<{ stream: MediaStream; ctx: AudioContext; raf: number } | null>(null);
+  // Cancels an in-flight ElevenLabs sentence-by-sentence playback sequence.
+  const seqCancelRef = useRef<(() => void) | null>(null);
+  // Latest interrupt action (set each render) — lets the monitor trigger a
+  // barge-in without a definition-order cycle against cancelSpeech.
+  const bargeInRef = useRef<() => void>(() => {});
 
   const sttOk = speechSupported();
   const ttsOk = ttsSupported();
@@ -416,8 +449,108 @@ export function useVoice() {
     setListening(false);
   }, []);
 
+  // Tear down the barge-in listening stream + audio graph.
+  const stopBargeMonitor = useCallback(() => {
+    const m = monitorRef.current;
+    monitorRef.current = null;
+    if (!m) return;
+    try {
+      cancelAnimationFrame(m.raf);
+    } catch {
+      /* ignore */
+    }
+    try {
+      m.stream.getTracks().forEach((t) => t.stop());
+    } catch {
+      /* ignore */
+    }
+    try {
+      m.ctx.close();
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // While the co-pilot speaks, listen (echo-cancelled) for the driver starting
+  // to talk. On a sustained speech-level spike, fire the barge-in interrupt.
+  // Everything is best-effort and wrapped: any failure just means no barge-in,
+  // never a broken reply.
+  const startBargeMonitor = useCallback(() => {
+    if (monitorRef.current) return;
+    // Only in hands-free — a single tap-to-ask doesn't need interruption.
+    if (!sessionRef.current) return;
+    const md = typeof navigator !== "undefined" ? navigator.mediaDevices : undefined;
+    if (!md?.getUserMedia) return;
+    const AudioCtx =
+      typeof window !== "undefined"
+        ? (window.AudioContext || (window as any).webkitAudioContext)
+        : null;
+    if (!AudioCtx) return;
+    md.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    })
+      .then((stream) => {
+        // Playback may have already finished while we were acquiring the mic.
+        if (!speakingGuardRef.current) {
+          try {
+            stream.getTracks().forEach((t) => t.stop());
+          } catch {
+            /* ignore */
+          }
+          return;
+        }
+        let ctx: AudioContext;
+        try {
+          ctx = new AudioCtx();
+          ctx.resume?.().catch(() => {});
+        } catch {
+          try {
+            stream.getTracks().forEach((t) => t.stop());
+          } catch {
+            /* ignore */
+          }
+          return;
+        }
+        const src = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        src.connect(analyser);
+        const buf = new Uint8Array(analyser.fftSize);
+        let hot = 0;
+        const tick = () => {
+          if (!monitorRef.current) return;
+          analyser.getByteTimeDomainData(buf);
+          let sum = 0;
+          for (let i = 0; i < buf.length; i++) {
+            const v = (buf[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / buf.length);
+          if (rms > BARGE_RMS_THRESHOLD) hot++;
+          else hot = Math.max(0, hot - 1);
+          if (hot >= BARGE_SUSTAINED_FRAMES) {
+            bargeInRef.current();
+            return;
+          }
+          if (monitorRef.current) monitorRef.current.raf = requestAnimationFrame(tick);
+        };
+        monitorRef.current = { stream, ctx, raf: requestAnimationFrame(tick) };
+      })
+      .catch(() => {
+        /* no mic for monitoring — barge-in simply won't be available */
+      });
+  }, []);
+
   // Stop and tear down any ElevenLabs audio that's playing.
   const stopAudio = useCallback(() => {
+    // Halt any pending sentence-by-sentence sequence first.
+    try {
+      seqCancelRef.current?.();
+    } catch {
+      /* ignore */
+    }
+    seqCancelRef.current = null;
+    stopBargeMonitor();
     const a = audioRef.current;
     if (a) {
       try {
@@ -431,7 +564,7 @@ export function useVoice() {
       }
       audioRef.current = null;
     }
-  }, []);
+  }, [stopBargeMonitor]);
 
   // Speak with the browser's built-in speech synthesis. This is the fallback
   // when ElevenLabs isn't connected or its request fails.
@@ -584,49 +717,99 @@ export function useVoice() {
         return;
       }
 
-      // Try the real human voice. If anything goes wrong, fall back cleanly.
+      // Real human voice, spoken a SENTENCE AT A TIME so the co-pilot starts
+      // talking as soon as the first line is ready instead of after the whole
+      // reply renders — that's the "conversational" latency win. We synthesize
+      // the next sentence while the current one plays, and start listening for
+      // a barge-in the moment audio begins. Any failure falls back cleanly to
+      // the browser voice for whatever's left to say.
       setSpeaking(true);
-      elevenSynthesize(text, cfg)
-        .then((url) => {
-          if (!url) {
-            // API failed — fall back to browser voice.
-            setSpeaking(false);
-            browserSpeak(text, finishAll);
-            return;
-          }
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          const finish = () => {
-            setSpeaking(false);
-            if (audioRef.current === audio) {
-              try {
-                URL.revokeObjectURL(url);
-              } catch {
-                /* ignore */
-              }
-              audioRef.current = null;
-            }
-            finishAll();
-          };
-          audio.onended = finish;
-          audio.onerror = () => {
-            // Playback failed — fall back to browser voice.
-            setSpeaking(false);
-            if (audioRef.current === audio) audioRef.current = null;
-            browserSpeak(text, finishAll);
-          };
-          audio.play().catch(() => {
-            setSpeaking(false);
-            if (audioRef.current === audio) audioRef.current = null;
-            browserSpeak(text, finishAll);
-          });
-        })
-        .catch(() => {
+      const chunks = splitForSpeech(text);
+      let cancelled = false;
+      const cache = new Map<number, Promise<string | null>>();
+      const synthAt = (i: number): Promise<string | null> => {
+        if (i < 0 || i >= chunks.length) return Promise.resolve(null);
+        let p = cache.get(i);
+        if (!p) {
+          p = elevenSynthesize(chunks[i], cfg);
+          cache.set(i, p);
+        }
+        return p;
+      };
+
+      seqCancelRef.current = () => {
+        cancelled = true;
+      };
+
+      const playFrom = (i: number) => {
+        if (cancelled) return;
+        if (i >= chunks.length) {
           setSpeaking(false);
-          browserSpeak(text, finishAll);
-        });
+          finishAll();
+          return;
+        }
+        synthAt(i)
+          .then((url) => {
+            if (cancelled) {
+              if (url) {
+                try {
+                  URL.revokeObjectURL(url);
+                } catch {
+                  /* ignore */
+                }
+              }
+              return;
+            }
+            if (!url) {
+              // Synthesis failed for this sentence — speak the rest with the
+              // browser voice so the driver still hears the full answer.
+              setSpeaking(false);
+              browserSpeak(chunks.slice(i).join(" "), finishAll);
+              return;
+            }
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            // Kick off the next sentence's synthesis while this one plays.
+            synthAt(i + 1).catch(() => {});
+            const advance = () => {
+              if (audioRef.current === audio) {
+                try {
+                  URL.revokeObjectURL(url);
+                } catch {
+                  /* ignore */
+                }
+                audioRef.current = null;
+              }
+              playFrom(i + 1);
+            };
+            audio.onended = advance;
+            audio.onerror = () => {
+              if (audioRef.current === audio) audioRef.current = null;
+              setSpeaking(false);
+              browserSpeak(chunks.slice(i).join(" "), finishAll);
+            };
+            audio
+              .play()
+              .then(() => {
+                // Audio is rolling — open the barge-in listener (hands-free).
+                startBargeMonitor();
+              })
+              .catch(() => {
+                if (audioRef.current === audio) audioRef.current = null;
+                setSpeaking(false);
+                browserSpeak(chunks.slice(i).join(" "), finishAll);
+              });
+          })
+          .catch(() => {
+            if (cancelled) return;
+            setSpeaking(false);
+            browserSpeak(chunks.slice(i).join(" "), finishAll);
+          });
+      };
+
+      playFrom(0);
     },
-    [browserSpeak, stopAudio]
+    [browserSpeak, stopAudio, startBargeMonitor]
   );
 
   const cancelSpeech = useCallback(() => {
@@ -656,6 +839,13 @@ export function useVoice() {
       }, 200);
     }
   }, [stopAudio]);
+
+  // Wire the monitor's interrupt to the real stop action. Assigned each render
+  // (a plain statement, not an effect) so the tick loop always calls the latest
+  // cancelSpeech — no definition-order cycle, no stale closure. Barge-in =
+  // "driver started talking" → stop the reply and (in a hands-free session)
+  // cancelSpeech hands the mic straight back for their next command.
+  bargeInRef.current = cancelSpeech;
 
   return {
     sttSupported: sttOk,
