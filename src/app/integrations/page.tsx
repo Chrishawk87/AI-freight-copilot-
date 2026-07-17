@@ -15,6 +15,8 @@ import {
   AudioLines,
   Brain,
   ScanLine,
+  Banknote,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
@@ -55,11 +57,13 @@ type Category = {
 
 const CATEGORIES: Category[] = [
   { key: "loadboards", label: "Load Boards", icon: Truck, desc: "Find and book freight" },
+  { key: "tms", label: "TMS & Dispatch", icon: ClipboardList, desc: "Dispatch, invoicing, settlements, IFTA" },
   { key: "gps", label: "Truck GPS & Navigation", icon: Navigation, desc: "Truck-legal routing and turn-by-turn" },
   { key: "telematics", label: "ELD & Telematics", icon: Radio, desc: "Hours of service, tracking, diagnostics" },
-  { key: "accounting", label: "Accounting & Payments", icon: Calculator, desc: "Invoicing, factoring, expenses" },
+  { key: "accounting", label: "Accounting & Payments", icon: Calculator, desc: "Invoicing, bookkeeping, expenses" },
+  { key: "factoring", label: "Factoring & Cash Flow", icon: Banknote, desc: "Get paid on invoices in hours, not weeks" },
   { key: "lastmile", label: "Last-Mile & Delivery", icon: PackageCheck, desc: "On-demand and local delivery gigs" },
-  { key: "fuel", label: "Fuel & Savings", icon: Fuel, desc: "Discounts and station networks" },
+  { key: "fuel", label: "Fuel & Savings", icon: Fuel, desc: "Discounts, fuel cards, and station networks" },
   { key: "maintenance", label: "Fleet & Maintenance", icon: Wrench, desc: "Service, parts, and asset tracking" },
   { key: "documents", label: "Documents & Compliance", icon: ScanLine, desc: "Scan BOL/POD and read the fields automatically" },
   { key: "voice", label: "Co-Pilot Voice", icon: AudioLines, desc: "Give your Co-Pilot a real human voice" },
@@ -139,6 +143,71 @@ const PLUGINS: Plugin[] = [
   { id: "elevenlabs", name: "ElevenLabs", category: "voice", blurb: "Swap the built-in voice for a genuinely human one. Paste your ElevenLabs API key. Heads up: free ElevenLabs plans can't use the stock voices over the API — add your own voice in your ElevenLabs library and paste its Voice ID below, or upgrade your plan.", status: "beta", needsKey: true, keyHint: "ElevenLabs API key", extraField: { id: "elevenlabs_voice", label: "Voice ID", hint: "ElevenLabs Voice ID (optional)" } },
 
   { id: "anthropic", name: "Claude (Anthropic)", category: "brain", blurb: "Your Co-Pilot already runs on Claude's brain — reasoning, researching, and talking like a real co-driver — included with your subscription. Nothing to set up. Optional: paste your OWN Anthropic key only if you'd rather it bill your own account and run straight from this device.", status: "beta", needsKey: true, keyHint: "Your own Anthropic key (optional, sk-ant-…)", extraField: { id: "anthropic_model", label: "Model (optional)", hint: "e.g. claude-haiku-4-5-20251001" } },
+
+  // ---- TMS & Dispatch ----
+  { id: "truckbase", name: "Truckbase", category: "tms", blurb: "Modern cloud TMS for 10–100 truck fleets — dispatch, invoicing, driver settlements, live tracking links, and AI data entry.", status: "soon", website: "https://www.truckbase.com", apiNote: "API + partner integrations (access on request)." },
+  { id: "alvys", name: "Alvys", category: "tms", blurb: "Unified carrier + brokerage TMS — dispatch, billing, safety, and load tracking in one system.", status: "soon", website: "https://www.alvys.com", apiNote: "Open API + integration marketplace." },
+  { id: "roserocket", name: "Rose Rocket", category: "tms", blurb: "Order automation, customer portals, and dispatch with AI-assisted workflows.", status: "soon", website: "https://www.roserocket.com", apiNote: "Public REST API (varies by plan tier)." },
+  { id: "ascendtms", name: "AscendTMS", category: "tms", blurb: "Affordable cloud TMS for carriers and brokers with a free tier for very small operations.", status: "soon", website: "https://www.thefreetms.com", apiNote: "Developer API available." },
+  { id: "axon", name: "Axon Software", category: "tms", blurb: "All-in-one trucking software with real-time accounting, dispatch, and IFTA — built for small fleets.", status: "soon", website: "https://axonsoftware.com", apiNote: "Vendor-built integrations; no open public API." },
+  { id: "protransport", name: "ProTransport", category: "tms", blurb: "TMS for owner-operators and small fleets — dispatch, accounting, ELD, and maintenance.", status: "soon", website: "https://www.protransport.com", apiNote: "Integrations via ProTransport." },
+  { id: "tailwind", name: "Tailwind TMS", category: "tms", blurb: "Owner-operator TMS from ~$99/mo — dispatch, invoicing, and IFTA in one place.", status: "soon", website: "https://www.tailwindtms.com", apiNote: "API + Zapier integrations." },
+  { id: "truckingoffice", name: "TruckingOffice", category: "tms", blurb: "Low-cost record-keeping, invoicing, and IFTA reporting for single owner-operators.", status: "soon", website: "https://truckingoffice.com", apiNote: "No public API." },
+  { id: "turvo", name: "Turvo", category: "tms", blurb: "Collaborative TMS with real-time visibility across shippers, brokers, and carriers.", status: "soon", website: "https://turvo.com", apiNote: "Public API + integration hub." },
+  { id: "mcleod", name: "McLeod LoadMaster", category: "tms", blurb: "Enterprise-grade TMS for large fleets — deeply customizable dispatch and accounting.", status: "soon", website: "https://www.mcleodsoftware.com", apiNote: "Integration toolkit (enterprise)." },
+
+  // ---- More ELD & Telematics ----
+  { id: "omnitracs", name: "Omnitracs (Solera)", category: "telematics", blurb: "ELD, routing, and compliance from one of the oldest names in fleet telematics.", status: "soon", apiNote: "Developer/partner API." },
+  { id: "verizonconnect", name: "Verizon Connect", category: "telematics", blurb: "GPS fleet tracking, ELD, and vehicle diagnostics (Reveal).", status: "soon", apiNote: "REST API (Reveal)." },
+  { id: "eroad", name: "EROAD", category: "telematics", blurb: "ELD, IFTA, and fleet telematics with strong tax/compliance reporting.", status: "soon", apiNote: "Partner API." },
+  { id: "fleetcomplete", name: "Fleet Complete / BigRoad", category: "telematics", blurb: "ELD and GPS tracking popular with owner-operators and small fleets.", status: "soon", apiNote: "Developer API." },
+  { id: "garminelog", name: "Garmin eLog", category: "telematics", blurb: "Simple no-subscription ELD for hours-of-service compliance.", status: "soon", apiNote: "No public API — device only." },
+
+  // ---- More Accounting ----
+  { id: "xero", name: "Xero", category: "accounting", blurb: "Cloud accounting — sync loads to invoices, bills, and expense reports.", status: "soon", website: "https://www.xero.com", apiNote: "Full public API." },
+  { id: "rigbooks", name: "Rigbooks", category: "accounting", blurb: "Simple bookkeeping and true cost-per-mile tracking built for owner-operators.", status: "soon", website: "https://www.rigbooks.com", apiNote: "No public API." },
+  { id: "trucklogics", name: "TruckLogics", category: "accounting", blurb: "Accounting, IFTA, and driver settlements with a load-management layer.", status: "soon", website: "https://www.trucklogics.com", apiNote: "Integrations available." },
+
+  // ---- Factoring & Cash Flow ----
+  { id: "apex", name: "Apex Capital", category: "factoring", blurb: "Freight factoring — fund invoices in minutes with the Blynk app, plus a fuel card and discounts. No minimum volume.", status: "soon", cost: "Paid", website: "https://www.apexcapitalcorp.com", apiNote: "Partner API (via TMS integrations)." },
+  { id: "rts", name: "RTS Financial", category: "factoring", blurb: "24-hour funding, a mobile app, and one of the larger fuel-discount networks.", status: "soon", cost: "Paid", website: "https://www.rtsinc.com", apiNote: "Partner integrations." },
+  { id: "otr", name: "OTR Solutions", category: "factoring", blurb: "Non-recourse factoring with genuinely open developer APIs for invoice/rate verification and document exchange.", status: "soon", cost: "Paid", website: "https://otrsolutions.com", apiNote: "Open developer API (Rate Verification, Document Exchange, Carrier Setup)." },
+  { id: "tbs", name: "TBS Factoring", category: "factoring", blurb: "Same-day funding, free broker credit checks, and a fuel card.", status: "soon", cost: "Paid", website: "https://www.tbsfactoring.com", apiNote: "Portal-based; no public API." },
+  { id: "triumph", name: "Triumph", category: "factoring", blurb: "24/7 funding with transparent pricing; non-recourse contracts available.", status: "soon", cost: "Paid", website: "https://www.mytriumph.com", apiNote: "Partner integrations." },
+  { id: "bobtail", name: "Bobtail", category: "factoring", blurb: "Non-recourse factoring with a flat fee and same-day pay — no long-term contract.", status: "soon", cost: "Paid", website: "https://www.bobtail.com", apiNote: "TMS integrations." },
+  { id: "ecapital", name: "eCapital", category: "factoring", blurb: "Funding in as little as one hour, advances up to 90%, recourse or non-recourse.", status: "soon", cost: "Paid", website: "https://ecapital.com", apiNote: "Factoring API (developer hub)." },
+  { id: "tafs", name: "TAFS", category: "factoring", blurb: "One-hour weekday funding with weekend advances and fuel discounts.", status: "soon", cost: "Paid", website: "https://www.tafs.com", apiNote: "Portal-based." },
+  { id: "datoutgo", name: "DAT Outgo", category: "factoring", blurb: "Low-rate factoring built into DAT — fast funding, no long-term contract.", status: "soon", cost: "Paid", apiNote: "Integrated with DAT." },
+  { id: "truckstopfactoring", name: "Truckstop Factoring", category: "factoring", blurb: "Flat-rate non-recourse factoring from ~2.99%, wired into the Truckstop board.", status: "soon", cost: "Paid", apiNote: "Integrated with Truckstop." },
+
+  // ---- More Fuel & Fuel Cards ----
+  { id: "ta", name: "TA / Petro (Ultra ONE)", category: "fuel", blurb: "TravelCenters of America loyalty pricing and the largest full-service truck-stop network.", status: "soon", apiNote: "No public API — loyalty app." },
+  { id: "wex", name: "WEX Fleet Cards", category: "fuel", blurb: "Fleet fuel cards with spend controls, discounts, and detailed expense data.", status: "soon", website: "https://www.wexinc.com", apiNote: "Developer API." },
+  { id: "comdata", name: "Comdata", category: "fuel", blurb: "Fuel card plus payments and money codes for fleets (Corpay).", status: "soon", apiNote: "Partner API." },
+  { id: "efs", name: "EFS (Corpay)", category: "fuel", blurb: "Fuel card and money codes widely accepted across truck stops.", status: "soon", apiNote: "Partner API." },
+  { id: "tcs", name: "TCS Fuel Card", category: "fuel", blurb: "No transaction fee and deep in-network diesel discounts.", status: "soon", apiNote: "No public API — card/app." },
+  { id: "rtsfuel", name: "RTS Fuel Card", category: "fuel", blurb: "Diesel discounts at 2,000+ locations, paired with RTS factoring.", status: "soon", apiNote: "No public API — card/app." },
+  { id: "atob", name: "AtoB", category: "fuel", blurb: "Universal-acceptance fuel card with fleet controls and telematics.", status: "soon", website: "https://www.atob.com", apiNote: "Developer API." },
+  { id: "roadflex", name: "RoadFlex", category: "fuel", blurb: "Fuel card with security controls and telematics integration.", status: "soon", website: "https://www.roadflex.com", apiNote: "API available." },
+  { id: "relay", name: "Relay Payments", category: "fuel", blurb: "Contactless payments for fuel and lumper fees.", status: "soon", apiNote: "Partner API." },
+  { id: "fuelbook", name: "Fuelbook", category: "fuel", blurb: "Compare real fuel prices and manage card discounts across networks.", status: "soon", apiNote: "No public API — app." },
+
+  // ---- More Last-Mile & Delivery ----
+  { id: "goshare", name: "GoShare", category: "lastmile", blurb: "On-demand delivery for trucks, box trucks, and vans.", status: "soon", website: "https://goshare.co", apiNote: "Delivery API (business accounts)." },
+  { id: "curri", name: "Curri", category: "lastmile", blurb: "Construction and industrial last-mile and on-demand delivery.", status: "soon", website: "https://www.curri.com", apiNote: "Developer API." },
+  { id: "frayt", name: "FRAYT", category: "lastmile", blurb: "On-demand freight and last-mile for box trucks, cargo vans, and sprinters.", status: "soon", website: "https://www.frayt.com", apiNote: "Developer API." },
+  { id: "dolly", name: "Dolly", category: "lastmile", blurb: "Local delivery and moving help booked on demand.", status: "soon", apiNote: "No public API — app." },
+  { id: "veho", name: "Veho", category: "lastmile", blurb: "Last-mile package delivery routes for independent drivers.", status: "soon", apiNote: "Driver app." },
+
+  // ---- More Fleet & Maintenance ----
+  { id: "whiparound", name: "Whip Around", category: "maintenance", blurb: "Digital DVIR inspections plus maintenance and compliance tracking.", status: "soon", website: "https://www.whiparound.com", apiNote: "Public API." },
+  { id: "fullbay", name: "Fullbay", category: "maintenance", blurb: "Heavy-duty repair-shop management — work orders, parts, and invoicing.", status: "soon", website: "https://www.fullbay.com", apiNote: "API + integrations." },
+  { id: "rtafleet", name: "RTA Fleet Management", category: "maintenance", blurb: "Maintenance scheduling, parts inventory, and asset tracking.", status: "soon", apiNote: "Integration API." },
+  { id: "simplyfleet", name: "Simply Fleet", category: "maintenance", blurb: "Maintenance, inspections, and expense tracking for small fleets.", status: "soon", apiNote: "REST API." },
+
+  // ---- More Documents & Compliance ----
+  { id: "transflo", name: "Transflo", category: "documents", blurb: "Scan and submit BOL/POD, e-docs, and ELD data across a huge broker and factor network.", status: "soon", website: "https://www.transflo.com", apiNote: "Partner API (Transflo Velocity)." },
+  { id: "vector", name: "Vector", category: "documents", blurb: "Document capture and workflow automation for carriers and brokers.", status: "soon", website: "https://www.withvector.com", apiNote: "Partner API." },
 ];
 
 const STORAGE_KEY = STORAGE_KEY_SHARED;
