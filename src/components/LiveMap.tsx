@@ -74,41 +74,112 @@ function loadScript(src: string): Promise<void> {
 
 // ---------- geocoding + routing (free) ----------
 
-// A single address suggestion for the autocomplete dropdown.
+// A single address suggestion for the autocomplete dropdown. `label` is the
+// bold primary line (place / street), `sublabel` the grey context line
+// (city, state, ZIP) — the two-line layout Google uses.
 export type AddressSuggestion = {
-  label: string; // full display name
+  label: string;
+  sublabel: string;
   lat: number;
   lon: number;
 };
 
-// Free-text address search → ranked US suggestions (OpenStreetMap Nominatim).
-// Used both for the autocomplete dropdown and as the resolver when the driver
-// hits "Go" without picking a suggestion.
+type SearchOpts = { limit?: number; bias?: LatLon | null };
+
+// Build the two display lines from a Photon feature's properties.
+function formatPhoton(p: Record<string, any>): { label: string; sublabel: string } {
+  const line1 =
+    p.name ||
+    [p.housenumber, p.street].filter(Boolean).join(" ") ||
+    p.street ||
+    p.city ||
+    "Unknown";
+  const parts: string[] = [];
+  // If line1 is a named place, show its street on line 2; otherwise skip.
+  if (p.name && (p.housenumber || p.street)) {
+    parts.push([p.housenumber, p.street].filter(Boolean).join(" "));
+  }
+  parts.push(p.city || p.county || p.district || "");
+  parts.push(p.state || "");
+  if (p.postcode) parts.push(p.postcode);
+  const sublabel = parts.filter(Boolean).join(", ");
+  return { label: String(line1), sublabel };
+}
+
+// Type-ahead address search. Uses Photon (photon.komoot.io) — an OpenStreetMap
+// autocomplete engine built for search-as-you-type: fast, fuzzy, and
+// location-biased. This is the free stand-in for Google Places Autocomplete.
 export async function searchAddresses(
   q: string,
-  limit = 6,
+  opts: SearchOpts = {},
 ): Promise<AddressSuggestion[]> {
   const query = q.trim();
-  if (query.length < 3) return [];
-  const url =
+  if (query.length < 2) return [];
+  const limit = opts.limit ?? 6;
+  let url =
+    `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}` +
+    `&limit=${limit}&lang=en`;
+  // Bias toward the driver's current position so nearby matches rank first.
+  if (opts.bias) url += `&lat=${opts.bias.lat}&lon=${opts.bias.lon}`;
+  try {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(`Photon ${res.status}`);
+    const json: any = await res.json();
+    const feats: any[] = json?.features ?? [];
+    const out = feats
+      .map((f) => {
+        const [lon, lat] = f.geometry?.coordinates ?? [];
+        const { label, sublabel } = formatPhoton(f.properties ?? {});
+        return { label, sublabel, lat, lon };
+      })
+      .filter(
+        (s) => Number.isFinite(s.lat) && Number.isFinite(s.lon) && s.label,
+      );
+    if (out.length) return out;
+  } catch {
+    /* fall through to Nominatim */
+  }
+  // Fallback: Nominatim free-text search (US-biased) if Photon is unavailable.
+  return nominatimSearch(query, limit, opts.bias);
+}
+
+async function nominatimSearch(
+  query: string,
+  limit: number,
+  bias?: LatLon | null,
+): Promise<AddressSuggestion[]> {
+  let url =
     `https://nominatim.openstreetmap.org/search?format=jsonv2` +
-    `&addressdetails=0&limit=${limit}&countrycodes=us` +
+    `&addressdetails=1&limit=${limit}&countrycodes=us` +
     `&q=${encodeURIComponent(query)}`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) return [];
-  const data: any[] = await res.json();
-  if (!Array.isArray(data)) return [];
-  return data
-    .map((d) => ({
-      label: d.display_name as string,
-      lat: parseFloat(d.lat),
-      lon: parseFloat(d.lon),
-    }))
-    .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lon));
+  if (bias) {
+    // ~1.5° box around the driver, unbounded so far matches still appear.
+    const d = 1.5;
+    url += `&viewbox=${bias.lon - d},${bias.lat + d},${bias.lon + d},${bias.lat - d}`;
+  }
+  try {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) return [];
+    const data: any[] = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .map((d) => {
+        const a = d.address ?? {};
+        const full = String(d.display_name ?? "");
+        const label = full.split(",")[0] || full;
+        const sublabel = [a.city ?? a.town ?? a.village ?? a.county, a.state, a.postcode]
+          .filter(Boolean)
+          .join(", ");
+        return { label, sublabel, lat: parseFloat(d.lat), lon: parseFloat(d.lon) };
+      })
+      .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lon));
+  } catch {
+    return [];
+  }
 }
 
 export async function geocode(q: string): Promise<LatLon> {
-  const hits = await searchAddresses(q, 1);
+  const hits = await searchAddresses(q, { limit: 1 });
   if (!hits.length) throw new Error("No geocode for " + q);
   return { lat: hits[0].lat, lon: hits[0].lon };
 }

@@ -384,6 +384,7 @@ export default function MapPage() {
         {/* Start */}
         <AddressAutocomplete
           icon="start"
+          bias={pos}
           value={startQuery}
           placeholder="My location"
           onChange={(t) => {
@@ -409,6 +410,7 @@ export default function MapPage() {
           <div className="flex-1">
             <AddressAutocomplete
               icon="dest"
+              bias={pos}
               value={query}
               placeholder="Destination…"
               onChange={(t) => {

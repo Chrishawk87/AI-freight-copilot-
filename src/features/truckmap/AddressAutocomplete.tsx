@@ -23,6 +23,8 @@ type Props = {
   onUseMyLocation?: () => void;
   onClear?: () => void;
   onEnter?: () => void;
+  // Driver position to bias results toward (nearby first).
+  bias?: LatLon | null;
 };
 
 export function AddressAutocomplete({
@@ -34,6 +36,7 @@ export function AddressAutocomplete({
   onUseMyLocation,
   onClear,
   onEnter,
+  bias,
 }: Props) {
   const [items, setItems] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -49,7 +52,7 @@ export function AddressAutocomplete({
       return;
     }
     const q = value.trim();
-    if (q.length < 3 || q.toLowerCase() === "my location") {
+    if (q.length < 2 || q.toLowerCase() === "my location") {
       setItems([]);
       setLoading(false);
       return;
@@ -57,7 +60,7 @@ export function AddressAutocomplete({
     setLoading(true);
     const t = setTimeout(async () => {
       try {
-        const hits = await searchAddresses(q);
+        const hits = await searchAddresses(q, { bias });
         setItems(hits);
         setOpen(true);
       } catch {
@@ -65,9 +68,9 @@ export function AddressAutocomplete({
       } finally {
         setLoading(false);
       }
-    }, 350);
+    }, 220);
     return () => clearTimeout(t);
-  }, [value]);
+  }, [value, bias]);
 
   // Close the dropdown when clicking outside.
   useEffect(() => {
@@ -82,8 +85,9 @@ export function AddressAutocomplete({
 
   const pick = (s: AddressSuggestion) => {
     suppressRef.current = true;
-    onChange(s.label);
-    onSelect({ lat: s.lat, lon: s.lon }, s.label);
+    const full = s.sublabel ? `${s.label}, ${s.sublabel}` : s.label;
+    onChange(full);
+    onSelect({ lat: s.lat, lon: s.lon }, full);
     setItems([]);
     setOpen(false);
   };
@@ -147,10 +151,19 @@ export function AddressAutocomplete({
             <button
               key={`${s.lat},${s.lon},${i}`}
               onClick={() => pick(s)}
-              className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm text-white/80 hover:bg-white/5"
+              className="flex w-full items-start gap-2 px-3 py-2.5 text-left hover:bg-white/5"
             >
               <MapPin className="mt-0.5 h-4 w-4 flex-none text-white/40" />
-              <span className="line-clamp-2">{s.label}</span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-white">
+                  {s.label}
+                </span>
+                {s.sublabel && (
+                  <span className="block truncate text-xs text-white/50">
+                    {s.sublabel}
+                  </span>
+                )}
+              </span>
             </button>
           ))}
         </div>

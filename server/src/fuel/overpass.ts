@@ -150,7 +150,16 @@ function categorize(t: Record<string, string>): PlaceCategory | null {
   if (t.amenity === 'fuel') return 'fuel';
   if (t.highway === 'rest_area') return 'rest_area';
   if (t.highway === 'services') return 'services';
-  if (t.amenity === 'weighbridge' || t.highway === 'weigh_station')
+  if (
+    t.amenity === 'weighbridge' ||
+    t.highway === 'weigh_station' ||
+    t.man_made === 'weighbridge' ||
+    // Scale houses are inconsistently tagged; fall back to the name when the
+    // feature clearly reads as a weigh/inspection station.
+    /weigh[\s-]?station|scale[\s-]?house|inspection\s?station|port\s?of\s?entry/i.test(
+      t.name || '',
+    )
+  )
     return 'weigh_station';
   // Truck-oriented repair / service: dedicated truck shops, tyre shops that
   // handle HGVs, and vehicle inspection stations.
@@ -180,7 +189,12 @@ export async function findPlacesNear(
   node["highway"="services"]${A};
   way["highway"="services"]${A};
   node["amenity"="weighbridge"]${A};
+  way["amenity"="weighbridge"]${A};
   node["highway"="weigh_station"]${A};
+  way["highway"="weigh_station"]${A};
+  node["man_made"="weighbridge"]${A};
+  node["name"~"weigh.?station|scale.?house|port of entry",i]${A};
+  way["name"~"weigh.?station|scale.?house|port of entry",i]${A};
   node["amenity"="parking"]["hgv"="yes"]${A};
   way["amenity"="parking"]["hgv"="yes"]${A};
   node["amenity"="parking"]["hgv"="designated"]${A};
