@@ -284,13 +284,25 @@ export async function runCoPilot(
   //   • never override a confident (strong-keyword) intent;
   //   • only step in when there's a solid KB match AND the utterance reads like
   //     a question, the intent was empty, or the KB match dwarfs the intent.
-  if (!KB_NAV_CMD_RE.test(q) && !intentDetail?.strong) {
+  const isCommand = KB_NAV_CMD_RE.test(q);
+  // A definitional question ("what is a reefer trailer") beats even a strong
+  // intent; anything else only reaches the KB when the intent is shaky.
+  const isDefinitionQuestion =
+    KB_DEF_QUESTION_RE.test(q) && !KB_PERSONAL_RE.test(q);
+  if (!isCommand && (isDefinitionQuestion || !intentDetail?.strong)) {
     const kb = await fetchKnowledgeTop(raw);
     if (kb && kb.score >= KB_MIN_SCORE) {
       const looksLikeQuestion = KB_QUESTION_RE.test(q);
       const intentScore = intentDetail?.score ?? 0;
       const kbDwarfsIntent = kb.score >= Math.max(KB_MIN_SCORE, intentScore * 3);
-      if (intent === null || looksLikeQuestion || kbDwarfsIntent) {
+      // Answer from knowledge when it's a clear teach-me question, when nothing
+      // else classified, or (for shaky intents) when it reads like a question or
+      // the KB match dwarfs the guess. Real commands never get here.
+      if (
+        isDefinitionQuestion ||
+        intent === null ||
+        (!intentDetail?.strong && (looksLikeQuestion || kbDwarfsIntent))
+      ) {
         return speakKnowledge(kb.content, P);
       }
     }
@@ -684,6 +696,19 @@ const KB_QUESTION_RE =
 // the KB never intercepts them, even when the wording also matches an entry.
 const KB_NAV_CMD_RE =
   /\b(open|pull up|bring up|take me|go to|switch to|navigate|show me the|start gps|start the gps|start my route|start route|start navigation|start the nav|fire up|book it|book that|send it|make an offer|place a bid)\b/;
+
+// A clear "teach me" question — the driver wants to understand what something IS
+// or how it works. This is allowed to WIN over even a confident intent, because
+// "what is a reefer trailer" scores as the loads intent (on the word "reefer")
+// yet obviously wants an explanation, not a load search.
+const KB_DEF_QUESTION_RE =
+  /\b(what(?:'s|s| is| are| does| do)|how (?:do|does|to)|explain|tell me about|meaning of|define|difference between|when (?:do|does|should|can)|why (?:do|does|is|are)|what happens)\b/;
+
+// …but NOT when the question is about the driver's OWN numbers, loads, or the
+// here-and-now. "what's my best move today", "how much did I make" are data
+// questions the app answers — never send those to the knowledge base.
+const KB_PERSONAL_RE =
+  /\b(my|how much did i|how much have i|best move|today|tonight|right now|this week|this month|near me|nearby|deadhead|reload)\b/;
 
 // Fetch the best-matching freight knowledge entry (offline, free, no Claude
 // call). Returns the raw top hit so the caller can weigh it against the intent
