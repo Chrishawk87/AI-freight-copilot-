@@ -275,16 +275,25 @@ export async function runCoPilot(
   }
 
   // ---- Knowledge base (offline freight know-how) ----
-  // The canned intents above/below handle app actions and the driver's own
-  // numbers. For everything else — regs, procedures, "what do I do when..." —
-  // consult the shared knowledge base. This is a free, no-LLM lookup, so it
-  // works even when the Claude brain isn't wired. We only let it win when the
-  // intent classifier ISN'T confident (no strong keyword): a solid KB match on
-  // a shaky intent means the driver asked a freight question that a generic
-  // "here's a load" reply would wrongly swallow.
-  if (!intentDetail?.strong) {
-    const kb = await lookupKnowledge(raw, P);
-    if (kb) return kb;
+  // Running the site comes FIRST. Every app action and data intent below still
+  // fires normally — the KB only pre-empts when the driver is clearly asking a
+  // freight QUESTION that would otherwise be swallowed by a shaky intent match
+  // (the classic case: "what do I do when the seal doesn't match?" scoring as
+  // "loads" on the filler word "what"). Guardrails, in order:
+  //   • never intercept an explicit app command ("open loads", "start gps");
+  //   • never override a confident (strong-keyword) intent;
+  //   • only step in when there's a solid KB match AND the utterance reads like
+  //     a question, the intent was empty, or the KB match dwarfs the intent.
+  if (!KB_NAV_CMD_RE.test(q) && !intentDetail?.strong) {
+    const kb = await fetchKnowledgeTop(raw);
+    if (kb && kb.score >= KB_MIN_SCORE) {
+      const looksLikeQuestion = KB_QUESTION_RE.test(q);
+      const intentScore = intentDetail?.score ?? 0;
+      const kbDwarfsIntent = kb.score >= Math.max(KB_MIN_SCORE, intentScore * 3);
+      if (intent === null || looksLikeQuestion || kbDwarfsIntent) {
+        return speakKnowledge(kb.content, P);
+      }
+    }
   }
 
   if (intent === "start_nav") {
@@ -666,28 +675,39 @@ const INTENTS: { id: IntentId; kws: string[]; strong?: string[] }[] = [
 // content-word hit while still catching real freight questions.
 const KB_MIN_SCORE = 6;
 
-// Consult the shared freight knowledge base (offline, free, no Claude call).
-// Returns a spoken reply built from the best-matching entry when it's a strong
-// match, or null so the caller falls through to its other handlers.
-async function lookupKnowledge(
+// The driver is asking a QUESTION (wants an explanation), not barking a command.
+// Used to tell "what's the deal with detention?" from "find me a load".
+const KB_QUESTION_RE =
+  /\b(what|whats|what's|how|when|why|which|who|whose|do i|does|can i|could i|should i|shall i|am i|is it|is there|are there|need to|needs to|have to|allowed to|difference between|explain|tell me about|meaning of|what happens|what do i do|what's the)\b/;
+
+// An explicit app command — "run the site" verbs. These ALWAYS drive the app;
+// the KB never intercepts them, even when the wording also matches an entry.
+const KB_NAV_CMD_RE =
+  /\b(open|pull up|bring up|take me|go to|switch to|navigate|show me the|start gps|start the gps|start my route|start route|start navigation|start the nav|fire up|book it|book that|send it|make an offer|place a bid)\b/;
+
+// Fetch the best-matching freight knowledge entry (offline, free, no Claude
+// call). Returns the raw top hit so the caller can weigh it against the intent
+// classifier, or null if nothing matched / the KB was unreachable.
+async function fetchKnowledgeTop(
   raw: string,
-  P: Personality,
-): Promise<CoPilotResult | null> {
+): Promise<{ content: string; score: number } | null> {
   try {
     const { hits } = await api.copilotKnowledge(raw, 3);
     const top = hits?.[0];
-    if (!top || top.score < KB_MIN_SCORE) return null;
+    if (!top) return null;
     const content = (top.content || "").trim();
     if (!content) return null;
-    const brief =
-      content.length > 160 ? content.slice(0, 157).trimEnd() + "…" : content;
-    return {
-      speak: say(P, { core: content, brief }),
-    };
+    return { content, score: top.score };
   } catch {
     // KB unreachable (offline / server hiccup) — let the caller carry on.
     return null;
   }
+}
+
+function speakKnowledge(content: string, P: Personality): CoPilotResult {
+  const brief =
+    content.length > 160 ? content.slice(0, 157).trimEnd() + "…" : content;
+  return { speak: say(P, { core: content, brief }) };
 }
 
 function classifyIntent(q: string): IntentId | null {
