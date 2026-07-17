@@ -146,6 +146,9 @@ export interface FuelResponse {
     exit: string | null;
     address: string | null;
     priceEnriched?: boolean;
+    hours?: string | null;
+    hgv?: boolean;
+    diesel?: boolean;
   }[];
 }
 

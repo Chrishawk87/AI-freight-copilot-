@@ -14,6 +14,7 @@ export type OverpassStation = {
   address: string | null;
   diesel: boolean;
   hgv: boolean; // truck-friendly (heavy goods vehicle access)
+  hours: string | null; // raw OSM opening_hours where present
 };
 
 // Map raw OSM name/brand text onto the networks we style with colored pins.
@@ -103,6 +104,7 @@ out body 120;`;
       address: addressParts.length ? addressParts.join(' ') : null,
       diesel,
       hgv,
+      hours: t.opening_hours ?? null,
     });
   }
   return out;

@@ -19,6 +19,9 @@ type StationOut = {
   exit: string | null;
   address: string | null;
   priceEnriched: boolean;
+  hours: string | null; // raw OSM opening_hours (may be null)
+  hgv: boolean; // truck-accessible
+  diesel: boolean; // diesel available
 };
 
 function haversineMi(
@@ -79,6 +82,9 @@ export class FuelController {
             exit: null,
             address: s.address,
             priceEnriched: false,
+            hours: s.hours,
+            hgv: s.hgv,
+            diesel: s.diesel,
           }))
           .sort((a, b) => a.distanceMi - b.distanceMi)
           .slice(0, 40);
@@ -141,7 +147,13 @@ export class FuelController {
       priceLive: snap.live,
       priceEnriched: false,
       source: 'fallback' as const,
-      stations: rows.map((r) => ({ ...r, priceEnriched: false })) as StationOut[],
+      stations: rows.map((r) => ({
+        ...r,
+        priceEnriched: false,
+        hours: null,
+        hgv: false,
+        diesel: true,
+      })) as StationOut[],
     };
   }
 }

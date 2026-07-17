@@ -1,72 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Fuel,
   MapPin,
   Navigation2,
   Star,
-  Loader2,
   Crosshair,
   TrendingDown,
 } from "lucide-react";
 import { PageHeader, Stat, money, Loading, ErrorState } from "@/components/ui";
 import { api, FuelResponse } from "@/lib/api";
-import {
-  useGeolocation,
-  haversineMiles,
-  US_CENTER,
-  type LatLon,
-} from "@/lib/geolocation";
+import { useGeolocation, haversineMiles } from "@/lib/geolocation";
+import { LiveMap, brandColor, type StationPin } from "@/components/LiveMap";
 import clsx from "clsx";
-
-// ---------- Leaflet loaders (free map, no key) ----------
-function loadCss(href: string) {
-  if (typeof document === "undefined") return;
-  if (document.querySelector(`link[href="${href}"]`)) return;
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = href;
-  document.head.appendChild(link);
-}
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(
-      `script[src="${src}"]`
-    ) as HTMLScriptElement | null;
-    if (existing) {
-      if (existing.dataset.loaded === "1") resolve();
-      else {
-        existing.addEventListener("load", () => resolve());
-        existing.addEventListener("error", () => reject(new Error("load error")));
-      }
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => {
-      s.dataset.loaded = "1";
-      resolve();
-    };
-    s.onerror = () => reject(new Error("Failed to load " + src));
-    document.body.appendChild(s);
-  });
-}
-
-// ---------- brand styling for price pins ----------
-const BRAND_COLORS: Record<string, string> = {
-  "Love's": "#E4002B",
-  Pilot: "#C8102E",
-  TA: "#003DA5",
-  QT: "#E51937",
-  "Buc-ee's": "#B8860B",
-};
-function brandColor(network: string): string {
-  return BRAND_COLORS[network] ?? "#246BFD";
-}
 
 type ApiStation = FuelResponse["stations"][number];
 type Station = ApiStation & { liveDistance: number | null };
@@ -82,134 +30,6 @@ function readIds(key: string): string[] {
   } catch {
     return [];
   }
-}
-
-// ---------- Map with branded price pins ----------
-function FuelMap({
-  driver,
-  stations,
-  selectedId,
-  onSelect,
-}: {
-  driver: LatLon | null;
-  stations: ApiStation[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<Record<string, any>>({});
-  const driverMarkerRef = useRef<any>(null);
-  const didFitRef = useRef(false);
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-
-  // Init the map once.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        loadCss("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css");
-        await loadScript(
-          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
-        );
-        const L = (window as any).L;
-        if (cancelled || !ref.current || mapRef.current) return;
-        const map = L.map(ref.current, { zoomControl: true, attributionControl: true });
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: "&copy; OpenStreetMap contributors",
-        }).addTo(map);
-        map.setView([US_CENTER.lat, US_CENTER.lon], 4);
-        mapRef.current = map;
-        setTimeout(() => map.invalidateSize(), 200);
-        setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, []);
-
-  // Live driver dot.
-  useEffect(() => {
-    const L = (window as any).L;
-    const map = mapRef.current;
-    if (!L || !map || !driver) return;
-    if (driverMarkerRef.current) {
-      driverMarkerRef.current.setLatLng([driver.lat, driver.lon]);
-    } else {
-      driverMarkerRef.current = L.circleMarker([driver.lat, driver.lon], {
-        radius: 7,
-        color: "#fff",
-        weight: 3,
-        fillColor: "#246BFD",
-        fillOpacity: 1,
-      })
-        .addTo(map)
-        .bindTooltip("You");
-      if (!didFitRef.current) {
-        map.setView([driver.lat, driver.lon], 9);
-        didFitRef.current = true;
-      }
-    }
-  }, [driver, status]);
-
-  // Station price pins — built once per station set (identity is stable from the API).
-  useEffect(() => {
-    const L = (window as any).L;
-    const map = mapRef.current;
-    if (!L || !map) return;
-    Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
-    markersRef.current = {};
-    stations.forEach((s) => {
-      if (s.latitude == null || s.longitude == null) return;
-      const color = brandColor(s.network);
-      const html = `<div style="transform:translate(-50%,-100%);background:${color};color:#fff;font:700 12px/1 system-ui;padding:5px 8px;border-radius:9px;box-shadow:0 2px 6px rgba(0,0,0,.4);white-space:nowrap;border:2px solid rgba(255,255,255,.85)">$${s.price.toFixed(
-        2
-      )}</div>`;
-      const icon = L.divIcon({ className: "fuel-pin", html, iconSize: [0, 0] });
-      const m = L.marker([s.latitude, s.longitude], { icon }).addTo(map);
-      m.on("click", () => onSelectRef.current(s.id));
-      markersRef.current[s.id] = m;
-    });
-  }, [stations, status]);
-
-  // Pan to the selected station.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !selectedId) return;
-    const s = stations.find((x) => x.id === selectedId);
-    if (s && s.latitude != null && s.longitude != null) {
-      map.setView([s.latitude, s.longitude], Math.max(map.getZoom(), 10), {
-        animate: true,
-      });
-    }
-  }, [selectedId, stations]);
-
-  return (
-    <div className="relative h-full w-full overflow-hidden rounded-2xl">
-      <div ref={ref} className="h-full w-full" style={{ background: "#0f1526" }} />
-      {status !== "ready" && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-navy-900/40 text-xs text-white/60">
-          {status === "loading" ? (
-            <span className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading map…
-            </span>
-          ) : (
-            <span>Map unavailable — check your connection.</span>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 type Tab = "nearby" | "explore" | "recent";
@@ -276,6 +96,25 @@ export default function FuelPage() {
 
   // Raw stations (stable identity) power the map pins.
   const rawStations = data?.stations ?? [];
+
+  // Map to the shared LiveMap's StationPin shape (drop any without coords).
+  const pins: StationPin[] = useMemo(
+    () =>
+      rawStations
+        .filter((s) => s.latitude != null && s.longitude != null)
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          network: s.network,
+          lat: s.latitude as number,
+          lon: s.longitude as number,
+          price: s.price,
+          hours: s.hours ?? null,
+          hgv: s.hgv ?? false,
+          diesel: s.diesel ?? true,
+        })),
+    [rawStations]
+  );
 
   // Distance-annotated stations power the list. Recomputed as GPS moves.
   const stations: Station[] = useMemo(() => {
@@ -418,14 +257,17 @@ export default function FuelPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-            {/* Map */}
+            {/* Map — shared MapLibre renderer, same one the live map tab uses */}
             <div className="card h-[360px] p-2 lg:h-[620px]">
-              <FuelMap
-                driver={pos}
-                stations={rawStations}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-              />
+              <div className="relative h-full w-full overflow-hidden rounded-2xl">
+                <LiveMap
+                  driver={pos}
+                  stations={pins}
+                  selectedId={selectedId}
+                  onSelectStation={setSelectedId}
+                  showRoute={false}
+                />
+              </div>
             </div>
 
             {/* List */}
