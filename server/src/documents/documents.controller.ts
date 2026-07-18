@@ -83,6 +83,16 @@ export class DocumentsController {
     return this.docs.scan(user, dto);
   }
 
+  // SIA-independent freight: turn a broker tender/offer into a live, scored
+  // OPEN load in the Opportunity Center — no signed load-board agreement needed.
+  @Post('scan-tender')
+  scanTender(@CurrentUser() user: AuthUser, @Body() dto: ScanDto) {
+    return this.docs.scanTender(user, {
+      imageData: dto.imageData,
+      ocrKey: dto.ocrKey,
+    });
+  }
+
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.docs.list(user);

@@ -11,6 +11,7 @@ import { MailService } from '../mail/mail.service';
 import { EmailOauthService } from '../carrier/email-oauth.service';
 import { decryptSecret } from '../common/secret';
 import { buildJobPackagePdf } from './job-package';
+import { estimateStateMiles } from './tender-distance';
 
 // What each document type needs before it's "complete" enough to invoice / file.
 const REQUIRED: Record<string, string[]> = {
@@ -388,6 +389,121 @@ export class DocumentsService {
         rate: load.rate,
         broker: load.broker,
       },
+    };
+  }
+
+  /**
+   * SIA-INDEPENDENT REAL FREIGHT PATH.
+   *
+   * Brokers tender loads to carriers directly all day — by email, text, or a PDF
+   * offer sheet — long before any Rate Con is signed. Those tenders are REAL
+   * freight the carrier can actually haul, and none of it requires a signed
+   * load-board Systems Integration Agreement. This turns one such tender into a
+   * live, scored opportunity in the same feed the boards feed into.
+   *
+   * The distinction from a Rate Con is intent, not format:
+   *   • A Rate Con is a *commitment* → confirmRateConLoad books it (source
+   *     'RateCon'), and it's excluded from the open feed.
+   *   • A tender is an *offer to evaluate* → this creates an OPEN load
+   *     (source 'Tender', active, unbooked) that flows straight into the
+   *     Opportunity Center, gets scored by the Profitability Engine, and can be
+   *     booked through the normal flow.
+   *
+   * We reuse the Rate Con OCR extractor (same lane/rate/broker fields), estimate
+   * loaded miles from the origin/destination states so scoring is meaningful,
+   * and let real routing refine mileage once the driver navigates it.
+   */
+  async scanTender(
+    user: AuthUser,
+    body: { imageData?: string; ocrKey?: string },
+  ) {
+    const byok = !!body.ocrKey?.trim();
+    const allowCompanyKey =
+      byok || (await this.usage.withinCap('ocr_scan', user.id, user.carrierId));
+
+    const rc = await this.ocr.extractRateCon(
+      body.imageData,
+      {},
+      { allowCompanyKey },
+    );
+
+    const billable = !byok && rc.provider !== 'simulated';
+    await this.usage.record({
+      kind: 'ocr_scan',
+      provider: byok ? 'byok' : rc.provider,
+      billable,
+      userId: user.id,
+      carrierId: user.carrierId,
+    });
+
+    const rate =
+      rc.totalRate ?? (rc.lineHaulRate ?? 0) + (rc.fuelSurcharge ?? 0);
+    if (!rate || rate <= 0) {
+      throw new BadRequestException(
+        "Couldn't read a rate off this tender. Add the total rate and try again.",
+      );
+    }
+
+    // Estimate loaded miles so the Profitability Engine can score it honestly.
+    // Real turn-by-turn mileage replaces this the moment the driver routes it.
+    const miles = estimateStateMiles(rc.originState, rc.destState);
+
+    // Collision-safe external id for a broker-tendered open load.
+    const base = (rc.rateConNumber || rc.referenceNumber || '')
+      .replace(/[^A-Za-z0-9]/g, '')
+      .slice(0, 16);
+    let externalId = `TDR-${base || Math.random().toString(36).slice(2, 10)}`;
+    if (await this.prisma.load.findUnique({ where: { externalId } })) {
+      externalId = `${externalId}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    // Derive the same market signal the board loads carry: rate-per-mile vs a
+    // healthy baseline. reloadIndex starts neutral and the learning loop
+    // calibrates it per carrier — identical to how the live boards behave.
+    const demandIndex =
+      miles > 0
+        ? Math.max(0, Math.min(100, Math.round(((rate / miles - 1.0) / 2.0) * 100)))
+        : 0;
+
+    const load = await this.prisma.load.create({
+      data: {
+        externalId,
+        equipment: rc.equipmentType || 'Van',
+        originCity: rc.originCity || '',
+        originState: rc.originState || '',
+        destCity: rc.destCity || '',
+        destState: rc.destState || '',
+        miles,
+        deadheadMiles: 0,
+        rate,
+        weightLbs: rc.weightLbs ?? 0,
+        broker: rc.brokerName || 'Broker (tender)',
+        brokerRating: 0,
+        pickupDate: (rc.pickupAppt || '').slice(0, 10),
+        source: 'Tender',
+        demandIndex,
+        reloadIndex: 50,
+        active: true,
+      },
+    });
+
+    return {
+      load: {
+        id: load.id,
+        externalId: load.externalId,
+        equipment: load.equipment,
+        originCity: load.originCity,
+        originState: load.originState,
+        destCity: load.destCity,
+        destState: load.destState,
+        miles: load.miles,
+        milesEstimated: miles > 0,
+        rate: load.rate,
+        broker: load.broker,
+        source: load.source,
+      },
+      ocrProvider: rc.provider,
+      confidence: rc.confidence,
     };
   }
 
