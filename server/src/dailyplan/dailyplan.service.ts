@@ -4,6 +4,8 @@ import { scoreLoad, ScoredLoad } from '../scoring/scoring';
 import { FuelIntelService } from '../truckmap/fuel/fuel-intel.service';
 import { FuelPricesService } from '../fuel/fuel-prices';
 import { AuthUser } from '../auth/current-user.decorator';
+import { LearningService } from '../learning/learning.service';
+import { applyLearning } from '../learning/learning';
 
 // The Daily Profit Plan — the product's headline decision. Instead of making the
 // driver browse a load board, the AI assembles ONE recommended play for the day
@@ -49,6 +51,7 @@ export class DailyPlanService {
     private readonly prisma: PrismaService,
     private readonly fuelIntel: FuelIntelService,
     private readonly eia: FuelPricesService,
+    private readonly learning: LearningService,
   ) {}
 
   private costOpts(user: AuthUser, diesel: number) {
@@ -85,13 +88,17 @@ export class DailyPlanService {
     const opts = this.costOpts(user, diesel);
     const revenueGoal = await this.revenueGoal(user);
 
+    // The carrier's learned preferences — sharpens which load leads the plan.
+    const profile = await this.learning.profile(user);
+
     // Best bookable load right now (open board, excludes the carrier's own
-    // Rate Con freight and reload-pool rows).
+    // Rate Con freight and reload-pool rows). Ranked with the learning loop, so
+    // a broker/lane/equipment this carrier actually runs floats to the top.
     const openLoads = await this.prisma.load.findMany({
       where: { isReloadPool: false, active: true, source: { not: 'RateCon' } },
     });
     const scored = openLoads
-      .map((l) => scoreLoad(l, opts))
+      .map((l) => applyLearning(scoreLoad(l, opts), profile))
       .sort((a, b) => b.overall - a.overall);
     const recommendedLoad = scored[0] ?? null;
 
@@ -128,7 +135,7 @@ export class DailyPlanService {
     });
     const bestReload =
       reloads
-        .map((l) => scoreLoad(l, opts))
+        .map((l) => applyLearning(scoreLoad(l, opts), profile))
         .sort((a, b) => b.overall - a.overall)[0] ?? null;
 
     // Expected end-of-day revenue = today's load + a probability-weighted reload.
@@ -140,6 +147,12 @@ export class DailyPlanService {
     );
 
     const steps = this.narrate(recommendedLoad, fuelStop, bestReload, reloadProbability);
+    // If the learning loop tipped this pick, tell the driver why in plain terms.
+    if (recommendedLoad.learnedReasons?.length) {
+      steps.push(
+        `Why this one for you: it's ${recommendedLoad.learnedReasons.join(', ')} — based on the loads you've actually booked.`,
+      );
+    }
     const headline = `Best move today: ${recommendedLoad.equipment} ${recommendedLoad.originCity}, ${recommendedLoad.originState} → ${recommendedLoad.destCity}, ${recommendedLoad.destState} — about $${Math.round(recommendedLoad.netProfit).toLocaleString()} net.`;
 
     return {

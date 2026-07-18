@@ -2,10 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { scoreLoad, ScoredLoad } from '../scoring/scoring';
 import { AuthUser } from '../auth/current-user.decorator';
+import { LearningService } from '../learning/learning.service';
+import { applyLearning, LearningProfile } from '../learning/learning';
 
 @Injectable()
 export class LoadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly learning: LearningService,
+  ) {}
 
   private opts(user: AuthUser) {
     const c = user.carrier;
@@ -13,6 +18,19 @@ export class LoadsService {
       mpg: c?.mpg ?? 6.5,
       fixedCostPerMile: c?.fixedCostPerMile ?? 0.72,
     };
+  }
+
+  // Score, then re-rank with the carrier's learned preferences. On a cold-start
+  // carrier the profile has zero confidence, so applyLearning is a no-op.
+  private rank(
+    loads: any[],
+    user: AuthUser,
+    profile: LearningProfile,
+  ): ScoredLoad[] {
+    const opts = this.opts(user);
+    return loads
+      .map((l) => applyLearning(scoreLoad(l, opts), profile))
+      .sort((a, b) => b.overall - a.overall);
   }
 
   async list(user: AuthUser, equipment?: string): Promise<ScoredLoad[]> {
@@ -25,19 +43,21 @@ export class LoadsService {
       source: { not: 'RateCon' },
     };
     if (equipment && equipment !== 'All') where.equipment = equipment;
-    const loads = await this.prisma.load.findMany({ where });
-    return loads
-      .map((l) => scoreLoad(l, this.opts(user)))
-      .sort((a, b) => b.overall - a.overall);
+    const [loads, profile] = await Promise.all([
+      this.prisma.load.findMany({ where }),
+      this.learning.profile(user),
+    ]);
+    return this.rank(loads, user, profile);
   }
 
   async reloads(user: AuthUser, radius = 200): Promise<ScoredLoad[]> {
-    const loads = await this.prisma.load.findMany({
-      where: { isReloadPool: true, deadheadMiles: { lte: radius } },
-    });
-    return loads
-      .map((l) => scoreLoad(l, this.opts(user)))
-      .sort((a, b) => b.overall - a.overall);
+    const [loads, profile] = await Promise.all([
+      this.prisma.load.findMany({
+        where: { isReloadPool: true, deadheadMiles: { lte: radius } },
+      }),
+      this.learning.profile(user),
+    ]);
+    return this.rank(loads, user, profile);
   }
 
   async getOne(user: AuthUser, id: string): Promise<ScoredLoad> {
@@ -45,7 +65,8 @@ export class LoadsService {
       where: { OR: [{ id }, { externalId: id }] },
     });
     if (!load) throw new NotFoundException('Load not found');
-    return scoreLoad(load, this.opts(user));
+    const profile = await this.learning.profile(user);
+    return applyLearning(scoreLoad(load, this.opts(user)), profile);
   }
 
   async dashboard(user: AuthUser) {

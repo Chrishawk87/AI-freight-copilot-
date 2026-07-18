@@ -39,6 +39,11 @@ export interface ScoredLoad extends Load {
   scores: Scores;
   overall: number;
   recommendation: 'Accept' | 'Consider' | 'Avoid';
+  // Set by the learning loop (learning/learning.ts) once a carrier has booking
+  // history: how many points their revealed preferences moved this load's score,
+  // and why. Absent on a cold-start carrier.
+  learnedBoost?: number;
+  learnedReasons?: string[];
 }
 
 export function scoreLoad(

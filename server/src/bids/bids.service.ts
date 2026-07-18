@@ -5,10 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/current-user.decorator';
+import { LearningService } from '../learning/learning.service';
 
 @Injectable()
 export class BidsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly learning: LearningService,
+  ) {}
 
   private async resolveLoad(id: string) {
     const load = await this.prisma.load.findFirst({
@@ -37,13 +41,17 @@ export class BidsService {
       where: { loadId: load.id, userId: user.id },
     });
     if (existing) return existing;
-    return this.prisma.booking.create({
+    const booking = await this.prisma.booking.create({
       data: {
         loadId: load.id,
         userId: user.id,
         carrierId: user.carrierId,
       },
     });
+    // A new booking is fresh revealed-preference signal — drop the cached
+    // learning profile so the next recommendation reflects it.
+    this.learning.invalidate(user.carrierId);
+    return booking;
   }
 
   async myBookings(user: AuthUser) {
@@ -75,6 +83,8 @@ export class BidsService {
       where: { id: booking.loadId, source: 'RateCon' },
       data: { active: false },
     });
+    // Booking history changed — refresh the learning profile on next read.
+    this.learning.invalidate(user.carrierId);
     return { ok: true };
   }
 
