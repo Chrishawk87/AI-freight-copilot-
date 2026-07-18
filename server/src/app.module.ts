@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { ConnectionsModule } from './connections/connections.module';
 import { AuthModule } from './auth/auth.module';
 import { LoadsModule } from './loads/loads.module';
 import { BidsModule } from './bids/bids.module';
@@ -24,6 +25,7 @@ import { HealthController } from './health.controller';
     ScheduleModule.forRoot(),
     PrismaModule,
     IntegrationsModule,
+    ConnectionsModule,
     AuthModule,
     LoadsModule,
     BidsModule,

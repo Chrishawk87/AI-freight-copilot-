@@ -730,4 +730,35 @@ export const api = {
     apiFetch<{
       hits: { topic: string; content: string; category: string; score: number }[];
     }>(`/copilot/knowledge/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+
+  // ---- Plugin connections (per-carrier, server-side, encrypted) ----
+  // The source of truth for which apps a carrier has connected. Persists across
+  // devices and drives the login-time data sync. Credentials are stored
+  // encrypted on the server and never returned — only `hasCredential`.
+  connections: () => apiFetch<PluginConnection[]>("/connections"),
+  connectPlugin: (
+    provider: string,
+    body: { credentials?: Record<string, string>; config?: Record<string, unknown>; label?: string },
+  ) =>
+    apiFetch<PluginConnection>(`/connections/${provider}/connect`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  disconnectPlugin: (provider: string) =>
+    apiFetch<PluginConnection | null>(`/connections/${provider}/disconnect`, { method: "POST" }),
+  syncPlugin: (provider: string) =>
+    apiFetch<PluginConnection | null>(`/connections/${provider}/sync`, { method: "POST" }),
+  syncConnections: () => apiFetch<PluginConnection[]>("/connections/sync", { method: "POST" }),
 };
+
+export interface PluginConnection {
+  provider: string;
+  status: string; // pending | connected | error | disabled
+  live: boolean; // a real integration backs this provider
+  liveSync: boolean; // it has pulled this carrier's data
+  hasCredential: boolean;
+  config: unknown;
+  lastSyncedAt: string | null;
+  lastError: string;
+  updatedAt: string;
+}

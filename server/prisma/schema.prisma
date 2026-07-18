@@ -53,11 +53,42 @@ model Carrier {
   fixedCostPerMile  Float    @default(0.72)
   createdAt         DateTime @default(now())
 
-  users     User[]
-  drivers   Driver[]
-  equipment Equipment[]
-  bookings  Booking[]
-  documents Document[]
+  users       User[]
+  drivers     Driver[]
+  equipment   Equipment[]
+  bookings    Booking[]
+  documents   Document[]
+  connections Connection[]
+}
+
+// ── Per-carrier plugin connections ──────────────────────────────────────────
+// The scalable heart of the Plugin Engine. One row per (carrier, provider). A
+// carrier connects an app they already use; their credentials live HERE —
+// encrypted, server-side, scoped to that carrier — instead of in the browser.
+// On connect and on login we run the matching connector's sync() to populate
+// THAT carrier's data in isolation. Providers without a live API yet occupy a
+// uniform "pending" slot that lights up the moment their connector is wired,
+// with zero schema change. This is what lets connections work for thousands of
+// carriers at once without a per-user backend retrofit.
+model Connection {
+  id           String    @id @default(cuid())
+  carrier      Carrier   @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId    String
+  provider     String // plugin id, e.g. "googlemaps", "quickbooks", "dat"
+  status       String    @default("pending") // pending | connected | error | disabled
+  // Encrypted credential blob. JSON string of { apiKey, accountId, ... },
+  // AES-256-GCM encrypted via common/secret.ts. NEVER returned to the client.
+  credentials  String    @default("")
+  // Non-secret, client-visible connection config (labels, selected options).
+  config       Json?
+  liveSync     Boolean   @default(false) // true once a real connector pulls this carrier's data
+  lastSyncedAt DateTime?
+  lastError    String    @default("")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([carrierId, provider])
+  @@index([carrierId, status])
 }
 
 model Driver {

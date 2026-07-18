@@ -17,6 +17,8 @@ import {
   ScanLine,
   Banknote,
   ClipboardList,
+  HelpCircle,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
@@ -27,6 +29,7 @@ import {
   readKeys,
   type KeyMap,
 } from "@/lib/plugins";
+import { api, getToken } from "@/lib/api";
 
 type Plugin = {
   id: string;
@@ -210,7 +213,89 @@ const PLUGINS: Plugin[] = [
   { id: "vector", name: "Vector", category: "documents", blurb: "Document capture and workflow automation for carriers and brokers.", status: "soon", website: "https://www.withvector.com", apiNote: "Partner API." },
 ];
 
+// Hand-written setup steps for the integrations that are actually connectable
+// today. Everything else gets sensible steps derived from its own fields below.
+const HOW_TO: Record<string, string[]> = {
+  googlemaps: [
+    "Open the Google Cloud Console and create (or pick) a project.",
+    "Under APIs & Services, enable “Maps JavaScript API” (add Directions API for routing).",
+    "Go to Credentials → Create credentials → API key, then restrict it to your site’s domain.",
+    "Toggle Google Maps on here, paste the key, and Save — the Navigation map switches to Google automatically.",
+  ],
+  trimble: [
+    "Create a developer account at developer.trimblemaps.com.",
+    "Generate a Maps API key in your developer dashboard.",
+    "Toggle Trimble Maps on here, paste the key, and Save.",
+    "The Navigation map switches to Trimble PC*MILER truck-legal routing automatically.",
+  ],
+  herewego: [
+    "Sign up at platform.here.com and create a project.",
+    "Generate a REST API key for that project.",
+    "Toggle HERE Maps on here, paste the key, and Save to enable truck-attribute routing (weight, height, hazmat).",
+  ],
+  elevenlabs: [
+    "Create an account at elevenlabs.io.",
+    "Open your Profile → API Keys and copy your key.",
+    "Heads up: free plans can’t use the stock voices over the API — add or clone a voice in your Voice Library and copy its Voice ID.",
+    "Toggle on, paste the key (and Voice ID), Save, then tap “Test voice” to hear it.",
+  ],
+  anthropic: [
+    "Optional — your Co-Pilot already runs on Claude with your subscription.",
+    "To bill your own account instead, create a key at console.anthropic.com.",
+    "Toggle on, paste your sk-ant-… key, and optionally set a model.",
+    "Save — Co-Pilot calls now route through your own key.",
+  ],
+  ocr: [
+    "Optional — document scanning already works on your subscription.",
+    "To run extraction on your own account, create an API key with your OCR provider (e.g., Mindee).",
+    "Toggle on, paste the key, and Save — scans now use your account.",
+  ],
+};
+
+// Build friendly, honest setup steps for any plugin from what we know about it.
+function deriveHowTo(p: Plugin): string[] {
+  if (HOW_TO[p.id]?.length) return HOW_TO[p.id];
+
+  const steps: string[] = [];
+  steps.push(
+    p.website
+      ? `Tap “Visit & sign up” above to open ${p.name} and create your account.`
+      : `Create an account with ${p.name}.`,
+  );
+
+  const noApi = !!p.apiNote && /no public api/i.test(p.apiNote);
+
+  if (p.needsKey) {
+    steps.push(
+      `In your ${p.name} dashboard, find your ${p.keyHint ?? "API key"} (usually under Settings → API or Developer).`,
+    );
+    steps.push(`Toggle ${p.name} on here, paste the key, and hit Save.`);
+  } else if (p.category === "loadboards" || p.cost === "Free") {
+    steps.push(`Search and book loads directly in the ${p.name} app or website.`);
+    steps.push(
+      noApi
+        ? `${p.name} has no public API, so live sync into this app isn’t available yet — book in their app for now.`
+        : `Live sync into this app turns on as we finish wiring ${p.name}.`,
+    );
+  } else {
+    steps.push(
+      p.apiNote
+        ? `Ask ${p.name} for API/partner access — ${p.apiNote}`
+        : `Ask ${p.name} for API or partner access.`,
+    );
+    steps.push(
+      `Toggle it on here; we enable the live connection as each provider’s integration is wired.`,
+    );
+  }
+  return steps;
+}
+
 const STORAGE_KEY = STORAGE_KEY_SHARED;
+
+// Quick lookup so the server-sync helpers can read a plugin's credential shape.
+const PLUGIN_BY_ID: Record<string, Plugin> = Object.fromEntries(
+  PLUGINS.map((p) => [p.id, p]),
+);
 
 // Honest state per integration. Nothing pulls live data until its API is wired,
 // so we only advertise what's actually available today.
@@ -248,14 +333,38 @@ export default function IntegrationsPage() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // Start from this device's local state so the page paints instantly…
+    let localEnabled: Record<string, boolean> = {};
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setEnabled(JSON.parse(raw));
+      if (raw) localEnabled = JSON.parse(raw);
     } catch {
       /* ignore */
     }
+    setEnabled(localEnabled);
     setKeys(readKeys());
     setHydrated(true);
+
+    // …then reconcile with the server, which is the source of truth for a
+    // carrier's connections across every device they sign in from.
+    if (getToken()) {
+      api
+        .connections()
+        .then((rows) => {
+          setEnabled((prev) => {
+            const next = { ...prev };
+            for (const r of rows) {
+              // A live, connected, or pending connection means "on" for this
+              // carrier regardless of which device first flipped the switch.
+              next[r.provider] =
+                r.status === "connected" || r.status === "pending" || r.status === "error";
+              if (r.status === "disabled") next[r.provider] = false;
+            }
+            return next;
+          });
+        })
+        .catch(() => undefined);
+    }
   }, []);
 
   useEffect(() => {
@@ -266,8 +375,35 @@ export default function IntegrationsPage() {
     if (hydrated) localStorage.setItem(PLUGIN_KEYS_KEY, JSON.stringify(keys));
   }, [keys, hydrated]);
 
+  // Persist a connect to the server (encrypted, per-carrier). Fire-and-forget:
+  // the local toggle already updated the UI; the server call makes it stick
+  // across devices and triggers this carrier's data sync. Silent on failure so
+  // an offline/logged-out device still works from localStorage.
+  function pushConnect(id: string, keyState: KeyMap) {
+    if (!getToken()) return;
+    const p = PLUGIN_BY_ID[id];
+    const credentials: Record<string, string> = {};
+    if (p?.needsKey && keyState[id]?.trim()) credentials.apiKey = keyState[id].trim();
+    const config: Record<string, unknown> = {};
+    if (p?.extraField && keyState[p.extraField.id]?.trim()) {
+      config[p.extraField.id] = keyState[p.extraField.id].trim();
+    }
+    api
+      .connectPlugin(id, {
+        credentials: Object.keys(credentials).length ? credentials : undefined,
+        config: Object.keys(config).length ? config : undefined,
+        label: p?.name,
+      })
+      .catch(() => undefined);
+  }
+
   function toggle(id: string) {
-    setEnabled((prev) => ({ ...prev, [id]: !prev[id] }));
+    setEnabled((prev) => {
+      const nowOn = !prev[id];
+      if (nowOn) pushConnect(id, keys);
+      else if (getToken()) api.disconnectPlugin(id).catch(() => undefined);
+      return { ...prev, [id]: nowOn };
+    });
   }
 
   function setKey(id: string, value: string) {
@@ -275,6 +411,11 @@ export default function IntegrationsPage() {
       const next = { ...prev };
       if (value.trim()) next[id] = value.trim();
       else delete next[id];
+      // Persist the credential/config change to the owning plugin's connection.
+      const owner = PLUGIN_BY_ID[id]
+        ? id
+        : PLUGINS.find((p) => p.extraField?.id === id)?.id;
+      if (owner) pushConnect(owner, next);
       return next;
     });
   }
@@ -455,6 +596,8 @@ function PluginGrid({
               </div>
             )}
 
+            <HowTo steps={deriveHowTo(p)} />
+
             {p.needsKey && on && (
               <KeyField
                 value={keys[p.id] ?? ""}
@@ -479,6 +622,38 @@ function PluginGrid({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Per-card, click-to-open setup guide. Collapsed by default so cards stay clean;
+// the driver only sees steps for the plugin they're actually setting up.
+function HowTo({ steps }: { steps: string[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-t border-white/5 pt-2.5">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex items-center gap-1.5 text-[11px] font-semibold text-white/60 hover:text-white"
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+        How to set up
+        <ChevronDown className={clsx("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <ol className="mt-2 space-y-1.5">
+          {steps.map((s, i) => (
+            <li key={i} className="flex gap-2 text-[11px] leading-relaxed text-white/55">
+              <span className="mt-px grid h-4 w-4 flex-none place-items-center rounded-full bg-white/10 text-[9px] font-bold text-white/70">
+                {i + 1}
+              </span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }
@@ -519,8 +694,8 @@ function KeyField({
       </div>
       <div className="mt-1 text-[10px] text-white/40">
         {saved
-          ? "Key saved on this device only — never sent to our servers."
-          : "Stored only on your device, never in our system."}
+          ? "Saved to your account — encrypted on our servers, synced to your devices."
+          : "Stored encrypted on your account and used only to power this connection."}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConnectionsService } from '../connections/connections.service';
 import { LoginDto, RegisterDto } from './dto';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly connections: ConnectionsService,
   ) {}
 
   private sign(userId: string, email: string) {
@@ -54,6 +56,15 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
+
+    // Populate this carrier's connected-app data on sign-in. Fire-and-forget so
+    // login stays instant; each carrier syncs in isolation, so it scales.
+    if (user.carrierId) {
+      this.connections
+        .syncCarrier(user.carrierId)
+        .catch(() => undefined);
+    }
+
     return this.buildAuthResponse(user);
   }
 

@@ -7,8 +7,8 @@ import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("demo@aifreight.co");
-  const [password, setPassword] = useState("demo1234");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -44,6 +44,8 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input"
+              placeholder="you@yourcompany.com"
+              autoComplete="email"
               required
             />
           </Field>
@@ -53,6 +55,8 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input"
+              placeholder="Your password"
+              autoComplete="current-password"
               required
             />
           </Field>
