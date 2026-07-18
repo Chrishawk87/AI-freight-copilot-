@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   TrendingUp,
   Fuel,
@@ -16,10 +16,19 @@ import {
   Gift,
   Copy,
   Check,
+  Target,
+  Navigation,
+  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { PageHeader, Stat, money, Loading, ErrorState } from "@/components/ui";
 import LoadCard from "@/components/LoadCard";
-import { api, type Booking, type CarrierDetail } from "@/lib/api";
+import {
+  api,
+  type Booking,
+  type CarrierDetail,
+  type DailyPlan,
+} from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useAuth } from "@/lib/auth";
 
@@ -30,6 +39,22 @@ export default function Home() {
   const carrier = useApi(() => api.carrier(), []);
   const booked = useApi(() => api.bookings(), []);
   const fuel = useApi(() => api.fuel(), []);
+
+  // Daily Profit Plan — the day's single recommended play. We fetch immediately,
+  // then refine with GPS (sharper fuel-stop pick) once the driver shares location.
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const plan = useApi(
+    () => api.dailyPlan(coords?.lat, coords?.lon),
+    [coords?.lat, coords?.lon],
+  );
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (p) => setCoords({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => undefined,
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 },
+    );
+  }, []);
 
   if (dash.loading || carrier.loading) return <Loading />;
   if (dash.error) return <ErrorState message={dash.error} />;
@@ -66,6 +91,19 @@ export default function Home() {
           </button>
         }
       />
+
+      {/* Today's Plan — the day's single recommended play */}
+      <div className="mb-4">
+        <DailyPlanHero
+          plan={plan.data}
+          loading={plan.loading}
+          onBook={() => {
+            plan.reload();
+            dash.reload();
+            booked.reload();
+          }}
+        />
+      </div>
 
       {/* Total savings hero + last-7-days spend */}
       <div className="mb-4 grid gap-3 lg:grid-cols-[1fr_1.4fr]">
@@ -126,6 +164,186 @@ export default function Home() {
           <LoadCard key={l.id} load={l} onBooked={() => dash.reload()} />
         ))}
       </div>
+    </div>
+  );
+}
+
+function DailyPlanHero({
+  plan,
+  loading,
+  onBook,
+}: {
+  plan: DailyPlan | null;
+  loading: boolean;
+  onBook: () => void;
+}) {
+  const router = useRouter();
+  const [booking, setBooking] = useState(false);
+  const [booked, setBooked] = useState(false);
+  const [error, setError] = useState("");
+
+  if (loading && !plan) {
+    return (
+      <div className="card flex items-center gap-3 p-6">
+        <Loader2 className="h-5 w-5 animate-spin text-electric" />
+        <span className="text-sm text-white/60">Building today&apos;s profit plan…</span>
+      </div>
+    );
+  }
+  if (!plan) return null;
+
+  // No bookable freight — show the empty-state guidance the backend returns.
+  if (!plan.hasPlan || !plan.recommendedLoad) {
+    return (
+      <div className="card p-6">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-electric">
+          <Sparkles className="h-4 w-4" /> Today&apos;s Profit Plan
+        </div>
+        <div className="mt-2 text-lg font-bold">{plan.headline}</div>
+        <ul className="mt-3 space-y-1.5">
+          {plan.steps.map((s, i) => (
+            <li key={i} className="flex gap-2 text-sm text-white/60">
+              <span className="text-white/30">•</span>
+              {s}
+            </li>
+          ))}
+        </ul>
+        <button
+          onClick={() => router.push("/integrations")}
+          className="btn-primary mt-4"
+        >
+          Connect a load board
+        </button>
+      </div>
+    );
+  }
+
+  const load = plan.recommendedLoad;
+
+  async function book() {
+    setBooking(true);
+    setError("");
+    try {
+      await api.book(load.id);
+      setBooked(true);
+      onBook();
+    } catch (e: any) {
+      setError(e.message || "Could not book");
+    } finally {
+      setBooking(false);
+    }
+  }
+
+  return (
+    <div className="card relative overflow-hidden p-5 lg:p-6">
+      <div
+        className="pointer-events-none absolute -right-10 -top-10 h-52 w-52 rounded-full opacity-20"
+        style={{ background: "radial-gradient(circle, #246BFD, transparent 70%)" }}
+      />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-electric">
+          <Sparkles className="h-4 w-4" /> Today&apos;s Profit Plan
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-white/40">
+          <Target className="h-3.5 w-3.5" />
+          Goal {money(plan.revenueGoal)}
+        </div>
+      </div>
+
+      <div className="mt-2 text-lg font-bold leading-snug lg:text-xl">
+        {plan.headline}
+      </div>
+
+      {/* Key numbers */}
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <PlanStat label="Load pays" value={money(load.rate)} sub={`$${load.allInRpm.toFixed(2)}/mi all-in`} />
+        <PlanStat label="Est. fuel" value={money(plan.expectedFuelCost)} sub={`diesel $${plan.dieselPrice.toFixed(2)}`} accent="#F59E0B" />
+        <PlanStat label="Net profit" value={money(plan.expectedNetProfit)} sub={`${load.miles.toLocaleString()} loaded mi`} accent="#16C784" />
+        <PlanStat label="End-of-day" value={money(plan.expectedEndOfDayRevenue)} sub={`${plan.reloadProbability}% reload odds`} />
+      </div>
+
+      {/* Fuel stop + reload */}
+      {(plan.fuelStop || plan.bestReload) && (
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {plan.fuelStop && (
+            <div className="flex items-start gap-3 rounded-xl bg-warning/10 p-3">
+              <Fuel className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <div className="text-sm">
+                <div className="font-semibold">
+                  Fuel: {plan.fuelStop.brand || plan.fuelStop.name}
+                  {plan.fuelStop.city ? ` · ${plan.fuelStop.city}, ${plan.fuelStop.state}` : ""}
+                </div>
+                <div className="text-xs text-white/50">
+                  ${plan.fuelStop.priceEff.toFixed(2)}/gal · ${plan.fuelStop.savingsPerGal.toFixed(2)} under avg · {plan.fuelStop.distanceMi.toFixed(0)} mi away
+                </div>
+              </div>
+            </div>
+          )}
+          {plan.bestReload && (
+            <div className="flex items-start gap-3 rounded-xl bg-success/10 p-3">
+              <Repeat className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+              <div className="text-sm">
+                <div className="font-semibold">
+                  Reload: {plan.bestReload.originCity}, {plan.bestReload.originState} → {plan.bestReload.destCity}, {plan.bestReload.destState}
+                </div>
+                <div className="text-xs text-white/50">
+                  {money(plan.bestReload.rate)} · ~{plan.reloadProbability}% chance near {load.destCity}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && <div className="mt-3 text-xs text-danger">{error}</div>}
+
+      {/* Actions */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {booked ? (
+          <span className="flex items-center gap-1.5 rounded-xl bg-success/15 px-4 py-2 text-sm font-semibold text-success">
+            <CheckCircle2 className="h-4 w-4" /> Booked
+          </span>
+        ) : (
+          <button onClick={book} disabled={booking} className="btn-primary disabled:opacity-60">
+            {booking ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            Book this load
+          </button>
+        )}
+        <button
+          onClick={() => router.push("/navigation")}
+          className="flex items-center gap-1.5 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-electric/40"
+        >
+          <Navigation className="h-4 w-4" /> Navigate
+        </button>
+        <button
+          onClick={() => router.push("/dispatcher")}
+          className="flex items-center gap-1.5 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-electric/40"
+        >
+          <Mic className="h-4 w-4" /> Ask Co-Pilot
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PlanStat({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  accent?: string;
+}) {
+  return (
+    <div className="rounded-xl bg-white/5 p-3">
+      <div className="text-[11px] uppercase tracking-wide text-white/40">{label}</div>
+      <div className="mt-0.5 text-lg font-bold" style={accent ? { color: accent } : undefined}>
+        {value}
+      </div>
+      <div className="text-[11px] text-white/40">{sub}</div>
     </div>
   );
 }

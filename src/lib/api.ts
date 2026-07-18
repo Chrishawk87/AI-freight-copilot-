@@ -315,6 +315,35 @@ export interface DispatcherResponse {
   loads: ScoredLoad[];
 }
 
+// ---- Daily Profit Plan (Pillar 4: the day's single recommended play) ----
+export interface PlanFuelStop {
+  poiId: string;
+  name: string;
+  brand: string | null;
+  city: string | null;
+  state: string | null;
+  lat: number;
+  lon: number;
+  priceEff: number;
+  savingsPerGal: number;
+  distanceMi: number;
+}
+export interface DailyPlan {
+  generatedAt: string;
+  hasPlan: boolean; // false when there are no bookable loads to plan around
+  dieselPrice: number; // live national diesel used in the math
+  revenueGoal: number;
+  recommendedLoad: ScoredLoad | null;
+  expectedFuelCost: number;
+  expectedNetProfit: number;
+  fuelStop: PlanFuelStop | null;
+  reloadProbability: number; // 0..100
+  bestReload: ScoredLoad | null;
+  expectedEndOfDayRevenue: number;
+  headline: string;
+  steps: string[];
+}
+
 export interface UsageMeter {
   used: number;
   cap: number | null; // null = unlimited
@@ -705,6 +734,15 @@ export const api = {
     apiFetch<CarrierDetail>(`/carrier/equipment/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   removeEquipment: (id: string) =>
     apiFetch<CarrierDetail>(`/carrier/equipment/${id}`, { method: "DELETE" }),
+
+  // ---- Daily Profit Plan ----
+  // The day's single recommended play. Optional GPS sharpens the fuel-stop pick.
+  dailyPlan: (lat?: number, lon?: number) =>
+    apiFetch<DailyPlan>(
+      lat != null && lon != null
+        ? `/daily-plan?lat=${lat}&lon=${lon}`
+        : "/daily-plan",
+    ),
 
   // ---- Dispatcher ----
   ask: (message: string) =>

@@ -308,6 +308,40 @@ export async function runCoPilot(
     }
   }
 
+  if (intent === "plan") {
+    const plan = await api.dailyPlan().catch(() => null);
+    if (!plan || !plan.hasPlan || !plan.recommendedLoad) {
+      return {
+        speak: say(P, {
+          core:
+            "No bookable freight to build a plan around right now. Connect a load board or bring in a Rate Con and I'll put today's play together for you.",
+          brief: "No loads to plan around yet.",
+        }),
+        navigate: plan ? undefined : "/integrations",
+        followups: ["Open plugins", "Find loads near me"],
+      };
+    }
+    const l = plan.recommendedLoad;
+    const fuelLine = plan.fuelStop
+      ? ` Fuel up at ${plan.fuelStop.brand || plan.fuelStop.name} around $${plan.fuelStop.priceEff.toFixed(2)} a gallon, about $${plan.fuelStop.savingsPerGal.toFixed(2)} under the national average.`
+      : "";
+    const reloadLine =
+      plan.reloadProbability >= 40 && plan.bestReload
+        ? ` And there's roughly a ${plan.reloadProbability}% shot at a reload near ${l.destCity} — best one pays ${money(plan.bestReload.rate)}.`
+        : ` Reload odds near ${l.destCity} are about ${plan.reloadProbability}% — I'll recheck on delivery.`;
+    return {
+      speak: say(P, {
+        core:
+          `Here's the play. Take the ${l.equipment} from ${l.originCity}, ${l.originState} to ${l.destCity}, ${l.destState} — pays ${money(l.rate)}, nets you about ${money(plan.expectedNetProfit)} after ${money(plan.expectedFuelCost)} in fuel.${fuelLine}${reloadLine} That puts your day around ${money(plan.expectedEndOfDayRevenue)} against a ${money(plan.revenueGoal)} goal. Want me to book it?`,
+        brief: `${l.originCity}→${l.destCity}, ${money(l.rate)}, net ${money(plan.expectedNetProfit)}. Book it?`,
+      }),
+      loads: [l],
+      navigate: "/",
+      pending: { kind: "book_load", load: l, amount: l.rate },
+      followups: ["Book this load", "Find a reload near the drop", "Cheapest diesel on my route"],
+    };
+  }
+
   if (intent === "start_nav") {
     // Try to pull a spoken destination ("navigate to Dallas Texas",
     // "take me to 500 Main Street Dallas"). If we get one, the map routes
@@ -601,6 +635,7 @@ function executePending(pending: PendingAction, P: Personality): CoPilotResult {
 // also acts as a tie-breaker (earlier = more specific).
 
 type IntentId =
+  | "plan"
   | "start_nav"
   | "heading"
   | "earnings"
@@ -614,6 +649,19 @@ type IntentId =
   | "loads";
 
 const INTENTS: { id: IntentId; kws: string[]; strong?: string[] }[] = [
+  {
+    id: "plan",
+    kws: [
+      "best move today", "best move", "what should i do today", "what do i do today",
+      "plan for today", "plan for the day", "today's plan", "todays plan", "daily plan",
+      "profit plan", "my plan", "what's my plan", "whats my plan", "what's the play",
+      "whats the play", "game plan", "the play today", "what's my best move", "whats my best move",
+    ],
+    strong: [
+      "best move today", "plan for today", "today's plan", "todays plan", "daily plan",
+      "profit plan", "what's the play", "game plan", "best move",
+    ],
+  },
   {
     id: "book",
     kws: ["book it", "book the", "book me", "book a", "take this load", "take that load", "grab this", "grab that", "accept the load", "lock it in"],
