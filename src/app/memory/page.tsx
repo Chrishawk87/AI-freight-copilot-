@@ -97,6 +97,7 @@ function MemoryTab() {
   const [pinned, setPinned] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   async function add() {
     if (!key.trim() || !value.trim()) return;
@@ -122,6 +123,7 @@ function MemoryTab() {
 
   async function remove(id: string) {
     await api.deleteMemory(id);
+    setConfirmId(null);
     mem.reload();
   }
 
@@ -155,13 +157,30 @@ function MemoryTab() {
                   >
                     {m.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                   </button>
-                  <button
-                    onClick={() => remove(m.id)}
-                    title="Forget this"
-                    className="rounded-lg border border-white/10 p-2 text-white/40 transition hover:border-danger/40 hover:text-danger"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {confirmId === m.id ? (
+                    <>
+                      <button
+                        onClick={() => remove(m.id)}
+                        className="rounded-lg border border-danger/40 bg-danger/10 px-2.5 py-2 text-xs font-semibold text-danger transition hover:bg-danger/20"
+                      >
+                        Forget
+                      </button>
+                      <button
+                        onClick={() => setConfirmId(null)}
+                        className="rounded-lg border border-white/10 px-2.5 py-2 text-xs text-white/60 transition hover:bg-white/5"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmId(m.id)}
+                      title="Forget this"
+                      className="rounded-lg border border-white/10 p-2 text-white/40 transition hover:border-danger/40 hover:text-danger"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -228,6 +247,7 @@ function KnowledgeTab() {
     [category, q],
   );
   const [adding, setAdding] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const grouped = useMemo(() => {
     const map = new Map<string, KnowledgeEntry[]>();
@@ -241,6 +261,7 @@ function KnowledgeTab() {
 
   async function remove(id: string) {
     await api.deleteKnowledge(id);
+    setConfirmId(null);
     kb.reload();
   }
 
@@ -302,15 +323,31 @@ function KnowledgeTab() {
                   <div key={e.id} className="card p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="text-sm font-semibold">{e.topic}</div>
-                      {e.scope !== "global" && (
-                        <button
-                          onClick={() => remove(e.id)}
-                          title="Remove your entry"
-                          className="shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:border-danger/40 hover:text-danger"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                      {e.scope !== "global" &&
+                        (confirmId === e.id ? (
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              onClick={() => remove(e.id)}
+                              className="rounded-lg border border-danger/40 bg-danger/10 px-2 py-1 text-xs font-semibold text-danger transition hover:bg-danger/20"
+                            >
+                              Remove
+                            </button>
+                            <button
+                              onClick={() => setConfirmId(null)}
+                              className="rounded-lg border border-white/10 px-2 py-1 text-xs text-white/60 transition hover:bg-white/5"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmId(e.id)}
+                            title="Remove your entry"
+                            className="shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:border-danger/40 hover:text-danger"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        ))}
                     </div>
                     <div className="mt-1 text-sm text-white/60">{e.content}</div>
                     {e.scope !== "global" && (

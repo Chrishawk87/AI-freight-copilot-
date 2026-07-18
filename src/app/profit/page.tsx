@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Check, Navigation } from "lucide-react";
 import { PageHeader, ScoreBar, ScoreRing, RecBadge, money, scoreColor, Loading, ErrorState } from "@/components/ui";
 import { DIESEL_PRICE } from "@/lib/scoring";
 import { api } from "@/lib/api";
@@ -9,10 +10,26 @@ import { useApi } from "@/lib/useApi";
 import clsx from "clsx";
 
 export default function ProfitPage() {
+  const router = useRouter();
   const { data, loading, error } = useApi(() => api.loads(), []);
   const [id, setId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [bookedIds, setBookedIds] = useState<string[]>([]);
 
   const sorted = [...(data ?? [])].sort((a, b) => b.overall - a.overall);
+
+  async function bookLoad(loadId: string) {
+    setBusy(true);
+    try {
+      await api.book(loadId);
+      setBookedIds((b) => (b.includes(loadId) ? b : [...b, loadId]));
+    } catch {
+      // Surface nothing destructive here — the button just re-enables so the
+      // driver can retry. Booking errors are rare (already-booked is a no-op).
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!id && sorted.length) setId(sorted[0].id);
@@ -89,6 +106,35 @@ export default function ProfitPage() {
                 <p className="mt-4 rounded-xl bg-white/5 p-3 text-sm text-white/70">
                   {recExplain[load.recommendation]}
                 </p>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => bookLoad(load.id)}
+                    disabled={busy || bookedIds.includes(load.id)}
+                    className={clsx(
+                      "flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed",
+                      bookedIds.includes(load.id)
+                        ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/40"
+                        : "bg-electric text-white hover:bg-electric/90 disabled:opacity-50"
+                    )}
+                  >
+                    {bookedIds.includes(load.id) ? (
+                      <>
+                        <Check className="h-4 w-4" /> Booked
+                      </>
+                    ) : busy ? (
+                      "Booking…"
+                    ) : (
+                      "Book this load"
+                    )}
+                  </button>
+                  <button
+                    onClick={() => router.push("/navigation")}
+                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/80 transition hover:bg-white/10"
+                  >
+                    <Navigation className="h-4 w-4" /> Navigate
+                  </button>
+                </div>
 
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <ScoreBar label="Profit Score" value={load.scores.profit} />

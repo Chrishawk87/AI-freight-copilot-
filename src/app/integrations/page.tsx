@@ -297,6 +297,20 @@ const PLUGIN_BY_ID: Record<string, Plugin> = Object.fromEntries(
   PLUGINS.map((p) => [p.id, p]),
 );
 
+// Whether flipping this plugin on should write a per-carrier connection record
+// on the server. We only persist connections that mean something today:
+//   • "Coming soon" (status: "soon") plugins have no integration slot yet, so a
+//     server record would be a phantom connection that muddies debugging. The
+//     toggle still works as a local "I use this" preference.
+//   • Credential-based plugins only become a real connection once a key is in —
+//     an on toggle with no key just reveals the key field.
+// Everything marked Available (beta) with no key requirement connects as-is.
+function isServerConnectable(p: Plugin | undefined, keyState: KeyMap): boolean {
+  if (!p || p.status === "soon") return false;
+  if (p.needsKey) return !!keyState[p.id]?.trim();
+  return true;
+}
+
 // Honest state per integration. Nothing pulls live data until its API is wired,
 // so we only advertise what's actually available today.
 const STATUS_STYLE: Record<string, string> = {
@@ -382,6 +396,8 @@ export default function IntegrationsPage() {
   function pushConnect(id: string, keyState: KeyMap) {
     if (!getToken()) return;
     const p = PLUGIN_BY_ID[id];
+    // Don't write phantom server connections for not-yet-integrated plugins.
+    if (!isServerConnectable(p, keyState)) return;
     const credentials: Record<string, string> = {};
     if (p?.needsKey && keyState[id]?.trim()) credentials.apiKey = keyState[id].trim();
     const config: Record<string, unknown> = {};
@@ -401,7 +417,12 @@ export default function IntegrationsPage() {
     setEnabled((prev) => {
       const nowOn = !prev[id];
       if (nowOn) pushConnect(id, keys);
-      else if (getToken()) api.disconnectPlugin(id).catch(() => undefined);
+      // Only disconnect on the server if this plugin could have written a
+      // connection record in the first place — otherwise it's a local-only
+      // preference and there's nothing to tear down.
+      else if (getToken() && isServerConnectable(PLUGIN_BY_ID[id], keys)) {
+        api.disconnectPlugin(id).catch(() => undefined);
+      }
       return { ...prev, [id]: nowOn };
     });
   }

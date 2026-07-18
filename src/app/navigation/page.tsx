@@ -40,11 +40,15 @@ import { US_CENTER, haversineMiles, type LatLon } from "@/lib/geolocation";
 import { readEnabled, readKeys, resolveMapEngine, type EnabledMap, type KeyMap } from "@/lib/plugins";
 import clsx from "clsx";
 
+// `requiresTrimble` toggles only affect routing on the Trimble (truck-legal)
+// engine — the free OSM engine can't honor them. `soon` toggles aren't wired to
+// any engine yet, so we show them disabled rather than let a driver trust a
+// setting that does nothing. Keep this in sync with what TrimbleMap consumes.
 const TOGGLES = [
-  { key: "bridge", label: "Low bridge avoidance", icon: TriangleAlert },
-  { key: "weight", label: "Weight restrictions", icon: Scale },
-  { key: "hazmat", label: "Hazmat routing", icon: TriangleAlert },
-  { key: "weather", label: "Weather-aware", icon: Cloud },
+  { key: "hazmat", label: "Hazmat routing", icon: TriangleAlert, requiresTrimble: true },
+  { key: "bridge", label: "Low bridge avoidance", icon: TriangleAlert, soon: true },
+  { key: "weight", label: "Weight restrictions", icon: Scale, soon: true },
+  { key: "weather", label: "Weather-aware", icon: Cloud, soon: true },
 ];
 
 // All selectable engines. "osm" is the free default; keyed engines light up
@@ -289,10 +293,10 @@ export default function NavigationPage() {
   const carrierQ = useApi(() => api.carrier(), []);
   const [id, setId] = useState<string | null>(null);
   const [on, setOn] = useState<Record<string, boolean>>({
-    bridge: true,
-    weight: true,
     hazmat: false,
-    weather: true,
+    bridge: false,
+    weight: false,
+    weather: false,
   });
   const [accepted, setAccepted] = useState(false);
   const [started, setStarted] = useState(false);
@@ -934,23 +938,47 @@ export default function NavigationPage() {
             <div className="space-y-1">
               {TOGGLES.map((t) => {
                 const Icon = t.icon;
-                const isOn = on[t.key];
+                // A toggle is only live if the engine that honors it is active.
+                // Trimble-only toggles are inert on the free OSM engine; `soon`
+                // toggles aren't wired to any engine yet.
+                const trimbleActive = activeId === "trimble";
+                const available = t.soon ? false : t.requiresTrimble ? trimbleActive : true;
+                const isOn = available && on[t.key];
+                const note = t.soon
+                  ? "Coming soon"
+                  : t.requiresTrimble && !trimbleActive
+                    ? "Trimble only"
+                    : null;
                 return (
                   <button
                     key={t.key}
+                    disabled={!available}
                     onClick={() => setOn((s) => ({ ...s, [t.key]: !s[t.key] }))}
-                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-sm hover:bg-white/5"
+                    className={clsx(
+                      "flex w-full items-center justify-between rounded-lg px-2 py-2 text-sm",
+                      available ? "hover:bg-white/5" : "cursor-not-allowed opacity-50",
+                    )}
                   >
                     <span className="flex items-center gap-2 text-white/70">
                       <Icon className="h-4 w-4" /> {t.label}
                     </span>
-                    <span className={clsx("relative h-5 w-9 rounded-full transition", isOn ? "bg-electric" : "bg-white/10")}>
-                      <span className={clsx("absolute top-0.5 h-4 w-4 rounded-full bg-white transition", isOn ? "left-4" : "left-0.5")} />
-                    </span>
+                    {note ? (
+                      <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/40">
+                        {note}
+                      </span>
+                    ) : (
+                      <span className={clsx("relative h-5 w-9 rounded-full transition", isOn ? "bg-electric" : "bg-white/10")}>
+                        <span className={clsx("absolute top-0.5 h-4 w-4 rounded-full bg-white transition", isOn ? "left-4" : "left-0.5")} />
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
+            <p className="mt-2 px-2 text-[11px] leading-snug text-white/40">
+              Truck-legal routing (hazmat, bridge &amp; weight limits) applies on the
+              Trimble engine. Connect Trimble in the Plugin Engine to enable it.
+            </p>
           </div>
 
           {/* Trip P&L */}
