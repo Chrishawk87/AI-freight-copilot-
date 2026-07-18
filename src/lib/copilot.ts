@@ -158,7 +158,7 @@ export async function runCoPilot(
 
   // ---- Confirm / deny a pending action ----
   if (ctx.pending && CONFIRM.test(q)) {
-    return executePending(ctx.pending, P);
+    return executePending(ctx.pending, P, ctx);
   }
   if (ctx.pending && DENY.test(q)) {
     return { speak: say(P, { core: "No worries, I'll leave it. Just say the word.", brief: "Standing by." }) };
@@ -577,7 +577,21 @@ export async function runCoPilot(
 
 // ---------------- pending execution ----------------
 
-function executePending(pending: PendingAction, P: Personality): CoPilotResult {
+// Load-board plugin ids — if any is enabled, an offer can actually reach the
+// broker's board; otherwise the bid is recorded in-app only and we say so.
+const LOAD_BOARD_IDS = [
+  "dat", "truckstop", "123loadboard", "truckerpath", "trucksmarter",
+  "nextload", "loadie", "truckbase", "trucklogics",
+];
+function hasLoadBoard(plugins: EnabledMap): boolean {
+  return LOAD_BOARD_IDS.some((id) => plugins[id]);
+}
+
+async function executePending(
+  pending: PendingAction,
+  P: Personality,
+  ctx: CoPilotContext,
+): Promise<CoPilotResult> {
   switch (pending.kind) {
     case "open_screen":
       return {
@@ -586,32 +600,65 @@ function executePending(pending: PendingAction, P: Personality): CoPilotResult {
         loads: pending.load ? [pending.load] : undefined,
       };
     case "submit_bid":
-    case "prepare_offer":
+    case "prepare_offer": {
+      const load = pending.load;
+      if (!load) return { speak: say(P, { core: "I lost track of which load — say it again?", brief: "Which load?" }) };
+      const amount = pending.amount ?? load.rate;
+      try {
+        await api.bid(load.id, amount, "Sent from Co-Pilot");
+      } catch (e: any) {
+        return {
+          speak: say(P, {
+            core: `Couldn't get that offer logged — ${e?.message || "something went wrong"}. Want me to try again?`,
+            brief: `Offer failed: ${e?.message || "error"}.`,
+          }),
+          loads: [load],
+        };
+      }
+      const board = hasLoadBoard(ctx.plugins);
       return {
         speak: say(P, {
-          core: `Done — sent it at ${pending.amount ? money(pending.amount) : "the rate I quoted"}. I'll ping you the second the broker comes back. One thing: that's a simulated send for now. Connect a load board and it goes out for real.`,
-          brief: `Sent${pending.amount ? " at " + money(pending.amount) : ""}. (Simulated.)`,
+          core: board
+            ? `Offer's in at ${money(amount)} on ${load.originCity} → ${load.destCity} — it's on your connected board and I'll ping you the second the broker answers.`
+            : `Logged your ${money(amount)} offer on ${load.originCity} → ${load.destCity}. It's saved on your Bids for now — connect a load board and I'll fire offers straight to the broker.`,
+          brief: `Offer in at ${money(amount)}.${board ? "" : " (Saved to Bids.)"}`,
         }),
-        loads: pending.load ? [pending.load] : undefined,
+        loads: [load],
         steps: [
           { label: "Generate offer" },
-          { label: "Submit to broker", simulated: true },
-          { label: "Await approval", simulated: true },
+          { label: "Record bid" },
+          { label: "Submit to broker board", simulated: !board },
         ],
       };
-    case "book_load":
+    }
+    case "book_load": {
+      const load = pending.load;
+      if (!load) return { speak: say(P, { core: "I lost track of which load — say it again?", brief: "Which load?" }) };
+      try {
+        await api.book(load.id);
+      } catch (e: any) {
+        return {
+          speak: say(P, {
+            core: `Couldn't book that one — ${e?.message || "something went wrong"}. Want me to try again?`,
+            brief: `Book failed: ${e?.message || "error"}.`,
+          }),
+          loads: [load],
+        };
+      }
       return {
         speak: say(P, {
-          core: `Alright, it's in at ${pending.amount ? money(pending.amount) : "the rate I quoted"}. Soon as it's yours I'll route you from your GPS and track it to the drop. Heads up — the send and tracking are simulated till you connect a load board.`,
-          brief: `Offer in${pending.amount ? " at " + money(pending.amount) : ""}. (Simulated.)`,
+          core: `Booked. ${load.originCity} → ${load.destCity} at ${money(load.rate)} is on your dashboard now — say "navigate" and I'll route you from where you're parked straight to the pickup.`,
+          brief: `Booked ${load.originCity}→${load.destCity} at ${money(load.rate)}.`,
         }),
-        loads: pending.load ? [pending.load] : undefined,
+        loads: [load],
+        navigate: "/",
+        followups: ["Navigate to pickup", "Find a reload near the drop"],
         steps: [
-          { label: "Submit offer to broker", simulated: true },
-          { label: "Route driver on award", simulated: true },
-          { label: "Track load to delivery", simulated: true },
+          { label: "Book load" },
+          { label: "Add to dashboard + bookings" },
         ],
       };
+    }
     case "book_repair":
       return {
         speak: say(P, {
