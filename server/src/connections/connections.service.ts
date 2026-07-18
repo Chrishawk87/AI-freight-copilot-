@@ -90,7 +90,7 @@ export class ConnectionsService {
     const ctx: ConnectorContext = {
       carrierId,
       creds,
-      config: opts.config ?? existing?.config ?? null,
+      config: (opts.config ?? existing?.config ?? null) as Record<string, any> | null,
       prisma: this.prisma,
     };
 
