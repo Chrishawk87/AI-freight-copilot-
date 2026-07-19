@@ -63,7 +63,10 @@ export function ScoreRing({
   const offset = c - (value / 100) * c;
   const color = scoreColor(value);
   return (
-    <div className="flex flex-col items-center">
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} fill="none" />
         <circle
@@ -78,12 +81,14 @@ export function ScoreRing({
           fill="none"
         />
       </svg>
-      <div className="-mt-[calc(50%+6px)] mb-[calc(50%-18px)] text-center" style={{ height: 0 }}>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
         <span className="text-sm font-bold" style={{ color }}>
           {value}
         </span>
+        {label && (
+          <span className="mt-0.5 text-[8px] uppercase tracking-wide text-white/40">{label}</span>
+        )}
       </div>
-      {label && <span className="mt-1 text-[10px] uppercase tracking-wide text-white/40">{label}</span>}
     </div>
   );
 }

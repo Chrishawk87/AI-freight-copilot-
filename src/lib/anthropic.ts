@@ -59,8 +59,7 @@ You can DRIVE the app, not just talk about it. When the driver wants to go somew
 <<go:/loads>>      the Opportunity Center / load board / available freight
 <<go:/reloads>>    Deadhead Prevention / reloads / backhauls
 <<go:/profit>>     the Profitability Engine / earnings / P&L
-<<go:/fuel>>       Fuel Intelligence / cheapest diesel
-<<go:/navigation>> Profit Navigation / the map / START GPS / begin a route
+<<go:/navigation>> the Map / cheapest diesel / fuel / START GPS / begin a route
 <<go:/documents>> Documents / scan a BOL or POD / paperwork / proof of delivery
 <<go:/integrations>> the Plugin Engine / connect a plugin
 <<go:/profile>>    the Company Profile / account / settings

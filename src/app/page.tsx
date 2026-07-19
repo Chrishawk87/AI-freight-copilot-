@@ -111,7 +111,7 @@ export default function Home() {
           savings={fuelSavings}
           perGal={perGal}
           gallons={weekGallons}
-          onFind={() => router.push("/fuel")}
+          onFind={() => router.push("/navigation")}
         />
         <SpendChart bookings={booked.data ?? []} mpg={mpg} price={nationalAvg} />
       </div>
@@ -135,7 +135,7 @@ export default function Home() {
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <QuickLink href="/dispatcher" icon={Bot} label="Ask the Dispatcher" tint="#246BFD" />
         <QuickLink href="/reloads" icon={Repeat} label="Find Reloads" tint="#16C784" />
-        <QuickLink href="/fuel" icon={Fuel} label="Cheapest Diesel" tint="#F59E0B" />
+        <QuickLink href="/navigation" icon={Fuel} label="Cheapest Diesel" tint="#F59E0B" />
         <QuickLink href="/loads" icon={TrendingUp} label="Best Loads Now" tint="#246BFD" />
       </div>
 

@@ -8,8 +8,8 @@ import { MoreHorizontal, X } from "lucide-react";
 import { NAV } from "@/lib/nav";
 
 // Primary phone tabs shown in the bar. Everything else lives under "More".
-const PRIMARY = ["/", "/loads", "/map", "/dispatcher", "/fuel"];
-const OVERFLOW = ["/profit", "/reloads", "/navigation", "/documents", "/memory", "/integrations", "/profile"];
+const PRIMARY = ["/", "/loads", "/navigation", "/dispatcher", "/profit"];
+const OVERFLOW = ["/reloads", "/documents", "/memory", "/integrations", "/profile"];
 
 export default function BottomNav() {
   const pathname = usePathname();
