@@ -367,7 +367,9 @@ export class DocumentsService {
     });
 
     const updated = await this.prisma.document.update({
-      where: { id },
+      // Owner-scoped write: id is unique, userId re-asserts ownership on the
+      // write itself (Prisma throws if the pair matches no row).
+      where: { id, userId: user.id },
       data: {
         loadId: load.id,
         bookingId: booking.id,
@@ -946,7 +948,7 @@ export class DocumentsService {
     data.status = missing.length ? 'needs_review' : 'complete';
 
     const doc = await this.prisma.document.update({
-      where: { id },
+      where: { id, userId: user.id }, // owner-scoped write
       data,
       select: this.listSelect,
     });
@@ -967,7 +969,7 @@ export class DocumentsService {
     }
 
     const updated = await this.prisma.document.update({
-      where: { id },
+      where: { id, userId: user.id }, // owner-scoped write
       data: { invoiceAmount: amount, invoiceStatus: 'staged' },
       select: this.listSelect,
     });
