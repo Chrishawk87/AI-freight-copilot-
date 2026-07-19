@@ -244,7 +244,7 @@ export class DocumentsService {
     const rc = await this.ocr.extractRateCon(
       body.imageData,
       {},
-      { allowCompanyKey },
+      { allowCompanyKey, clientKey: body.ocrKey },
     );
 
     const billable = !byok && rc.provider !== 'simulated';
@@ -424,7 +424,7 @@ export class DocumentsService {
     const rc = await this.ocr.extractRateCon(
       body.imageData,
       {},
-      { allowCompanyKey },
+      { allowCompanyKey, clientKey: body.ocrKey },
     );
 
     const billable = !byok && rc.provider !== 'simulated';
