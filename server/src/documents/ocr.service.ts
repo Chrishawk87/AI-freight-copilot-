@@ -397,7 +397,10 @@ export class OcrService {
 
     return {
       ...fields,
-      confidence: Math.min(96, 45 + present * 8),
+      // Prefer the model's own read-quality score; fall back to a presence-based
+      // heuristic when it doesn't report one. Never exceed the presence ceiling —
+      // a model can't be more sure than the fields it actually returned.
+      confidence: blendConfidence(parsed.confidence, 45 + present * 8),
       provider,
       raw: parsed,
     };
@@ -451,7 +454,7 @@ export class OcrService {
       fields.totalRate,
     ].filter((v) => v !== '' && v != null).length;
     if (present === 0) throw new Error('Rate Con parse: empty result');
-    fields.confidence = Math.min(96, 55 + present * 8);
+    fields.confidence = blendConfidence(parsed.confidence, 55 + present * 8);
     return fields;
   }
 
@@ -468,28 +471,114 @@ export class OcrService {
   }
 }
 
+// ---- Freight knowledge base ------------------------------------------------
+// Injected into every extraction prompt so the model reads freight shorthand
+// the way a dispatcher would. Layouts vary wildly across brokers; giving the
+// model the vocabulary is what lets one prompt generalize across carriers.
+const FREIGHT_GLOSSARY: Record<string, string> = {
+  // Documents
+  RC: 'Rate Confirmation (a.k.a. Rate Con / Carrier Confirmation)',
+  BOL: 'Bill of Lading',
+  POD: 'Proof of Delivery',
+  PRO: 'PRO number (carrier tracking number)',
+  // Parties / identifiers
+  MC: 'Motor Carrier number',
+  DOT: 'USDOT number',
+  PU: 'Pickup',
+  DEL: 'Delivery',
+  PO: 'Purchase Order number',
+  REF: 'Reference / load number',
+  SEAL: 'Trailer seal number',
+  // Equipment (normalize to a readable name)
+  V: 'Dry Van',
+  DV: 'Dry Van',
+  R: 'Reefer (refrigerated van)',
+  RF: 'Reefer (refrigerated van)',
+  F: 'Flatbed',
+  FB: 'Flatbed',
+  SD: 'Step Deck',
+  RGN: 'Removable Gooseneck',
+  'P/O': 'Power Only (equipment)',
+  CONE: 'Conestoga',
+  HS: 'Hotshot',
+  LB: 'Lowboy',
+  DD: 'Double Drop',
+  IMDL: 'Intermodal',
+  // Rate terms
+  LINEHAUL: 'Line haul — base transportation charge before extras',
+  FSC: 'Fuel Surcharge',
+  RPM: 'Rate Per Mile',
+  ALLIN: 'All-in / total rate — line haul plus every accessorial',
+  // Accessorials
+  DET: 'Detention — pay for time held at pickup/delivery',
+  TONU: 'Truck Ordered Not Used (cancellation fee)',
+  LUMPER: 'Lumper fee — third-party loading/unloading',
+  LAYOVER: 'Layover — overnight hold pay',
+  STOPOFF: 'Stop-off charge (extra pickup/drop)',
+  TARP: 'Tarp fee (flatbed load covering)',
+  DH: 'Deadhead — empty miles to the pickup',
+  // Scheduling / weight
+  FCFS: 'First Come First Served (no fixed appointment)',
+  APPT: 'Appointment (scheduled window)',
+  GVW: 'Gross Vehicle Weight',
+};
+
+const GLOSSARY_BLOCK = Object.entries(FREIGHT_GLOSSARY)
+  .map(([k, v]) => `  ${k.replace(/_EQ$/, '')} = ${v}`)
+  .join('\n');
+
+// Shared contract that applies to every freight document read.
+const EXTRACTION_RULES = [
+  'RULES:',
+  '1. Read ONLY what is printed on this document. Never guess, infer, or carry',
+  '   over a value from memory or a typical load.',
+  '2. If a field is not present or not legible, return "" for text and null for',
+  '   numbers. A missing value is correct — a fabricated one is a failure.',
+  '3. Money as plain numbers, no $ or commas (e.g. 1850.00 not "$1,850").',
+  '4. Dates as YYYY-MM-DD when the year is shown.',
+  '5. Expand abbreviations using the glossary above (e.g. equipment "R" ->',
+  '   "Reefer", "V" -> "Dry Van").',
+  '6. Return ONLY the JSON object — no markdown fences, no commentary.',
+  '7. Set "confidence" to your honest 0-100 read quality for THIS document:',
+  '   90-100 = every key field crisp and unambiguous; 60-89 = readable but some',
+  '   fields faint/cut off; below 60 = large parts unreadable or uncertain.',
+].join('\n');
+
 // ---- instructions (shared by every engine) ---------------------------------
 function bolInstruction(docType: string): string {
   const kind =
     docType === 'POD' ? 'Proof of Delivery (POD)' : 'Bill of Lading (BOL)';
   return (
-    `You are extracting fields from a freight ${kind}. ` +
-    'Return ONLY a JSON object (no markdown, no prose) with EXACTLY these keys:\n' +
+    `You are a freight documentation specialist extracting fields from a ${kind}.\n\n` +
+    `FREIGHT GLOSSARY (expand any shorthand you see):\n${GLOSSARY_BLOCK}\n\n` +
+    `${EXTRACTION_RULES}\n` +
+    '8. signaturePresent is true ONLY if a delivery/receiving signature is' +
+    ' actually visible; signedBy is the printed/legible name, else "".\n' +
+    '9. weightLbs and pieceCount as plain numbers (no commas or units).\n\n' +
+    'Return a JSON object with EXACTLY these keys:\n' +
     '{"bolNumber":string,"proNumber":string,"shipper":string,"consignee":string,' +
     '"poNumber":string,"pieceCount":number|null,"weightLbs":number|null,' +
     '"shipDate":string,"deliveryDate":string,"signaturePresent":boolean,' +
-    '"signedBy":string}\n' +
-    'Rules: dates as YYYY-MM-DD when shown. weightLbs and pieceCount as plain ' +
-    'numbers (no commas/units). Use "" for missing text and null for missing ' +
-    'numbers. signaturePresent is true only if a delivery/receiving signature is ' +
-    'actually visible on the document; signedBy is the printed name if legible, ' +
-    'else "". Do not guess values that are not present.'
+    '"signedBy":string,"confidence":number}'
   );
 }
 
 const RATECON_INSTRUCTION =
-  'You are extracting fields from a freight Rate Confirmation ("Rate Con"). ' +
-  'Return ONLY a JSON object (no markdown, no prose) with EXACTLY these keys:\n' +
+  'You are a freight documentation specialist extracting fields from a Rate ' +
+  'Confirmation ("Rate Con" / Carrier Confirmation).\n\n' +
+  `FREIGHT GLOSSARY (expand any shorthand you see):\n${GLOSSARY_BLOCK}\n\n` +
+  `${EXTRACTION_RULES}\n` +
+  '8. States as 2-letter USPS codes (e.g. "TX", "GA").\n' +
+  '9. lineHaulRate is the base transportation charge; fuelSurcharge is FSC only;' +
+  ' totalRate is the all-in amount the carrier is paid (line haul + FSC +' +
+  ' accessorials). If only a single total is shown, put it in totalRate and' +
+  ' leave lineHaulRate null.\n' +
+  '10. accessorials is a list of every named extra (detention, lumper, layover,' +
+  ' tarp, stop-off, TONU, etc.) with its dollar amount — do NOT fold these into' +
+  ' lineHaulRate.\n' +
+  '11. pickupAppt/deliveryAppt: capture the scheduled window or "FCFS" exactly' +
+  ' as written; equipmentType expanded to a readable name.\n\n' +
+  'Return a JSON object with EXACTLY these keys:\n' +
   '{"rateConNumber":string,"brokerName":string,"brokerContactName":string,' +
   '"brokerPhone":string,"brokerEmail":string,"commodity":string,' +
   '"equipmentType":string,"weightLbs":number|null,"pieceCount":number|null,' +
@@ -498,11 +587,7 @@ const RATECON_INSTRUCTION =
   '"totalRate":number|null,"originCity":string,"originState":string,' +
   '"pickupAddress":string,"pickupAppt":string,"destCity":string,' +
   '"destState":string,"deliveryAddress":string,"deliveryAppt":string,' +
-  '"specialInstructions":string}\n' +
-  'Rules: money as plain numbers (no $ or commas). Use "" for missing text ' +
-  'and null for missing numbers. States as 2-letter codes. accessorials covers ' +
-  'lumper, detention, tarp, and similar extras. If a value is not present, do ' +
-  'not guess.';
+  '"specialInstructions":string,"confidence":number}';
 
 // ---- helpers ---------------------------------------------------------------
 function decodeDataUrl(dataUrl: string): { buffer: Buffer; mime: string } {
@@ -515,6 +600,20 @@ function decodeDataUrl(dataUrl: string): { buffer: Buffer; mime: string } {
 function numOrNull(v: any): number | null {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+}
+
+// Combine the model's self-reported read quality with a presence-based floor.
+// If the model gives a usable 0-100 score we take the LOWER of it and the
+// heuristic ceiling, so a model can't claim high confidence on a sparse read.
+// If it reports nothing, we fall back to the heuristic alone. Capped at 96 —
+// we never present an OCR read as certain.
+function blendConfidence(modelValue: any, heuristic: number): number {
+  const ceiling = Math.min(96, Math.round(heuristic));
+  const m = Number(modelValue);
+  if (Number.isFinite(m) && m > 0) {
+    return Math.max(1, Math.min(ceiling, Math.round(m)));
+  }
+  return ceiling;
 }
 
 function str(v: any): string {

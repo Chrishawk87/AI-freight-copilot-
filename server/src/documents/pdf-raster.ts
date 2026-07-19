@@ -4,11 +4,11 @@
 // first few pages and hand those over.
 //
 // WHY A WORKER POOL
-// pdfjs + canvas rendering is CPU-heavy and synchronous enough to block Node's
-// single event loop. On a busy server that would stall EVERY other request while
-// one PDF renders. So rasterization runs in a small pool of persistent worker
-// threads: the main thread stays free to serve requests, and each worker imports
-// the heavy pdfjs/canvas modules once and reuses them across jobs.
+// PDF page rendering is CPU-heavy and synchronous enough to block Node's single
+// event loop. On a busy server that would stall EVERY other request while one
+// PDF renders. So rasterization runs in a small pool of persistent worker
+// threads: the main thread stays free to serve requests, and each worker loads
+// the mupdf WASM module once and reuses it across jobs.
 //
 // ISOLATION NOTE: a job carries only the raw PDF bytes in and image bytes out —
 // no account identity ever enters a worker, so there is nothing that could cross
@@ -23,17 +23,19 @@ import * as os from 'os';
 
 // The worker body runs as CommonJS (eval), so there is no .ts/.js build-path to
 // resolve — it works identically under ts-node (dev) and compiled dist (prod).
-// It imports pdfjs/canvas once, then renders one job per message.
+//
+// RENDERER: mupdf is a single pure-WASM package with NO native or optional
+// dependencies (no node-canvas / Cairo / Pango, no prebuilt binaries). That
+// keeps `npm ci` lock-sync trivial and the Railway build free of native
+// compilation — the reason we moved off pdfjs-dist + @napi-rs/canvas. mupdf
+// loads its WASM once, then renders one job per message.
 const WORKER_SRC = `
 const { parentPort } = require('worker_threads');
-let pdfjs = null;
-let createCanvas = null;
+let mupdf = null;
 
 async function ensure() {
-  if (pdfjs && createCanvas) return;
-  pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const canvas = await import('@napi-rs/canvas');
-  createCanvas = canvas.createCanvas;
+  if (mupdf) return;
+  mupdf = await import('mupdf');
 }
 
 parentPort.on('message', async (msg) => {
@@ -41,27 +43,24 @@ parentPort.on('message', async (msg) => {
   try {
     await ensure();
     const uint8 = new Uint8Array(data);
-    const doc = await pdfjs.getDocument({
-      data: uint8,
-      disableWorker: true,
-      isEvalSupported: false,
-      useSystemFonts: true,
-    }).promise;
-
-    const pageCount = Math.min(maxPages, doc.numPages || 1);
+    const doc = mupdf.Document.openDocument(uint8, 'application/pdf');
+    const pageCount = Math.min(maxPages, doc.countPages() || 1);
     const out = [];
-    for (let i = 1; i <= pageCount; i++) {
-      const page = await doc.getPage(i);
-      const unit = page.getViewport({ scale: 1 });
-      const scale = Math.min(2.5, Math.max(1, 1600 / unit.width));
-      const viewport = page.getViewport({ scale });
-      const cv = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
-      const ctx = cv.getContext('2d');
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      out.push('data:image/png;base64,' + cv.toBuffer('image/png').toString('base64'));
-      if (page.cleanup) page.cleanup();
+    for (let i = 0; i < pageCount; i++) {
+      const page = doc.loadPage(i);
+      // Scale so the rendered page is ~1600px on its long edge (cap 2.5x): big
+      // enough for the vision model to read fine print, small enough to keep the
+      // base64 payload reasonable. Page bounds are [x0, y0, x1, y1] in points.
+      const b = page.getBounds();
+      const w = Math.abs(b[2] - b[0]) || 612;
+      const scale = Math.min(2.5, Math.max(1, 1600 / w));
+      const matrix = mupdf.Matrix.scale(scale, scale);
+      const pix = page.toPixmap(matrix, mupdf.ColorSpace.DeviceRGB, false, true);
+      const png = pix.asPNG();
+      out.push('data:image/png;base64,' + Buffer.from(png).toString('base64'));
+      if (pix.destroy) pix.destroy();
+      if (page.destroy) page.destroy();
     }
-    if (doc.cleanup) doc.cleanup();
     if (doc.destroy) doc.destroy();
     parentPort.postMessage({ id, ok: true, images: out });
   } catch (e) {
