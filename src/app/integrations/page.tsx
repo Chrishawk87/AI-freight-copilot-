@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Search,
   Check,
   Plug,
   Truck,
@@ -343,7 +342,6 @@ function initials(name: string) {
 export default function IntegrationsPage() {
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
   const [keys, setKeys] = useState<KeyMap>({});
-  const [query, setQuery] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -446,14 +444,6 @@ export default function IntegrationsPage() {
     [enabled]
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return PLUGINS;
-    return PLUGINS.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.blurb.toLowerCase().includes(q)
-    );
-  }, [query]);
-
   return (
     <div>
       <PageHeader
@@ -483,42 +473,21 @@ export default function IntegrationsPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search integrations…"
-          className="input w-full pl-9"
-        />
-      </div>
-
-      {query.trim() ? (
-        <PluginGrid plugins={filtered} enabled={enabled} keys={keys} onToggle={toggle} onSetKey={setKey} />
-      ) : (
-        CATEGORIES.map((cat) => {
-          const items = PLUGINS.filter((p) => p.category === cat.key);
-          if (!items.length) return null;
-          const Icon = cat.icon;
-          return (
-            <section key={cat.key} className="mb-8">
-              <div className="mb-3 flex items-center gap-2">
-                <Icon className="h-[18px] w-[18px] text-electric" />
-                <h2 className="text-base font-bold">{cat.label}</h2>
-                <span className="text-xs text-white/40">— {cat.desc}</span>
-              </div>
-              <PluginGrid plugins={items} enabled={enabled} keys={keys} onToggle={toggle} onSetKey={setKey} />
-            </section>
-          );
-        })
-      )}
-
-      {query.trim() && !filtered.length && (
-        <div className="card p-10 text-center text-sm text-white/50">
-          No integrations match “{query}”.
-        </div>
-      )}
+      {CATEGORIES.map((cat) => {
+        const items = PLUGINS.filter((p) => p.category === cat.key);
+        if (!items.length) return null;
+        const Icon = cat.icon;
+        return (
+          <section key={cat.key} className="mb-8">
+            <div className="mb-3 flex items-center gap-2">
+              <Icon className="h-[18px] w-[18px] text-electric" />
+              <h2 className="text-base font-bold">{cat.label}</h2>
+              <span className="text-xs text-white/40">— {cat.desc}</span>
+            </div>
+            <PluginGrid plugins={items} enabled={enabled} keys={keys} onToggle={toggle} onSetKey={setKey} />
+          </section>
+        );
+      })}
     </div>
   );
 }

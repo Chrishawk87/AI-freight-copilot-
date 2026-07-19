@@ -125,6 +125,37 @@ export class OcrService {
     return this.simulate(ctx);
   }
 
+  /**
+   * POST to Anthropic's Messages API. Critically, PDF document blocks require
+   * the `anthropic-beta: pdfs-2024-09-25` header on top of the stable API
+   * version — without it the request 400s. Rate Cons and many BOLs arrive as
+   * PDFs, so omitting this header was silently forcing every PDF scan onto the
+   * fabricated fallback. We also surface the real error BODY (not just the
+   * status) so a failed read is diagnosable instead of vanishing.
+   */
+  private async postAnthropic(
+    key: string,
+    isPdf: boolean,
+    body: Record<string, any>,
+  ): Promise<any> {
+    const headers: Record<string, string> = {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    };
+    if (isPdf) headers['anthropic-beta'] = 'pdfs-2024-09-25';
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(`Anthropic HTTP ${res.status} ${detail.slice(0, 400)}`);
+    }
+    return res.json();
+  }
+
   // ---- Real document parse: Claude vision --------------------------------------
   // Reads a Bill of Lading / Proof of Delivery (image OR PDF) into structured
   // fields. Broker/shipper-agnostic — no template needed. Any shape problem
@@ -161,26 +192,16 @@ export class OcrService {
       'actually visible on the document; signedBy is the printed name if legible, ' +
       'else "". Do not guess values that are not present.';
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1200,
-        messages: [
-          {
-            role: 'user',
-            content: [fileBlock, { type: 'text', text: instruction }],
-          },
-        ],
-      }),
+    const data: any = await this.postAnthropic(key, isPdf, {
+      model,
+      max_tokens: 1200,
+      messages: [
+        {
+          role: 'user',
+          content: [fileBlock, { type: 'text', text: instruction }],
+        },
+      ],
     });
-    if (!res.ok) throw new Error(`Anthropic HTTP ${res.status}`);
-    const data: any = await res.json();
     const text: string =
       Array.isArray(data?.content) && data.content[0]?.type === 'text'
         ? String(data.content[0].text || '')
@@ -289,26 +310,16 @@ export class OcrService {
       'lumper, detention, tarp, and similar extras. If a value is not present, do ' +
       'not guess.';
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1500,
-        messages: [
-          {
-            role: 'user',
-            content: [fileBlock, { type: 'text', text: instruction }],
-          },
-        ],
-      }),
+    const data: any = await this.postAnthropic(key, isPdf, {
+      model,
+      max_tokens: 1500,
+      messages: [
+        {
+          role: 'user',
+          content: [fileBlock, { type: 'text', text: instruction }],
+        },
+      ],
     });
-    if (!res.ok) throw new Error(`Anthropic HTTP ${res.status}`);
-    const data: any = await res.json();
     const text: string =
       Array.isArray(data?.content) && data.content[0]?.type === 'text'
         ? String(data.content[0].text || '')
